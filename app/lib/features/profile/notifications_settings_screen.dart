@@ -29,7 +29,7 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    
 
     return Scaffold(
       appBar: AppAppBar(title: const Text('Уведомления')),

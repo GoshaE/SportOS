@@ -34,7 +34,7 @@ class _MarshalScreenState extends State<MarshalScreen> {
     if (_passed.contains(bib)) {
       _togglePassed(bib);
     } else if (!_isSynced) {
-      final cs = Theme.of(context).colorScheme;
+      
       AppDialog.confirm(
         context,
         title: 'Нет синхронизации',

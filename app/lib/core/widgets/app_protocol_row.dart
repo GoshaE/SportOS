@@ -113,7 +113,9 @@ class AppProtocolRow extends StatelessWidget {
               ),
               const SizedBox(width: 6),
             ],
-            if (delta != '—') Text('Δ $delta', style: AppTypography.monoTiming.copyWith(color: cs.onSurfaceVariant, fontSize: 12)),
+            if (delta != '—') ...[
+              Text('Δ $delta', style: AppTypography.monoTiming.copyWith(color: cs.onSurfaceVariant, fontSize: 12)),
+            ],
             const Spacer(),
             Text(time, style: AppTypography.monoTiming.copyWith(fontWeight: FontWeight.bold, fontSize: 16, color: place == 1 ? cs.primary : (isDnf ? cs.error : cs.onSurface))),
           ],
@@ -241,9 +243,13 @@ class AppProtocolRow extends StatelessWidget {
 
   Widget _avatarWidget(ThemeData theme, ColorScheme cs, int? place) {
     Color? borderColor;
-    if (place == 1) borderColor = AppColors.gold;
-    else if (place == 2) borderColor = AppColors.silver;
-    else if (place == 3) borderColor = AppColors.bronze;
+    if (place == 1) {
+      borderColor = AppColors.gold;
+    } else if (place == 2) {
+      borderColor = AppColors.silver;
+    } else if (place == 3) {
+      borderColor = AppColors.bronze;
+    }
 
     return Container(
       width: 28,

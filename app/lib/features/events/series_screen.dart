@@ -676,7 +676,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                   barTouchData: BarTouchData(
                     touchTooltipData: BarTouchTooltipData(
                       getTooltipColor: (_) => cs.inverseSurface,
-                      getTooltipItem: (group, _, rod, __) => BarTooltipItem(
+                      getTooltipItem: (group, _, rod, _) => BarTooltipItem(
                         '${names[group.x]}: ${rod.toY.toInt()} очков',
                         Theme.of(context).textTheme.labelMedium!.copyWith(color: cs.onInverseSurface, fontWeight: FontWeight.bold),
                       ),

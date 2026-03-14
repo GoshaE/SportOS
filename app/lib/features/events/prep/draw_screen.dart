@@ -163,7 +163,7 @@ class _DrawScreenState extends State<DrawScreen> {
       AppInfoBanner.info(title: 'Выберите группу участников для проведения жеребьёвки. После утверждения всех групп можно переходить к стартовым листам.'),
       Expanded(child: ListView.separated(
         padding: const EdgeInsets.all(8), itemCount: _groups.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 8),
+        separatorBuilder: (_, _) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final g = _groups[i];
           final isApproved = g['status'] == 'approved';

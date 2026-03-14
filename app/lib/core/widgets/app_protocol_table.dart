@@ -89,7 +89,7 @@ class AppProtocolTable extends StatelessWidget {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       itemCount: itemCount,
-                      separatorBuilder: (_, _i) => Divider(
+                      separatorBuilder: (_, i) => Divider(
                         height: 1,
                         color: cs.onSurfaceVariant.withValues(alpha: 0.2), // Semantic divider
                       ),

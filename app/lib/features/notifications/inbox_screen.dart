@@ -55,7 +55,7 @@ class _InboxScreenState extends State<InboxScreen> {
           ? Center(child: Text('Нет уведомлений', style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)))
           : ListView.separated(
               itemCount: filtered.length,
-              separatorBuilder: (_, __) => const Divider(height: 1, indent: 60),
+              separatorBuilder: (_, _) => const Divider(height: 1, indent: 60),
               itemBuilder: (ctx, i) {
                 final n = filtered[i];
                 final bool read = n['read'] as bool;

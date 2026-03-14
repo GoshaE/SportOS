@@ -198,7 +198,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   void _linkTelegram() {
-    final cs = Theme.of(context).colorScheme;
+    
     AppBottomSheet.show(
       context,
       title: 'Привязать Telegram',

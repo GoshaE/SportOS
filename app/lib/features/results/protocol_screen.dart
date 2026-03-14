@@ -7,7 +7,6 @@ import '../../core/widgets/app_podium_view.dart';
 
 class _AthleteData {
   final int? place;
-  final String? placeText;
   final String bib;
   final String name;
   final String cat;
@@ -19,7 +18,6 @@ class _AthleteData {
 
   const _AthleteData({
     this.place,
-    this.placeText,
     required this.bib,
     required this.name,
     required this.cat,
@@ -191,7 +189,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                 return AppProtocolRow(
                   isCardView: isCardView,
                   place: a.place,
-                  placeText: a.placeText,
+                  
                   bib: a.bib,
                   name: a.name,
                   cat: a.cat,

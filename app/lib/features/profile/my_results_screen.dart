@@ -113,7 +113,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
             curveSmoothness: 0.3,
             color: style.primary,
             barWidth: 3,
-            dotData: FlDotData(show: true, getDotPainter: (spot, _, __, ___) => FlDotCirclePainter(
+            dotData: FlDotData(show: true, getDotPainter: (spot, _, _, __) => FlDotCirclePainter(
               radius: 4, color: style.primary, strokeWidth: 2, strokeColor: cs.surface,
             )),
             belowBarData: BarAreaData(

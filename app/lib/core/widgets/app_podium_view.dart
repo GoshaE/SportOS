@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import 'app_card.dart';
-import 'app_cached_image.dart';
+import 'package:sportos_app/core/widgets/app_cached_image.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 
