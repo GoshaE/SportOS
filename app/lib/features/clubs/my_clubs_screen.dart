@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
+import '../../core/widgets/app_club_card.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 
 /// Screen ID: C1 — Клубы (хаб-экран, корень вкладки)
@@ -131,48 +132,18 @@ class _MyClubsScreenState extends State<MyClubsScreen> with SingleTickerProvider
 
         final hasPending = (int.tryParse(club['pending'] ?? '0') ?? 0) > 0;
 
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => context.push('/clubs/${club['id']}'),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(children: [
-                Hero(
-                  tag: 'club-avatar-${club['id']}',
-                  child: AppAvatar(name: club['name']!, size: 48, imageUrl: club['logoUrl']),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(club['name']!, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 2),
-                  Row(children: [
-                    Icon(Icons.location_on, size: 12, color: cs.outline),
-                    const SizedBox(width: 2),
-                    Flexible(child: Text(club['city']!, style: TextStyle(fontSize: 12, color: cs.outline), overflow: TextOverflow.ellipsis)),
-                    const SizedBox(width: 8),
-                    Flexible(child: Text(club['sport']!, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
-                  ]),
-                  const SizedBox(height: 2),
-                  Text('${club['members']} участников', style: TextStyle(fontSize: 11, color: cs.outline)),
-                ])),
-                Column(mainAxisSize: MainAxisSize.min, children: [
-                  StatusBadge(text: club['role']!, type: badgeType),
-                  if (hasPending) ...[
-                    const SizedBox(height: 4),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: cs.error, borderRadius: BorderRadius.circular(8)),
-                      child: Text('${club['pending']} 📩', style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ]),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right, color: cs.outlineVariant, size: 20),
-              ]),
-            ),
-          ),
+        return AppClubCard(
+          title: club['name']!,
+          location: club['city']!,
+          sport: club['sport']!,
+          members: club['members']!,
+          role: club['role'],
+          pendingLabel: hasPending ? club['pending'] : null,
+          logoUrl: club['logoUrl'],
+          roleBadgeType: badgeType,
+          onTap: () => context.push('/clubs/${club['id']}'),
+          mode: ClubCardMode.bento,
+          heroTag: 'club-avatar-${club['id']}',
         );
       }),
     ]);
@@ -237,53 +208,18 @@ class _MyClubsScreenState extends State<MyClubsScreen> with SingleTickerProvider
                   final isMember = _myClubs.any((c) => c['id'] == club['id']);
                   final isFree = club['fee'] == 'Бесплатно';
 
-                  return Card(
-                    margin: const EdgeInsets.only(bottom: 8),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: () => context.push('/clubs/${club['id']}'),
-                      child: Padding(
-                        padding: const EdgeInsets.all(12),
-                        child: Row(children: [
-                          Hero(
-                            tag: 'club-avatar-${club['id']}',
-                            child: AppAvatar(name: club['name']!, size: 48, imageUrl: club['logoUrl']),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Row(children: [
-                              Flexible(child: Text(club['name']!, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
-                              if (isMember) ...[
-                                const SizedBox(width: 6),
-                                Icon(Icons.check_circle, size: 14, color: cs.primary),
-                              ],
-                            ]),
-                            const SizedBox(height: 2),
-                            Row(children: [
-                              Icon(Icons.location_on, size: 12, color: cs.outline),
-                              const SizedBox(width: 2),
-                              Flexible(child: Text(club['city']!, style: TextStyle(fontSize: 12, color: cs.outline), overflow: TextOverflow.ellipsis)),
-                              const SizedBox(width: 8),
-                              Flexible(child: Text(club['sportLabel']!, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant), overflow: TextOverflow.ellipsis)),
-                            ]),
-                            const SizedBox(height: 4),
-                            Row(children: [
-                              Icon(Icons.people, size: 12, color: cs.outline),
-                              const SizedBox(width: 3),
-                              Text('${club['members']} участников', style: TextStyle(fontSize: 11, color: cs.outline)),
-                              const SizedBox(width: 8),
-                              Icon(isFree ? Icons.money_off : Icons.attach_money, size: 12, color: isFree ? cs.secondary : cs.outline),
-                              const SizedBox(width: 3),
-                              Flexible(child: Text(club['fee']!, style: TextStyle(fontSize: 11, color: isFree ? cs.secondary : cs.outline, fontWeight: isFree ? FontWeight.w600 : FontWeight.normal), overflow: TextOverflow.ellipsis)),
-                            ]),
-                          ])),
-                          if (isMember)
-                            const StatusBadge(text: '✓ Состою', type: BadgeType.success)
-                          else
-                            Icon(Icons.chevron_right, color: cs.outlineVariant, size: 20),
-                        ]),
-                      ),
-                    ),
+                  return AppClubCard(
+                    title: club['name']!,
+                    location: club['city']!,
+                    sport: club['sportLabel']!,
+                    members: club['members']!,
+                    role: isMember ? 'Участник' : null,
+                    roleBadgeType: isMember ? BadgeType.success : null,
+                    fee: isFree ? 'Бесплатно' : club['fee'],
+                    logoUrl: club['logoUrl'],
+                    onTap: () => context.push('/clubs/${club['id']}'),
+                    mode: ClubCardMode.bento,
+                    heroTag: 'club-avatar-${club['id']}',
                   );
                 },
               ),
