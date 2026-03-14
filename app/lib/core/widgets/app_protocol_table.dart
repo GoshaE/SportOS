@@ -111,7 +111,7 @@ class AppProtocolTable extends StatelessWidget {
         shrinkWrap: true,
         physics: const ClampingScrollPhysics(),
         itemCount: itemCount,
-        separatorBuilder: (_, _i) => const SizedBox(height: 8),
+        separatorBuilder: (_, index) => const SizedBox(height: 8),
         itemBuilder: (ctx, i) => AppCard(
           padding: EdgeInsets.zero,
           children: [

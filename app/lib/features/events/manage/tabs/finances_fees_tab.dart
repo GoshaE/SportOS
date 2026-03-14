@@ -13,7 +13,7 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
   String _pricingMode = 'single';
   bool _earlyBird = true;
   String _earlyBirdType = 'percent';
-  int _earlyBirdValue = 15;
+  final int _earlyBirdValue = 15;
   int _bookingTimeout = 24;
 
   @override
@@ -197,7 +197,7 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
             Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: selected ? c : cs.onSurface)),
             Text(subtitle, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           ])),
-          Radio<String>(value: value, groupValue: _paymentTier, onChanged: (v) => setState(() => _paymentTier = v!), visualDensity: VisualDensity.compact),
+          if (selected) Icon(Icons.radio_button_checked, color: c, size: 20) else Icon(Icons.radio_button_unchecked, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 20),
         ]),
       ),
     );

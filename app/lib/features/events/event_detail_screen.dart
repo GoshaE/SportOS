@@ -412,44 +412,64 @@ class _RegisterCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(24),
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      borderColor: cs.primary.withValues(alpha: 0.3),
       children: [
         InkWell(
-          borderRadius: BorderRadius.circular(999),
+          borderRadius: BorderRadius.circular(24),
           onTap: () => context.push('/hub/event/$eventId/register'),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Row(children: [
-              Container(
-                width: 44, height: 44,
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  shape: BoxShape.circle,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.how_to_reg, color: cs.primary, size: 24),
                 ),
-                child: Icon(Icons.how_to_reg, color: cs.primary, size: 22),
-              ),
-              const SizedBox(width: 14),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Зарегистрироваться', style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                )),
-                const SizedBox(height: 2),
-                Text('6 дисциплин · 2 000–3 500₽', style: theme.textTheme.bodySmall?.copyWith(
-                  color: cs.onSurfaceVariant,
-                )),
-              ])),
-              SizedBox(
-                height: 36,
-                child: FilledButton(
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Регистрация открыта',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'От 2 000 ₽ · 6 дисциплин',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                FilledButton(
                   onPressed: () => context.push('/hub/event/$eventId/register'),
                   style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: const StadiumBorder(),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
                   child: Text('Выбрать', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
                 ),
-              ),
-            ]),
+              ],
+            ),
           ),
         ),
       ],
@@ -469,43 +489,75 @@ class _RegisteredCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return AppCard(
       padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(999),
+      borderRadius: BorderRadius.circular(24),
+      backgroundColor: cs.primaryContainer,
+      borderColor: cs.primary.withValues(alpha: 0.5),
       children: [
-        Container(
-          decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3)),
-          child: InkWell(
-            borderRadius: BorderRadius.circular(999),
-            onTap: () => _showDetails(context),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              child: Row(children: [
-                Icon(Icons.check_circle, color: cs.primary, size: 24),
-                const SizedBox(width: 12),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Вы участвуете', style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold, color: cs.primary,
-                  )),
-                  Text('Скиджоринг 5км · BIB 42', style: theme.textTheme.bodySmall?.copyWith(
-                    color: cs.onSurfaceVariant,
-                  )),
-                ])),
-                const StatusBadge(text: 'Оплачено', type: BadgeType.success),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 36,
-                  child: FilledButton.icon(
-                    onPressed: () => _showDetails(context),
-                    style: FilledButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      backgroundColor: cs.onPrimaryContainer.withValues(alpha: 0.1),
-                      foregroundColor: cs.onPrimaryContainer,
-                      elevation: 0,
-                    ),
-                    icon: const Icon(Icons.qr_code, size: 16),
-                    label: Text('Билет', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+        InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => _showDetails(context),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: cs.primary.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.check_circle, color: cs.primary, size: 28),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Вы участвуете',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: cs.primary,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const StatusBadge(text: 'Оплачено', type: BadgeType.success),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Скиджоринг 5км',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onPrimaryContainer,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ),
                 ),
-              ]),
+                const SizedBox(width: 8),
+                FilledButton.icon(
+                  onPressed: () => _showDetails(context),
+                  style: FilledButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    backgroundColor: cs.primary,
+                    foregroundColor: cs.onPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  ),
+                  icon: const Icon(Icons.qr_code, size: 18),
+                  label: Text('Билет', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                ),
+              ],
             ),
           ),
         ),

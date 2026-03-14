@@ -42,7 +42,6 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
 
   // ── Вкладка: Участники ──
   Widget _membersTab() {
-    final cs = Theme.of(context).colorScheme;
     final members = [
       {'name': 'Иванов Алексей', 'role': 'owner', 'roleLabel': 'Владелец', 'fee': 'paid', 'since': '2020', 'imageUrl': 'assets/images/avatar1.jpeg'},
       {'name': 'Петрова Мария', 'role': 'coach', 'roleLabel': 'Тренер', 'fee': 'paid', 'since': '2021', 'imageUrl': 'assets/images/avatar2.jpg'},
@@ -70,7 +69,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
         return AppUserTile(
           name: m['name'] as String,
           subtitle: '${m['roleLabel']} · с ${m['since']}',
-          leading: AppAvatar(name: m['name'] as String, imageUrl: m['imageUrl'] as String?, size: 40),
+          leading: AppAvatar(name: m['name'] as String, imageUrl: m['imageUrl'], size: 40),
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
             Text(feeLabel, style: TextStyle(fontSize: 12, color: feeColor)),
             PopupMenuButton<String>(

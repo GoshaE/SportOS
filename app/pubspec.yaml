@@ -81,8 +81,8 @@ flutter:
   fonts:
     - family: Satoshi
       fonts:
-        - asset: assets/fonts/satoshi/Satoshi-Variable.ttf
-        - asset: assets/fonts/satoshi/Satoshi-VariableItalic.ttf
+        - asset: assets/fonts/Satoshi/Satoshi-Variable.ttf
+        - asset: assets/fonts/Satoshi/Satoshi-VariableItalic.ttf
           style: italic
     - family: Orbitron
       fonts:
