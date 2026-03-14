@@ -19,7 +19,7 @@ jobs:
         run: cd app && flutter pub get
 
       - name: Build Web App
-        run: cd app && flutter build web --base-href "/SportOS/" --web-renderer canvaskit --release
+        run: cd app && flutter build web --base-href "/SportOS/" --release
 
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
