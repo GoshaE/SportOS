@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1800">
+<title>SportOS — Application Map</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #0a0e1a;
+    --surface: #131825;
+    --surface-2: #1a2035;
+    --border: #252d44;
+    --text: #e2e8f0;
+    --text-dim: #8892a8;
+    --accent: #6366f1;
+    --accent-glow: rgba(99,102,241,0.3);
+
+    --auth: #8b5cf6;
+    --hub: #3b82f6;
+    --my: #06b6d4;
+    --event: #f59e0b;
+    --prep: #10b981;
+    --ops: #ef4444;
+    --results: #ec4899;
+    --profile: #8b5cf6;
+    --notif: #f97316;
+    --web: #14b8a6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', -apple-system, sans-serif;
+    overflow-x: auto;
+    min-width: 1800px;
+  }
+
+  .header {
+    text-align: center;
+    padding: 40px 20px 20px;
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, var(--bg) 60%, transparent);
+    z-index: 100;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+  }
+  .header p {
+    color: var(--text-dim);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    padding: 12px 20px 24px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+  .legend-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+
+  .map-container {
+    position: relative;
+    padding: 20px 40px 60px;
+  }
+
+  svg.connections {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+  }
+  svg.connections path {
+    fill: none;
+    stroke-width: 1.5;
+    opacity: 0.35;
+  }
+  svg.connections path.highlight {
+    opacity: 0.8;
+    stroke-width: 2;
+  }
+
+  .row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    position: relative;
+    z-index: 2;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .row.spread { justify-content: space-between; }
+
+  /* ── SECTION BLOCK ── */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 0;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: default;
+  }
+  .section:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+
+  .section-header {
+    padding: 14px 18px 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-header .icon {
+    font-size: 20px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
+  .section-header h3 {
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+  }
+  .section-header .badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  .section-body {
+    padding: 12px 16px 14px;
+  }
+
+  /* ── SCREEN ROW ── */
+  .screen {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 7px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 12px;
+  }
+  .screen:last-child { border-bottom: none; }
+
+  .screen-id {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    min-width: 28px;
+    text-align: center;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .screen-name {
+    font-weight: 600;
+    flex-shrink: 0;
+    min-width: 120px;
+  }
+  .screen-features {
+    color: var(--text-dim);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .screen-features .tag {
+    display: inline-block;
+    background: var(--surface-2);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin: 1px 2px;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+  .screen-arrow {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-left: auto;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  /* ── COLOR THEMES ── */
+  .theme-auth .section-header { background: rgba(139,92,246,0.1); }
+  .theme-auth .icon { background: rgba(139,92,246,0.2); color: var(--auth); }
+  .theme-auth .badge { background: rgba(139,92,246,0.2); color: var(--auth); }
+
+  .theme-hub .section-header { background: rgba(59,130,246,0.1); }
+  .theme-hub .icon { background: rgba(59,130,246,0.2); color: var(--hub); }
+  .theme-hub .badge { background: rgba(59,130,246,0.2); color: var(--hub); }
+
+  .theme-my .section-header { background: rgba(6,182,212,0.1); }
+  .theme-my .icon { background: rgba(6,182,212,0.2); color: var(--my); }
+  .theme-my .badge { background: rgba(6,182,212,0.2); color: var(--my); }
+
+  .theme-event .section-header { background: rgba(245,158,11,0.1); }
+  .theme-event .icon { background: rgba(245,158,11,0.2); color: var(--event); }
+  .theme-event .badge { background: rgba(245,158,11,0.2); color: var(--event); }
+
+  .theme-prep .section-header { background: rgba(16,185,129,0.1); }
+  .theme-prep .icon { background: rgba(16,185,129,0.2); color: var(--prep); }
+  .theme-prep .badge { background: rgba(16,185,129,0.2); color: var(--prep); }
+
+  .theme-ops .section-header { background: rgba(239,68,68,0.1); }
+  .theme-ops .icon { background: rgba(239,68,68,0.2); color: var(--ops); }
+  .theme-ops .badge { background: rgba(239,68,68,0.2); color: var(--ops); }
+
+  .theme-results .section-header { background: rgba(236,72,153,0.1); }
+  .theme-results .icon { background: rgba(236,72,153,0.2); color: var(--results); }
+  .theme-results .badge { background: rgba(236,72,153,0.2); color: var(--results); }
+
+  .theme-profile .section-header { background: rgba(139,92,246,0.1); }
+  .theme-profile .icon { background: rgba(139,92,246,0.2); color: var(--profile); }
+  .theme-profile .badge { background: rgba(139,92,246,0.2); color: var(--profile); }
+
+  .theme-notif .section-header { background: rgba(249,115,22,0.1); }
+  .theme-notif .icon { background: rgba(249,115,22,0.2); color: var(--notif); }
+  .theme-notif .badge { background: rgba(249,115,22,0.2); color: var(--notif); }
+
+  .theme-web .section-header { background: rgba(20,184,166,0.1); }
+  .theme-web .icon { background: rgba(20,184,166,0.2); color: var(--web); }
+  .theme-web .badge { background: rgba(20,184,166,0.2); color: var(--web); }
+
+  /* ── CONNECTOR ARROWS ── */
+  .arrow-down {
+    display: flex;
+    justify-content: center;
+    padding: 4px 0;
+    z-index: 2;
+    position: relative;
+  }
+  .arrow-down svg {
+    width: 20px;
+    height: 28px;
+    fill: none;
+    stroke: var(--text-dim);
+    stroke-width: 1.5;
+    opacity: 0.4;
+  }
+
+  /* ── BOTTOM BAR VISUAL ── */
+  .bottom-bar {
+    display: flex;
+    gap: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .bottom-bar-tab {
+    flex: 1;
+    text-align: center;
+    padding: 14px 20px;
+    cursor: default;
+    transition: background 0.2s;
+    border-right: 1px solid var(--border);
+  }
+  .bottom-bar-tab:last-child { border-right: none; }
+  .bottom-bar-tab:hover { background: var(--surface-2); }
+  .bottom-bar-tab .tab-icon { font-size: 22px; margin-bottom: 4px; }
+  .bottom-bar-tab .tab-label { font-size: 11px; font-weight: 600; color: var(--text-dim); }
+  .bottom-bar-tab.active .tab-label { color: var(--accent); }
+
+  /* ── SIZING ── */
+  .w-280 { width: 280px; }
+  .w-320 { width: 320px; }
+  .w-360 { width: 360px; }
+  .w-400 { width: 400px; }
+  .w-440 { width: 440px; }
+  .w-full { width: 100%; max-width: 1700px; margin: 0 auto; }
+  .w-half { width: calc(50% - 10px); max-width: 840px; }
+
+  /* ── FLOW CONNECTOR LABELS ── */
+  .flow-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 2px 0;
+    position: relative;
+    z-index: 2;
+  }
+
+  /* ── MODAL SUBSCREEN ── */
+  .subscreen {
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+  .subscreen-title {
+    font-weight: 600;
+    font-size: 11px;
+    margin-bottom: 4px;
+    color: var(--text);
+  }
+  .subscreen-item {
+    color: var(--text-dim);
+    padding: 2px 0;
+    font-size: 10px;
+  }
+
+  .connector-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 0;
+    z-index: 2;
+    position: relative;
+  }
+  .connector-line {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--text-dim), transparent);
+    flex: 1;
+    max-width: 80px;
+    opacity: 0.3;
+  }
+  .connector-text {
+    font-size: 10px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .section-note {
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 6px 16px 10px;
+    font-style: italic;
+    background: rgba(255,255,255,0.02);
+    border-top: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .group-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dim);
+    text-align: center;
+    padding: 16px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    position: relative;
+    z-index: 2;
+  }
+  .group-label::before,
+  .group-label::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 60px;
+    height: 1px;
+    background: var(--border);
+  }
+  .group-label::before { right: calc(50% + 100px); }
+  .group-label::after { left: calc(50% + 100px); }
+
+  .stats-bar {
+    display: flex;
+    gap: 24px;
+    justify-content: center;
+    padding: 30px 20px;
+    flex-wrap: wrap;
+  }
+  .stat {
+    text-align: center;
+  }
+  .stat-value {
+    font-size: 32px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1, #ec4899);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SportOS — Application Map</h1>
+  <p>Полная карта экранов, функционала и связей · ~60 UI-единиц · 12 разделов</p>
+</div>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-value">60</div><div class="stat-label">Экранов</div></div>
+  <div class="stat"><div class="stat-value">257</div><div class="stat-label">Функций</div></div>
+  <div class="stat"><div class="stat-value">12</div><div class="stat-label">Разделов</div></div>
+  <div class="stat"><div class="stat-value">6</div><div class="stat-label">Ролей</div></div>
+  <div class="stat"><div class="stat-value">8</div><div class="stat-label">Движков</div></div>
+  <div class="stat"><div class="stat-value">40+</div><div class="stat-label">Сущностей</div></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--auth)"></div>Авторизация</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--hub)"></div>Хаб</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--my)"></div>Мои мероприятия</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--event)"></div>Управление</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--prep)"></div>Подготовка</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--ops)"></div>Режим гонки</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--results)"></div>Результаты</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--profile)"></div>Профиль</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--web)"></div>Web</div>
+</div>
+
+<div class="map-container">
+
+<!-- ═══════════════ ROW 1: AUTH ═══════════════ -->
+<div class="group-label">Точка входа</div>
+
+<div class="row">
+  <div class="section theme-auth w-440">
+    <div class="section-header">
+      <div class="icon">🔐</div>
+      <h3>Авторизация</h3>
+      <span class="badge">3 экрана</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">A1</span>
+        <span class="screen-name">Welcome</span>
+        <span class="screen-features">
+          <span class="tag">Логотип</span>
+          <span class="tag">Telegram Login</span>
+          <span class="tag">Гостевой доступ</span>
+          <span class="tag">Онбординг 2-3 слайда</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">A2</span>
+        <span class="screen-name">Вход / Регистрация</span>
+        <span class="screen-features">
+          <span class="tag">Telegram OAuth</span>
+          <span class="tag">Email + пароль</span>
+          <span class="tag">Мягкий триггер</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">A3</span>
+        <span class="screen-name">Подтверждение</span>
+        <span class="screen-features">
+          <span class="tag">OTP-код</span>
+          <span class="tag">Верификация</span>
+        </span>
+        <span class="screen-arrow">→ Hub</span>
+      </div>
+    </div>
+    <div class="section-note">Гость может листать мероприятия и смотреть результаты без входа</div>
+  </div>
+</div>
+
+<div class="arrow-down"><svg viewBox="0 0 20 28"><path d="M10 0 L10 22 M4 16 L10 24 L16 16" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+<!-- ═══════════════ ROW 2: BOTTOM BAR ═══════════════ -->
+<div class="group-label">Навигация</div>
+
+<div class="bottom-bar">
+  <div class="bottom-bar-tab active">
+    <div class="tab-icon">🏠</div>
+    <div class="tab-label">Хаб</div>
+  </div>
+  <div class="bottom-bar-tab">
+    <div class="tab-icon">📋</div>
+    <div class="tab-label">Мои</div>
+  </div>
+  <div class="bottom-bar-tab">
+    <div class="tab-icon">🔔</div>
+    <div class="tab-label">Уведомления</div>
+  </div>
+  <div class="bottom-bar-tab">
+    <div class="tab-icon">👤</div>
+    <div class="tab-label">Профиль</div>
+  </div>
+</div>
+
+<div class="arrow-down"><svg viewBox="0 0 20 28"><path d="M10 0 L10 22 M4 16 L10 24 L16 16" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+
+<!-- ═══════════════ ROW 3: TABS CONTENT ═══════════════ -->
+<div class="group-label">Основные разделы (Bottom Bar)</div>
+
+<div class="row">
+
+  <!-- HUB -->
+  <div class="section theme-hub w-400">
+    <div class="section-header">
+      <div class="icon">🏠</div>
+      <h3>Хаб мероприятий</h3>
+      <span class="badge">4 экрана</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">H1</span>
+        <span class="screen-name">Лента</span>
+        <span class="screen-features">
+          <span class="tag">Предстоящие</span>
+          <span class="tag">Прошедшие</span>
+          <span class="tag">Кнопка «Создать»</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">H2</span>
+        <span class="screen-name">Поиск / фильтры</span>
+        <span class="screen-features">
+          <span class="tag">Город</span>
+          <span class="tag">Вид спорта</span>
+          <span class="tag">Дата</span>
+          <span class="tag">Дистанция</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">H3</span>
+        <span class="screen-name">Карточка мероприятия</span>
+        <span class="screen-features">
+          <span class="tag">Название</span>
+          <span class="tag">Дата / место</span>
+          <span class="tag">Дисциплины</span>
+          <span class="tag">Слоты</span>
+          <span class="tag">Статус</span>
+        </span>
+        <span class="screen-arrow">→ H4 / E1</span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">H4</span>
+        <span class="screen-name">Регистрация (wizard)</span>
+        <span class="screen-features">
+          <span class="tag">4 шага</span>
+          <span class="tag">Дисциплины</span>
+          <span class="tag">Собака</span>
+          <span class="tag">Waiver</span>
+          <span class="tag">Оплата</span>
+          <span class="tag">Промокод</span>
+        </span>
+      </div>
+    </div>
+    <div class="section-note">H3 адаптируется: гость → «Зарегистрироваться», организатор → «Управлять»</div>
+  </div>
+
+  <!-- MY -->
+  <div class="section theme-my w-320">
+    <div class="section-header">
+      <div class="icon">📋</div>
+      <h3>Мои мероприятия</h3>
+      <span class="badge">3 экрана</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">M1</span>
+        <span class="screen-name">Как участник</span>
+        <span class="screen-features">
+          <span class="tag">Статус заявки</span>
+          <span class="tag">Результаты</span>
+        </span>
+        <span class="screen-arrow">→ H3</span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">M2</span>
+        <span class="screen-name">Как организатор</span>
+        <span class="screen-features">
+          <span class="tag">Черновики</span>
+          <span class="tag">Активные</span>
+          <span class="tag">Завершённые</span>
+        </span>
+        <span class="screen-arrow">→ E1</span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">M3</span>
+        <span class="screen-name">Создать мероприятие</span>
+        <span class="screen-features">
+          <span class="tag">Wizard</span>
+          <span class="tag">Из шаблона</span>
+          <span class="tag">С нуля</span>
+        </span>
+        <span class="screen-arrow">→ E1</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- NOTIFICATIONS -->
+  <div class="section theme-notif w-320">
+    <div class="section-header">
+      <div class="icon">🔔</div>
+      <h3>Уведомления</h3>
+      <span class="badge">1 экран</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">N1</span>
+        <span class="screen-name">Inbox</span>
+        <span class="screen-features">
+          <span class="tag">Приглашения</span>
+          <span class="tag">Результаты</span>
+          <span class="tag">Оплата</span>
+          <span class="tag">Waitlist</span>
+          <span class="tag">Протесты</span>
+          <span class="tag">Дипломы</span>
+          <span class="tag">SOS</span>
+          <span class="tag">PB</span>
+        </span>
+      </div>
+    </div>
+    <div class="section-note">Оффлайн: Pending Queue → доставка при интернете</div>
+  </div>
+
+  <!-- PROFILE -->
+  <div class="section theme-profile w-360">
+    <div class="section-header">
+      <div class="icon">👤</div>
+      <h3>Профиль</h3>
+      <span class="badge">6 экранов</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">PR1</span>
+        <span class="screen-name">Мой профиль</span>
+        <span class="screen-features">
+          <span class="tag">ФИО</span>
+          <span class="tag">Город</span>
+          <span class="tag">Вид спорта</span>
+          <span class="tag">Разряд</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">PR2</span>
+        <span class="screen-name">Мои собаки</span>
+        <span class="screen-features">
+          <span class="tag">Кличка</span>
+          <span class="tag">Чип</span>
+          <span class="tag">Вакцинации</span>
+          <span class="tag">Фото</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">PR3</span>
+        <span class="screen-name">Результаты / PB</span>
+        <span class="screen-features">
+          <span class="tag">Per-мероприятие</span>
+          <span class="tag">Personal Best</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">PR4</span>
+        <span class="screen-name">Мои дипломы</span>
+        <span class="screen-features">
+          <span class="tag">PDF</span>
+          <span class="tag">Скачать</span>
+          <span class="tag">Шаринг</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">PR5</span>
+        <span class="screen-name">Тренер / Воспитанники</span>
+        <span class="screen-features"><span class="tag">Связки per-спорт</span></span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">PR6</span>
+        <span class="screen-name">Настройки</span>
+        <span class="screen-features">
+          <span class="tag">Язык</span>
+          <span class="tag">Уведомления</span>
+          <span class="tag">Приватность</span>
+          <span class="tag">Удаление</span>
+        </span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="arrow-down"><svg viewBox="0 0 20 28"><path d="M10 0 L10 22 M4 16 L10 24 L16 16" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div class="flow-label">H3 «Управлять» или M2 → E1</div>
+
+<!-- ═══════════════ ROW 4: EVENT MANAGEMENT ═══════════════ -->
+<div class="group-label">Управление мероприятием (организатор)</div>
+
+<div class="row">
+  <div class="section theme-event w-full" style="max-width:1700px;">
+    <div class="section-header">
+      <div class="icon">⚙️</div>
+      <h3>Управление мероприятием — 7 вкладок</h3>
+      <span class="badge">7 вкладок + ~15 вложенных</span>
+    </div>
+    <div class="section-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+
+      <!-- E1 -->
+      <div style="flex:1;min-width:200px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">📄 E1 · Обзор</div>
+        <div class="screen-features">
+          <span class="tag">Dashboard</span>
+          <span class="tag">Участники</span>
+          <span class="tag">Оплата</span>
+          <span class="tag">Статус</span>
+          <span class="tag">Быстрые действия</span>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--ops);font-weight:600;">
+          🏁 Кнопка «Режим гонки»
+        </div>
+      </div>
+
+      <!-- E2 -->
+      <div style="flex:1;min-width:200px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🏁 E2 · Дисциплины</div>
+        <div class="screen-features">
+          <span class="tag">Список</span>
+          <span class="tag">Тип старта</span>
+          <span class="tag">Интервал</span>
+          <span class="tag">Cutoff</span>
+          <span class="tag">Круги</span>
+          <span class="tag">Категории</span>
+          <span class="tag">Min lap</span>
+          <span class="tag">Макс. участ.</span>
+        </div>
+      </div>
+
+      <!-- E3 -->
+      <div style="flex:1;min-width:200px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">👥 E3 · Участники</div>
+        <div class="screen-features">
+          <span class="tag">Таблица заявок</span>
+          <span class="tag">Фильтры</span>
+          <span class="tag">Статусы</span>
+          <span class="tag">Одобрить</span>
+          <span class="tag">Waitlist</span>
+          <span class="tag">Добавить</span>
+        </div>
+        <div style="margin-top:8px;font-size:10px;color:var(--prep);font-weight:600;">
+          → Жеребьёвка · BIB · Стартовый лист
+        </div>
+      </div>
+
+      <!-- E4 -->
+      <div style="flex:1;min-width:180px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🛡 E4 · Команда</div>
+        <div class="screen-features">
+          <span class="tag">Роли</span>
+          <span class="tag">Назначение</span>
+          <span class="tag">QR для маршала</span>
+          <span class="tag">Приглашение</span>
+          <span class="tag">Цепочка</span>
+        </div>
+      </div>
+
+      <!-- E5 -->
+      <div style="flex:1;min-width:180px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">💰 E5 · Финансы</div>
+        <div class="screen-features">
+          <span class="tag">Собрано</span>
+          <span class="tag">Ожидается</span>
+          <span class="tag">Возвраты</span>
+          <span class="tag">Промокоды</span>
+          <span class="tag">Реквизиты</span>
+        </div>
+      </div>
+
+      <!-- E6 -->
+      <div style="flex:1;min-width:180px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">📎 E6 · Документы</div>
+        <div class="screen-features">
+          <span class="tag">Waiver</span>
+          <span class="tag">ПД</span>
+          <span class="tag">Регламент</span>
+          <span class="tag">Шаблон диплома</span>
+          <span class="tag">GPX-трек</span>
+        </div>
+      </div>
+
+      <!-- E7 -->
+      <div style="flex:1;min-width:180px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">⚙️ E7 · Настройки</div>
+        <div class="screen-features">
+          <span class="tag">Config Engine</span>
+          <span class="tag">3-уровневое наследование</span>
+          <span class="tag">20+ параметров</span>
+          <span class="tag">Отличия от дефолта</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="arrow-down"><svg viewBox="0 0 20 28"><path d="M10 0 L10 22 M4 16 L10 24 L16 16" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div class="flow-label">E3 → Подготовка | E1 «Режим гонки» → Ops</div>
+
+<!-- ═══════════════ ROW 5: PREPARATION + OPS SPLIT ═══════════════ -->
+<div class="group-label">День мероприятия</div>
+
+<div class="row">
+
+  <!-- PREPARATION -->
+  <div class="section theme-prep w-440">
+    <div class="section-header">
+      <div class="icon">📋</div>
+      <h3>Подготовка к гонке</h3>
+      <span class="badge">6 экранов</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">P1</span>
+        <span class="screen-name">Жеребьёвка</span>
+        <span class="screen-features">
+          <span class="tag">Авто/ручная</span>
+          <span class="tag">Drag'n'Drop</span>
+          <span class="tag">Посев</span>
+          <span class="tag">М+Ж вместе/раздельно</span>
+        </span>
+        <span class="screen-arrow">→ P2</span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">P2</span>
+        <span class="screen-name">Стартовый лист</span>
+        <span class="screen-features">
+          <span class="tag">Per-дисциплина</span>
+          <span class="tag">BIB + имя + время</span>
+          <span class="tag">PDF</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">P3</span>
+        <span class="screen-name">BIB назначение</span>
+        <span class="screen-features">
+          <span class="tag">Пул</span>
+          <span class="tag">Авто/ручное</span>
+          <span class="tag">Alphanumeric</span>
+          <span class="tag">Диапазоны</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">P4</span>
+        <span class="screen-name">Ветконтроль</span>
+        <span class="screen-features">
+          <span class="tag">🩺 Ветеринар</span>
+          <span class="tag">Список собак</span>
+          <span class="tag">Вакцинации</span>
+          <span class="tag">✅ / ❌</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">P5</span>
+        <span class="screen-name">Мандатная комиссия</span>
+        <span class="screen-features">
+          <span class="tag">⚖️ Судья</span>
+          <span class="tag">Документы ок</span>
+          <span class="tag">Чек-лист</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">P6</span>
+        <span class="screen-name">Чек-ин</span>
+        <span class="screen-features">
+          <span class="tag">Отметка прихода</span>
+          <span class="tag">«45 из 50»</span>
+        </span>
+      </div>
+    </div>
+    <div class="section-note">Порядок: Мандатная → Ветконтроль → BIB → Выбор собаки → Старт</div>
+  </div>
+
+  <!-- OPS SELECTOR -->
+  <div class="section theme-ops" style="width:calc(100% - 480px);max-width:1200px;">
+    <div class="section-header">
+      <div class="icon">🏁</div>
+      <h3>Режим гонки (Ops) — переключаемые роли</h3>
+      <span class="badge">5 экранов + 7 модалок</span>
+    </div>
+    <div class="section-note" style="border-top:none;border-bottom:1px solid var(--border);padding:8px 16px;">
+      ⚡ Wakelock ON · Крупные кнопки · Работа в перчатках · Landscape опционально
+    </div>
+    <div class="section-body" style="display:flex;gap:12px;flex-wrap:wrap;">
+
+      <!-- R1 Starter -->
+      <div style="flex:1;min-width:200px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🟢 R1 · Стартёр</div>
+        <div class="screen-features">
+          <span class="tag">Общая очередь</span>
+          <span class="tag">Обратный отсчёт</span>
+          <span class="tag">«Ушёл»</span>
+          <span class="tag">«DNS»</span>
+          <span class="tag">Принудительный старт</span>
+          <span class="tag">⚠️ Собака?</span>
+        </div>
+      </div>
+
+      <!-- R2 Finish -->
+      <div style="flex:1.3;min-width:240px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🔴 R2 · Финиш</div>
+        <div class="screen-features">
+          <span class="tag">🔴 ОТСЕЧКА</span>
+          <span class="tag">Назначить BIB</span>
+          <span class="tag">Chip-фильтр</span>
+          <span class="tag">Swap</span>
+          <span class="tag">Вставка метки</span>
+          <span class="tag">Круги</span>
+        </div>
+        <div class="subscreen">
+          <div class="subscreen-title">Модалки:</div>
+          <div class="subscreen-item">R2.1 · Плитки BIB (фильтр по дисциплине)</div>
+          <div class="subscreen-item">R2.2 · Редактирование времени (+ Audit Log)</div>
+          <div class="subscreen-item">R2.3 · Вставка метки (ручной ввод)</div>
+          <div class="subscreen-item">R2.4 · Удаление метки (свайп)</div>
+        </div>
+      </div>
+
+      <!-- R3 Marshal -->
+      <div style="flex:1;min-width:200px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🚩 R3 · Маршал</div>
+        <div class="screen-features">
+          <span class="tag">Плитки BIB</span>
+          <span class="tag">Тап = прошёл</span>
+          <span class="tag">Нарушение</span>
+          <span class="tag">DNF запрос</span>
+          <span class="tag" style="background:rgba(239,68,68,0.3);color:#ff6b6b;">🆘 SOS</span>
+        </div>
+        <div class="subscreen">
+          <div class="subscreen-title">Модалки:</div>
+          <div class="subscreen-item">R3.1 · Нарушение (библиотека штрафов)</div>
+          <div class="subscreen-item">R3.2 · DNF (двухэтапный)</div>
+          <div class="subscreen-item">R3.3 · SOS (alert всему mesh)</div>
+        </div>
+      </div>
+
+      <!-- R4 Vet -->
+      <div style="flex:0.8;min-width:160px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🩺 R4 · Ветеринар</div>
+        <div class="screen-features">
+          <span class="tag">Список собак</span>
+          <span class="tag">📷 Скан чипа</span>
+          <span class="tag">✅ Допуск</span>
+          <span class="tag">❌ Отказ</span>
+        </div>
+      </div>
+
+      <!-- R5 Announcer -->
+      <div style="flex:0.8;min-width:160px;background:var(--surface-2);border-radius:10px;padding:12px;">
+        <div style="font-weight:700;font-size:12px;margin-bottom:6px;">🎙 R5 · Диктор</div>
+        <div class="screen-features">
+          <span class="tag">🏆 ТОП</span>
+          <span class="tag">Последний финиш</span>
+          <span class="tag">На трассе: N</span>
+          <span class="tag">Прогноз</span>
+          <span class="tag">Split-times</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div class="arrow-down"><svg viewBox="0 0 20 28"><path d="M10 0 L10 22 M4 16 L10 24 L16 16" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div class="flow-label">R2 Финиш → Live результаты (авто) │ Дисциплина завершена → Provisional</div>
+
+<!-- ═══════════════ ROW 6: RESULTS ═══════════════ -->
+<div class="group-label">Результаты и завершение</div>
+
+<div class="row">
+  <!-- RESULTS -->
+  <div class="section theme-results w-440">
+    <div class="section-header">
+      <div class="icon">📊</div>
+      <h3>Результаты и протоколы</h3>
+      <span class="badge">4 экрана + протесты</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">RS1</span>
+        <span class="screen-name">Live результаты</span>
+        <span class="screen-features">
+          <span class="tag">🔴 Автообновление</span>
+          <span class="tag">Позиции</span>
+          <span class="tag">Время</span>
+          <span class="tag">Дельта (Δ)</span>
+          <span class="tag">Фильтр дисципл.</span>
+          <span class="tag">Фильтр категории</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">RS2</span>
+        <span class="screen-name">Протоколы</span>
+        <span class="screen-features">
+          <span class="tag">Конфигурируемые колонки</span>
+          <span class="tag">PDF</span>
+          <span class="tag">Excel/CSV</span>
+          <span class="tag">Командный</span>
+          <span class="tag">Серийный</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">RS3</span>
+        <span class="screen-name">Протесты</span>
+        <span class="screen-features">
+          <span class="tag">Подача</span>
+          <span class="tag">Рассмотрение</span>
+          <span class="tag">Вердикт</span>
+          <span class="tag">→ Пересчёт</span>
+          <span class="tag">Grace period</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">RS4</span>
+        <span class="screen-name">Сертификаты / Дипломы</span>
+        <span class="screen-features">
+          <span class="tag">Генерация PDF</span>
+          <span class="tag">Предпросмотр</span>
+          <span class="tag">Шаринг</span>
+          <span class="tag">5 шаблонов</span>
+        </span>
+      </div>
+    </div>
+    <div class="section-note">Live → Provisional → Verified → Official (после утверждения гл. судьёй)</div>
+  </div>
+
+  <!-- COMPLETION -->
+  <div class="section theme-event w-360">
+    <div class="section-header">
+      <div class="icon">✅</div>
+      <h3>Завершение мероприятия</h3>
+      <span class="badge">чек-лист</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">EC1</span>
+        <span class="screen-name">Чек-лист завершения</span>
+        <span class="screen-features">
+          <span class="tag">✅ Все на трассе учтены?</span>
+          <span class="tag">✅ Протесты закрыты?</span>
+          <span class="tag">✅ Результаты Official?</span>
+          <span class="tag">📤 Экспорт PDF/CSV</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">EC2</span>
+        <span class="screen-name">Выгрузка на сервер</span>
+        <span class="screen-features">
+          <span class="tag">Авто при интернете</span>
+          <span class="tag">Ручной пуш</span>
+        </span>
+        <span class="screen-arrow">→ Archived</span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">EC3</span>
+        <span class="screen-name">Отчёт мероприятия</span>
+        <span class="screen-features">
+          <span class="tag">Участники</span>
+          <span class="tag">Финансы</span>
+          <span class="tag">Инциденты</span>
+          <span class="tag">Погода</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- WEB -->
+  <div class="section theme-web w-320">
+    <div class="section-header">
+      <div class="icon">🌐</div>
+      <h3>Публичная часть (Web)</h3>
+      <span class="badge">4 страницы</span>
+    </div>
+    <div class="section-body">
+      <div class="screen">
+        <span class="screen-id">W1</span>
+        <span class="screen-name">Страница мероприятия</span>
+        <span class="screen-features">
+          <span class="tag">sportos.live/slug</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">W2</span>
+        <span class="screen-name">Стартовый лист</span>
+        <span class="screen-features">
+          <span class="tag">/slug/start</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">W3</span>
+        <span class="screen-name">Live результаты</span>
+        <span class="screen-features">
+          <span class="tag">/slug/results</span>
+          <span class="tag">WebSocket</span>
+        </span>
+      </div>
+      <div class="screen">
+        <span class="screen-id">W4</span>
+        <span class="screen-name">Профиль атлета</span>
+        <span class="screen-features">
+          <span class="tag">/athlete/id</span>
+        </span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════ ROW 7: DATA FLOW ═══════════════ -->
+<div class="group-label" style="margin-top:20px;">Потоки данных</div>
+
+<div class="row">
+  <div class="section theme-hub" style="width:100%;max-width:1700px;">
+    <div class="section-header">
+      <div class="icon">🔄</div>
+      <h3>Ключевые связи между блоками</h3>
+      <span class="badge">переходы</span>
+    </div>
+    <div class="section-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:10px;">
+
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px;">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--auth);">🔐 Авторизация</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+          A3 → <b>Hub (H1)</b> — после входа<br>
+          Любой экран → <b>A2</b> — мягкий триггер (регистрация на мероприятие)<br>
+          QR-скан → <b>R3</b> — прямой вход маршала
+        </div>
+      </div>
+
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px;">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--hub);">🏠 Хаб → Мероприятие</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+          H3 → <b>H4</b> — кнопка «Зарегистрироваться» (атлет)<br>
+          H3 → <b>E1</b> — кнопка «Управлять» (организатор)<br>
+          H3 → <b>RS1</b> — кнопка «Результаты» (все)
+        </div>
+      </div>
+
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px;">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--event);">⚙️ Управление → Подготовка</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+          E3 → <b>P1</b> — кнопка «Жеребьёвка»<br>
+          P1 → <b>P2</b> — утверждение → стартовый лист<br>
+          P1 → <b>P3</b> — BIB назначение
+        </div>
+      </div>
+
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px;">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--ops);">🏁 Управление → Ops</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+          E1 «Режим гонки» → <b>R1-R5</b> — выбор роли<br>
+          Ops внутри: <b>R1↔R2↔R3↔R4↔R5</b> — переключение вкладок
+        </div>
+      </div>
+
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px;">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--results);">📊 Ops → Результаты</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+          R2 (финиш) → <b>RS1</b> — автообновление live<br>
+          Дисциплина завершена → <b>RS1</b> Provisional<br>
+          RS1 Official → <b>RS4</b> — генерация дипломов<br>
+          RS3 (вердикт) → <b>RS1</b> — пересчёт (ScoringEngine)
+        </div>
+      </div>
+
+      <div style="background:var(--surface-2);border-radius:8px;padding:10px;">
+        <div style="font-weight:600;font-size:11px;margin-bottom:6px;color:var(--web);">🌐 Приложение → Web</div>
+        <div style="font-size:11px;color:var(--text-dim);line-height:1.8;">
+          P2 (стартовый лист) → <b>W2</b> — публикация<br>
+          RS1 (live) → <b>W3</b> — WebSocket push<br>
+          RS4 (дипломы) → <b>PR4</b> — push-уведомление атлету
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</div>
+
+</body>
+</html>

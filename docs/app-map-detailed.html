@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=2800">
+    <title>SportOS — Detailed Application Map</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap');
+
+        :root {
+            --bg: #0b0f19;
+            --surface: #141c2f;
+            --surface-hover: #1e293b;
+            --border: #334155;
+            --text: #f8fafc;
+            --text-dim: #94a3b8;
+            --text-muted: #64748b;
+
+            --auth: #a78bfa;
+            --hub: #60a5fa;
+            --my: #2dd4bf;
+            --event: #fbbf24;
+            --prep: #34d399;
+            --ops: #f87171;
+            --results: #f472b6;
+            --profile: #c084fc;
+            --notif: #fb923c;
+            --web: #2bb4a5;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, sans-serif;
+            min-width: 2600px;
+            min-height: 2400px;
+            position: relative;
+            overflow: auto;
+        }
+
+        .header {
+            position: fixed;
+            top: 20px;
+            left: 40px;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #a78bfa, #60a5fa, #fbbf24);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            color: var(--text-dim);
+            font-size: 14px;
+        }
+
+        /* Grid Area */
+        #map-container {
+            display: grid;
+            grid-template-columns: repeat(16, 140px);
+            grid-auto-rows: minmax(100px, auto);
+            gap: 40px;
+            padding: 120px 80px 180px 80px;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Node Styling */
+        .node {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .node:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+            z-index: 20;
+            border-color: var(--theme-color);
+        }
+
+        .node-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 8px;
+        }
+
+        .node-id {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            font-weight: 700;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--theme-color);
+            padding: 3px 6px;
+            border-radius: 4px;
+            white-space: nowrap;
+        }
+
+        .node-title {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .node-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+
+        .node-tag {
+            font-size: 10px;
+            color: var(--text-dim);
+            background: rgba(255, 255, 255, 0.03);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* SVG Connections */
+        #connections {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .link-path {
+            fill: none;
+            stroke-width: 1.5;
+            opacity: 0.6;
+            transition: all 0.2s;
+        }
+
+        .link-path.dashed {
+            stroke-dasharray: 6 4;
+            opacity: 0.4;
+        }
+
+        .link-path.bold {
+            stroke-width: 3;
+            opacity: 0.9;
+        }
+
+        .link-text {
+            font-size: 10px;
+            font-weight: 600;
+            fill: var(--text-dim);
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+            transition: opacity 0.2s;
+        }
+
+        .link-text-bg {
+            fill: var(--bg);
+            opacity: 0.9;
+        }
+
+        /* Hover states for links (handled via JS) */
+        .fade {
+            opacity: 0.1 !important;
+        }
+
+        .active-link {
+            stroke-width: 3 !important;
+            opacity: 1 !important;
+            stroke: var(--theme-color) !important;
+        }
+
+        .active-text {
+            fill: #fff !important;
+            font-size: 11px;
+            z-index: 100;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <h1>SportOS — Detailed Flow Map</h1>
+        <p>Interactive Network & Information Architecture · Hover over nodes to trace data flows</p>
+    </div>
+
+    <!-- Connections Layer -->
+    <svg id="connections"></svg>
+
+    <!-- Nodes Layer -->
+    <div id="map-container"></div>
+
+    <script>
+        const nodesData = [
+            // --- AUTH --- //
+            { id: 'A1', title: 'Welcome', tags: ['Логотип', 'Гость', 'Onboarding'], group: 'auth', col: 8, row: 1, w: 2, icon: '🚀' },
+            { id: 'A2', title: 'Вход / Регистрация', tags: ['Telegram OAuth', 'Email/Pass', 'Мягкий триггер'], group: 'auth', col: 8, row: 2, w: 2, icon: '🔐' },
+            { id: 'A3', title: 'Подтверждение', tags: ['OTP-код', 'Верификация'], group: 'auth', col: 8, row: 3, w: 2, icon: '✅' },
+
+            // --- HUB (BOTTOM BAR) --- //
+            { id: 'M1', title: 'Мои (как участник)', tags: ['Статусы заявок', 'Мои результаты'], group: 'my', col: 4, row: 4, w: 2, icon: '🏃' },
+            { id: 'M2', title: 'Мои (как организатор)', tags: ['Черновики', 'Опубликованные', 'Архив'], group: 'my', col: 6, row: 4, w: 2, icon: '📋' },
+            { id: 'H1', title: 'Хаб (Лента)', tags: ['Предстоящие', 'Завершённые', 'Фильтры'], group: 'hub', col: 8, row: 4, w: 2, icon: '🏠' },
+            { id: 'N1', title: 'Уведомления', tags: ['Inbox', 'Pending Оффлайн', 'Push'], group: 'notif', col: 10, row: 4, w: 2, icon: '🔔' },
+            { id: 'PR1', title: 'Профиль', tags: ['ФИО', 'Контакты', 'Квалификации'], group: 'profile', col: 12, row: 4, w: 2, icon: '👤' },
+
+            // --- DISCOVERY & CREATION --- //
+            { id: 'H2', title: 'Поиск и Каталог', tags: ['Город', 'Спорт', 'Дистанция', 'Дата'], group: 'hub', col: 10, row: 5, w: 2, icon: '🔍' },
+            { id: 'M3', title: 'Создать Мероприятие', tags: ['Wizard 4 шага', 'Из шаблона'], group: 'hub', col: 6, row: 5, w: 2, icon: '➕' },
+
+            // --- EVENT CARD --- //
+            { id: 'H3', title: 'Карточка Мероприятия', tags: ['Описание', 'Локация', 'Дисциплины', 'Слоты'], group: 'hub', col: 8, row: 6, w: 2, icon: '🏔' },
+
+            // --- ATHLETE FLOW --- //
+            { id: 'H4', title: 'Регистрация на гонку', tags: ['Выбор дистанции', 'Собака', 'Waiver', 'Оплата'], group: 'my', col: 5, row: 7, w: 2, icon: '📝' },
+
+            // --- EVENT MANAGEMENT OVERVIEW --- //
+            { id: 'E1', title: 'Управление (Обзор)', tags: ['Dashboard', 'Участники', 'Быстрые действия', 'Статус'], group: 'event', col: 10, row: 7, w: 3, icon: '⚙️' },
+
+            // --- EVENT MANAGEMENT TABS --- //
+            { id: 'E5', title: 'Финансы', tags: ['Собрано', 'Возвраты', 'Промокоды'], group: 'event', col: 14, row: 6, w: 2, icon: '💰' },
+            { id: 'E6', title: 'Документы', tags: ['Регламент PDF', 'GPX Треки', 'Шаблон диплома'], group: 'event', col: 14, row: 7, w: 2, icon: '📎' },
+            { id: 'E7', title: 'Настройки (Config)', tags: ['Config Engine', '20+ параметров', 'Overrides'], group: 'event', col: 14, row: 8, w: 2, icon: '🔧' },
+            { id: 'E2', title: 'Дисциплины', tags: ['Тип старта', 'Интервал', 'Круги', 'Cutoff'], group: 'event', col: 12, row: 8, w: 2, icon: '🏁' },
+            { id: 'E4', title: 'Команда / Роли', tags: ['Назначение', 'QR Маршала', 'Цепочка авторитета'], group: 'event', col: 14, row: 9, w: 2, icon: '🛡' },
+            { id: 'E3', title: 'Участники', tags: ['Список заявок', 'Waitlist', 'Одобрение', 'Статусы'], group: 'event', col: 10, row: 8, w: 2, icon: '👥' },
+
+            // --- PRE-RACE PREPARATION --- //
+            { id: 'P5', title: 'Мандатная ком.', tags: ['Чек-лист доков', 'Страховка'], group: 'prep', col: 12, row: 10, w: 2, icon: '⚖️' },
+            { id: 'P4', title: 'Ветконтроль', tags: ['Скан чипа', 'Вакцинации', 'Допуск'], group: 'prep', col: 14, row: 10, w: 2, icon: '🩺' },
+            { id: 'P6', title: 'Чек-ин', tags: ['Отметка прибытия', 'Статистика явки'], group: 'prep', col: 14, row: 11, w: 2, icon: '📍' },
+
+            { id: 'P1', title: 'Жеребьёвка', tags: ['Авто/Ручная', 'Посев', 'Drag&Drop'], group: 'prep', col: 8, row: 9, w: 2, icon: '🎲' },
+            { id: 'P3', title: 'BIB Назначение', tags: ['Alphanumeric', 'Слоты', 'Диапазоны'], group: 'prep', col: 6, row: 9, w: 2, icon: '🔢' },
+            { id: 'P2', title: 'Стартовый Лист', tags: ['PDF', 'BIB + Имя + Время', 'Посев'], group: 'prep', col: 8, row: 10, w: 2, icon: '📋' },
+
+            // --- RACE DAY OPS --- //
+            { id: 'R5', title: 'Диктор', tags: ['Топ лидеров', 'Прогноз прибытия', 'На трассе N'], group: 'ops', col: 2, row: 12, w: 2, icon: '🎙' },
+            { id: 'W3', title: 'Web Live', tags: ['WebSocket Рез-ты', 'Дельты', 'sportos.live'], group: 'web', col: 4, row: 12, w: 2, icon: '🌐' },
+
+            { id: 'R1', title: 'Стартёр', tags: ['Обратный отсчёт', 'Ушёл', 'DNS', 'Собака?'], group: 'ops', col: 6, row: 12, w: 2, icon: '🟢' },
+            { id: 'R6', title: 'GPS Tracking', tags: ['Web Карта', 'Ключевые атлеты'], group: 'ops', col: 8, row: 11, w: 2, icon: '🛰' },
+            { id: 'R2', title: 'ФИНИШ (Ядро)', tags: ['🔴 ОТСЕЧКА', 'Swap', 'Вставка времени', 'Chip-фильтр'], group: 'ops', col: 8, row: 12, w: 2, icon: '⏱' },
+            { id: 'R3', title: 'Маршал', tags: ['Тап=Пройдено', 'Штрафт', 'DNF', 'SOS', 'P2P'], group: 'ops', col: 11, row: 12, w: 2, icon: '🚩' },
+            { id: 'R4', title: 'Ветеринар (Финиш)', tags: ['Пост-гонка', 'Контроль чипа'], group: 'ops', col: 14, row: 12, w: 2, icon: '🩺' },
+
+            // --- RESULTS --- //
+            { id: 'RS1', title: 'Live Результаты', tags: ['Автообновление', 'Прогресс', 'Δ Delta'], group: 'results', col: 8, row: 14, w: 2, icon: '📊' },
+            { id: 'RS3', title: 'Протесты', tags: ['Рассмотрение', 'Вердикт', 'Пересчёт Data'], group: 'results', col: 10, row: 13, w: 2, icon: '⚖️' },
+
+            { id: 'RS2', title: 'Протоколы', tags: ['Просмотр колонок', 'Excel / CSV / PDF'], group: 'results', col: 8, row: 15, w: 2, icon: '📄' },
+            { id: 'RS4', title: 'Дипломы / Сертификаты', tags: ['Генерация PDF', 'Вставка метрик'], group: 'results', col: 8, row: 16, w: 2, icon: '🏆' },
+
+            // --- CLOSURE & PROFILE UPDATE --- //
+            { id: 'EC1', title: 'Закрытие Гонок', tags: ['Чек-лист', 'Пуш на Сервер', 'Audit Log'], group: 'event', col: 11, row: 15, w: 2, icon: '✅' },
+            { id: 'PR2', title: 'Собаки', tags: ['Обновление истории', 'Вакцины'], group: 'profile', col: 14, row: 15, w: 2, icon: '🐕' },
+            { id: 'PR3', title: 'Моя История / PB', tags: ['Добавление гонки', 'Personal Best Update'], group: 'profile', col: 12, row: 16, w: 2, icon: '🥇' },
+
+            // --- WEB COMPONENTS --- //
+            { id: 'W1', title: 'Promo Page', tags: ['sportos.live/slug', 'Регистрация'], group: 'web', col: 2, row: 7, w: 2, icon: '🌍' },
+            { id: 'W2', title: 'Web StartList', tags: ['HTML/PDF Список'], group: 'web', col: 4, row: 10, w: 2, icon: '📋' }
+        ];
+
+        const linksData = [
+            // Auth
+            { from: 'A1', to: 'A2', label: 'Вход', type: 'bold' },
+            { from: 'A2', to: 'A3', label: 'Код из SMS/TG' },
+            { from: 'A3', to: 'H1', label: 'Авторизован', type: 'bold' },
+
+            // Bottom Bar (Hub Outlets)
+            { from: 'H1', to: 'M1', label: 'Мои заявки' },
+            { from: 'H1', to: 'M2', label: 'Модерация' },
+            { from: 'H1', to: 'N1', label: 'Alerts' },
+            { from: 'H1', to: 'PR1', label: 'Настройки' },
+
+            // Discovery
+            { from: 'H1', to: 'H2', label: 'Поиск' },
+            { from: 'H2', to: 'H3', label: 'Переход' },
+            { from: 'H1', to: 'M3', label: '+ Создать' },
+            { from: 'M3', to: 'E1', label: 'Форма готова' },
+            { from: 'H1', to: 'H3', label: 'Из ленты' },
+            { from: 'H3', to: 'W1', label: 'Share Link', dashed: true },
+
+            // Roles Flow From H3
+            { from: 'H3', to: 'H4', label: 'Зарегистрироваться (Атлет)' },
+            { from: 'H4', to: 'M1', label: 'В список моих' },
+
+            { from: 'H3', to: 'E1', label: 'Управлять (Организатор)', type: 'bold' },
+            { from: 'M2', to: 'E1', label: 'Редактировать' },
+
+            // Event Mgmt
+            { from: 'E1', to: 'E5', label: 'Бюджет' },
+            { from: 'E1', to: 'E6', label: 'Бланки' },
+            { from: 'E1', to: 'E7', label: 'Наследуемый Config', type: 'bold' },
+            { from: 'E1', to: 'E2', label: 'Параметры гонок' },
+            { from: 'E1', to: 'E4', label: 'Доступы' },
+            { from: 'E1', to: 'E3', label: 'Модерация заявок' },
+
+            // Preparation
+            { from: 'E3', to: 'P1', label: 'Сформировать заезды' },
+            { from: 'P1', to: 'P3', label: 'Выдача номеров' },
+            { from: 'P1', to: 'P2', label: 'Утвердить' },
+            { from: 'P2', to: 'W2', label: 'Publish Web' },
+
+            { from: 'E1', to: 'P5', label: 'Оффлайн процесс' },
+            { from: 'P5', to: 'P4', label: 'Далее Вет' },
+            { from: 'P4', to: 'P6', label: 'Финальный допуск' },
+
+            // Ops Entry
+            { from: 'E1', to: 'R2', label: 'Кнопка "Режим Гонки" (Admin)', type: 'bold' },
+
+            // Ops Connections
+            { from: 'P2', to: 'R1', label: 'Сверяет с планом', dashed: true },
+            { from: 'E4', to: 'R3', label: 'QR Вход Маршала' },
+
+            { from: 'R1', to: 'R2', label: 'Sync: Ушёл/DNS' },
+            { from: 'R3', to: 'R2', label: 'Sync: Метки по трассе (P2P)' },
+            { from: 'P4', to: 'R4', label: 'Допущенные' },
+
+            { from: 'R2', to: 'R6', label: 'Время на точку GPS' },
+            { from: 'R2', to: 'R5', label: 'Трансляция диктору' },
+
+            // Results Stream
+            { from: 'R2', to: 'RS1', label: 'Live Поток Отсечек', type: 'bold' },
+            { from: 'RS1', to: 'W3', label: 'Push Web' },
+
+            { from: 'RS1', to: 'RS3', label: 'Пенализация/Протест' },
+            { from: 'RS3', to: 'RS1', label: 'Пересчёт Scoring', dashed: true },
+
+            { from: 'RS1', to: 'RS2', label: 'Зафиксировать как Official' },
+
+            { from: 'RS2', to: 'RS4', label: 'Выдать награды' },
+            { from: 'RS2', to: 'EC1', label: 'Учесть логи' },
+
+            { from: 'EC1', to: 'PR3', label: 'Записать в историю атлету' },
+            { from: 'EC1', to: 'PR2', label: 'История собаки' }
+        ];
+
+        const colors = {
+            auth: 'var(--auth)', hub: 'var(--hub)', my: 'var(--my)', event: 'var(--event)',
+            prep: 'var(--prep)', ops: 'var(--ops)', results: 'var(--results)', profile: 'var(--profile)',
+            notif: 'var(--notif)', web: 'var(--web)'
+        };
+
+        // 1. Render Nodes
+        const container = document.getElementById('map-container');
+        nodesData.forEach(n => {
+            const el = document.createElement('div');
+            el.className = 'node';
+            el.id = n.id;
+            el.style.gridColumn = `${n.col} / span ${n.w}`;
+            el.style.gridRow = n.row;
+            el.style.setProperty('--theme-color', colors[n.group] || 'var(--border)');
+
+            el.innerHTML = `
+    <div class="node-header">
+      <div class="node-id">${n.id}</div>
+      <div class="node-icon" style="font-size:16px;">${n.icon}</div>
+      <div class="node-title">${n.title}</div>
+    </div>
+    <div class="node-tags">
+      ${n.tags.map(t => `<div class="node-tag">${t}</div>`).join('')}
+    </div>
+  `;
+            container.appendChild(el);
+        });
+
+        // 2. Render Connections
+        const svg = document.getElementById('connections');
+        // Create markers
+        const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        Object.entries(colors).forEach(([key, color]) => {
+            const marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+            marker.setAttribute('id', 'arrow-' + key);
+            marker.setAttribute('viewBox', '0 0 10 10');
+            marker.setAttribute('refX', '8');
+            marker.setAttribute('refY', '5');
+            marker.setAttribute('markerWidth', '6');
+            marker.setAttribute('markerHeight', '6');
+            marker.setAttribute('orient', 'auto-start-reverse');
+            marker.innerHTML = `<path d="M 0 0 L 10 5 L 0 10 z" fill="${color}" />`;
+            defs.appendChild(marker);
+        });
+        svg.appendChild(defs);
+
+        function getElmRect(id) {
+            const el = document.getElementById(id);
+            if (!el) return null;
+            const r = el.getBoundingClientRect();
+            return {
+                top: r.top + window.scrollY,
+                bottom: r.bottom + window.scrollY,
+                left: r.left + window.scrollX,
+                right: r.right + window.scrollX,
+                width: r.width,
+                height: r.height,
+                cx: r.left + window.scrollX + r.width / 2,
+                cy: r.top + window.scrollY + r.height / 2
+            };
+        }
+
+        let svgPaths = [];
+
+        function drawAllLinks() {
+            svg.innerHTML = '';
+            svg.appendChild(defs);
+            svgPaths = [];
+
+            linksData.forEach(link => {
+                const r1 = getElmRect(link.from);
+                const r2 = getElmRect(link.to);
+                if (!r1 || !r2) return;
+
+                let x1, y1, x2, y2;
+                let pathD = '';
+
+                // Advanced routing based on position
+                if (r2.top > r1.bottom) {
+                    // Downwards
+                    x1 = r1.cx; y1 = r1.bottom;
+                    x2 = r2.cx; y2 = r2.top;
+                    const dy = y2 - y1;
+                    pathD = `M ${x1} ${y1} C ${x1} ${y1 + dy / 2}, ${x2} ${y2 - dy / 2}, ${x2} ${y2 - 2}`;
+                } else if (r1.top > r2.bottom) {
+                    // Upwards (back links)
+                    x1 = r1.left + 20; y1 = r1.top;
+                    x2 = r2.left + 20; y2 = r2.bottom;
+                    const dy = y1 - y2;
+                    pathD = `M ${x1} ${y1} C ${x1 - 40} ${y1 - dy / 2}, ${x2 - 40} ${y2 + dy / 2}, ${x2} ${y2 + 2}`;
+                } else {
+                    // Horizontal
+                    if (r1.left < r2.left) {
+                        x1 = r1.right; y1 = r1.cy; x2 = r2.left; y2 = r2.cy;
+                        const dx = x2 - x1;
+                        pathD = `M ${x1} ${y1} C ${x1 + dx / 2} ${y1}, ${x2 - dx / 2} ${y2}, ${x2 - 2} ${y2}`;
+                    } else {
+                        x1 = r1.left; y1 = r1.cy; x2 = r2.right; y2 = r2.cy;
+                        const dx = x1 - x2;
+                        pathD = `M ${x1} ${y1} C ${x1 - dx / 2} ${y1}, ${x2 + dx / 2} ${y2}, ${x2 + 2} ${y2}`;
+                    }
+                }
+
+                const nFrom = nodesData.find(n => n.id === link.from);
+                const color = link.color || colors[nFrom.group] || 'var(--border)';
+                const markerId = `url(#arrow-${nFrom.group})`;
+
+                // Draw Path
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', pathD);
+                path.setAttribute('stroke', color);
+
+                let classNames = ['link-path'];
+                if (link.dashed) classNames.push('dashed');
+                if (link.type === 'bold') classNames.push('bold');
+                path.setAttribute('class', classNames.join(' '));
+                path.setAttribute('marker-end', markerId);
+                path.dataset.from = link.from;
+                path.dataset.to = link.to;
+
+                // Draw Text Background and Text
+                const midT = 0.5; // Basic midpoint estimation for bezier
+                let bx = (x1 + x2) / 2;
+                let by = (y1 + y2) / 2;
+
+                // Create text elements
+                const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+
+                const bg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                const textLength = link.label.length * 6;
+                bg.setAttribute('x', bx - textLength / 2 - 4);
+                bg.setAttribute('y', by - 12);
+                bg.setAttribute('width', textLength + 8);
+                bg.setAttribute('height', '18');
+                bg.setAttribute('rx', '4');
+                bg.setAttribute('class', 'link-text-bg');
+
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', bx);
+                text.setAttribute('y', by);
+                text.setAttribute('text-anchor', 'middle');
+                text.setAttribute('class', 'link-text');
+                text.textContent = link.label;
+
+                g.appendChild(bg);
+                g.appendChild(text);
+                g.dataset.from = link.from;
+                g.dataset.to = link.to;
+
+                svg.appendChild(path);
+                if (link.label) svg.appendChild(g);
+
+                svgPaths.push({ path, g, from: link.from, to: link.to });
+            });
+        }
+
+        // Draw once fonts and DOM are loaded
+        setTimeout(drawAllLinks, 500);
+        window.addEventListener('resize', () => {
+            clearTimeout(window.resizeTimer);
+            window.resizeTimer = setTimeout(drawAllLinks, 200);
+        });
+
+        // Hover UX
+        const allNodes = document.querySelectorAll('.node');
+        allNodes.forEach(node => {
+            node.addEventListener('mouseenter', () => {
+                const id = node.id;
+                // Dim all paths and other nodes
+                svgPaths.forEach(item => {
+                    if (item.from !== id && item.to !== id) {
+                        item.path.classList.add('fade');
+                        if (item.g) item.g.classList.add('fade');
+                    } else {
+                        item.path.classList.add('active-link');
+                        if (item.g) item.g.classList.add('active-text');
+                    }
+                });
+                // Optional: Dim unconnected nodes
+            });
+
+            node.addEventListener('mouseleave', () => {
+                svgPaths.forEach(item => {
+                    item.path.classList.remove('fade', 'active-link');
+                    if (item.g) item.g.classList.remove('fade', 'active-text');
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
