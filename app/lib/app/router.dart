@@ -411,11 +411,6 @@ final GoRouter router = GoRouter(
               name: 'ops-map',
               builder: (context, state) => const GpsMapScreen(),
             ),
-            GoRoute(
-              path: 'coach',
-              name: 'ops-coach',
-              builder: (context, state) => const CoachTimingScreen(),
-            ),
           ],
         ),
         GoRoute(
@@ -424,6 +419,16 @@ final GoRouter router = GoRouter(
           builder: (context, state) => const LiveResultsScreen(),
         ),
       ],
+    ),
+
+    // ═══════════════════════════════════════════════
+    // Тренерский Хронометраж (публичный)
+    // ═══════════════════════════════════════════════
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/events/:eventId/timing',
+      name: 'event-coach-timing',
+      builder: (context, state) => const CoachTimingScreen(),
     ),
 
     // ═══════════════════════════════════════════════
