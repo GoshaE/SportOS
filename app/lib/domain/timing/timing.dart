@@ -16,3 +16,4 @@ export 'gap_calculator.dart';
 export 'result_calculator.dart';
 export 'providers.dart';
 export 'race_session.dart';
+export 'athlete_registry.dart';

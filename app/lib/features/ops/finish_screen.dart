@@ -79,7 +79,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             childAspectRatio: 1.25,
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            children: session.startList.all.map((a) {
+            children: session.startedAthletes.map((a) {
               final bibMarks = session.marking.marksForBib(a.bib);
               final isFinished = bibMarks.isNotEmpty;
               return AppBibTile(
@@ -289,7 +289,8 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
     }
     final marks = session.marking.marks;
     final finishCount = session.marking.finishedCount;
-    final totalAthletes = session.startList.all.length;
+    final startedAthletes = session.startedAthletes;
+    final totalAthletes = startedAthletes.length;
 
     return Scaffold(
       appBar: AppAppBar(

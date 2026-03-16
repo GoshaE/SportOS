@@ -64,6 +64,13 @@ class RaceSession {
       penalties: [], // TODO: wire penalties
     );
   }
+
+  /// Только стартовавшие атлеты (для Финиша / Маршала / Диктора).
+  List<StartEntry> get startedAthletes =>
+      startList.all.where((e) => e.status == AthleteStatus.started).toList();
+
+  /// Есть ли атлеты в стартовом листе.
+  bool get hasAthletes => startList.all.isNotEmpty;
 }
 
 // ─────────────────────────────────────────────────────────────────
@@ -153,6 +160,30 @@ class RaceSessionNotifier extends Notifier<RaceSession?> {
 
   void relayHandoff(String nextBib, DateTime handoffTime) {
     state?.startList.relayHandoff(nextBib, handoffTime);
+    _notify();
+  }
+
+  // ─── Athlete Management ───────────────────────────────────────
+
+  void addAthlete({
+    required String entryId,
+    required String bib,
+    required String name,
+    String? category,
+    String? waveId,
+  }) {
+    state?.startList.addAthlete(
+      entryId: entryId,
+      bib: bib,
+      name: name,
+      category: category,
+      waveId: waveId,
+    );
+    _notify();
+  }
+
+  void removeAthlete(String bib) {
+    state?.startList.removeAthlete(bib);
     _notify();
   }
 

@@ -235,7 +235,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         body: const Center(child: Text('Нет активной сессии.')),
       );
     }
-    final athletes = session.startList.all;
+    final athletes = session.startedAthletes;
     final passedCount = session.marking.assigned.where((m) => m.type == MarkType.checkpoint).length;
 
     // Сортировка: непрошедшие первые

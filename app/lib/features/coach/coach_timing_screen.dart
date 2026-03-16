@@ -33,18 +33,6 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   Duration _elapsed = Duration.zero;
   int _selectedLapFilter = 0; // 0 = все
 
-  // ── Mock: официальные результаты (таб "Гонка") ──
-  final List<Map<String, dynamic>> _raceResults = [
-    {'pos': 1, 'bib': '07', 'name': 'Петров А.', 'split1': '04:12', 'finish': '12:34', 'gap': '—', 'status': 'finished'},
-    {'pos': 2, 'bib': '24', 'name': 'Иванов В.', 'split1': '04:18', 'finish': '12:57', 'gap': '+0:23', 'status': 'finished'},
-    {'pos': 3, 'bib': '42', 'name': 'Морозов Д.', 'split1': '04:25', 'finish': '13:15', 'gap': '+0:41', 'status': 'finished'},
-    {'pos': 4, 'bib': '31', 'name': 'Козлов Г.', 'split1': '04:30', 'finish': null, 'gap': null, 'status': 'on_course'},
-    {'pos': 5, 'bib': '55', 'name': 'Волков Е.', 'split1': '04:35', 'finish': null, 'gap': null, 'status': 'on_course'},
-    {'pos': 6, 'bib': '63', 'name': 'Лебедев Ж.', 'split1': null, 'finish': null, 'gap': null, 'status': 'on_course'},
-    {'pos': 7, 'bib': '12', 'name': 'Сидоров Б.', 'split1': null, 'finish': null, 'gap': null, 'status': 'started'},
-    {'pos': 8, 'bib': '77', 'name': 'Новиков З.', 'split1': null, 'finish': null, 'gap': null, 'status': 'dns'},
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -356,41 +344,57 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
       const Divider(height: 1),
 
       Expanded(
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: _raceResults.length,
-          itemBuilder: (context, i) {
-            final r = _raceResults[i];
-            final status = r['status'] as String;
-            final isFinished = status == 'finished';
-            final isDns = status == 'dns';
-            final isOnCourse = status == 'on_course' || status == 'started';
-            final statusColor = isFinished ? cs.primary : isDns ? cs.error : cs.tertiary;
-            final statusIcon = isFinished ? Icons.check_circle : isDns ? Icons.block : Icons.directions_run;
+        child: Builder(builder: (ctx) {
+          final session = ref.watch(raceSessionProvider);
+          if (session == null) return const Center(child: Text('Нет сессии'));
+          final started = session.startedAthletes;
+          if (started.isEmpty) {
+            return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              const SizedBox(height: 8),
+              Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
+            ]));
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: started.length,
+            itemBuilder: (context, i) {
+              final a = started[i];
+              final bibMarks = session.marking.marksForBib(a.bib);
+              final hasFinish = bibMarks.isNotEmpty;
+              final statusColor = hasFinish ? cs.primary : cs.tertiary;
+              final statusIcon = hasFinish ? Icons.check_circle : Icons.directions_run;
+              final splitText = bibMarks.isNotEmpty
+                  ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.first.correctedTime))
+                  : '—';
+              final finishText = bibMarks.length >= session.config.laps
+                  ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
+                  : '...';
 
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1)))),
-              child: Row(children: [
-                SizedBox(width: 32, child: Row(children: [
-                  Icon(statusIcon, size: 14, color: statusColor),
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1)))),
+                child: Row(children: [
+                  SizedBox(width: 32, child: Row(children: [
+                    Icon(statusIcon, size: 14, color: statusColor),
+                    const SizedBox(width: 4),
+                    Text('${i + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface)),
+                  ])),
+                  SizedBox(width: 40, child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4)),
+                    child: Text(a.bib, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.onSurfaceVariant), textAlign: TextAlign.center),
+                  )),
                   const SizedBox(width: 4),
-                  Text('${r['pos']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface)),
-                ])),
-                SizedBox(width: 40, child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                  decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4)),
-                  child: Text('${r['bib']}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.onSurfaceVariant), textAlign: TextAlign.center),
-                )),
-                const SizedBox(width: 4),
-                Expanded(child: Text('${r['name']}', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: isDns ? cs.outline : cs.onSurface, decoration: isDns ? TextDecoration.lineThrough : null), overflow: TextOverflow.ellipsis)),
-                SizedBox(width: 55, child: Text(r['split1'] ?? '—', style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: r['split1'] != null ? cs.onSurface : cs.outline), textAlign: TextAlign.center)),
-                SizedBox(width: 60, child: Text(r['finish'] ?? (isOnCourse ? '...' : '—'), style: TextStyle(fontSize: 12, fontFamily: 'monospace', fontWeight: isFinished ? FontWeight.bold : FontWeight.normal, color: isFinished ? cs.primary : cs.outline), textAlign: TextAlign.center)),
-                SizedBox(width: 55, child: Text(r['gap'] ?? '', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: r['gap'] == '—' ? cs.primary : cs.error), textAlign: TextAlign.center)),
-              ]),
-            );
-          },
-        ),
+                  Expanded(child: Text(a.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
+                  SizedBox(width: 55, child: Text(splitText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: bibMarks.isNotEmpty ? cs.onSurface : cs.outline), textAlign: TextAlign.center)),
+                  SizedBox(width: 60, child: Text(finishText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', fontWeight: hasFinish ? FontWeight.bold : FontWeight.normal, color: hasFinish ? cs.primary : cs.outline), textAlign: TextAlign.center)),
+                  SizedBox(width: 55, child: Text(i == 0 ? '—' : '', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary), textAlign: TextAlign.center)),
+                ]),
+              );
+            },
+          );
+        }),
       ),
     ]);
   }

@@ -136,7 +136,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
 
     final results = session.calculateResults();
     final finishedCount = session.marking.finishedCount;
-    final totalAthletes = session.startList.all.length;
+    final totalAthletes = session.startedAthletes.length;
 
     return Scaffold(
       appBar: AppAppBar(

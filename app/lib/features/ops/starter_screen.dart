@@ -18,6 +18,32 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
   bool _isSynced = false;
   bool _preFlightPassed = false;
 
+  // Live clock
+  Duration _elapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = ref.read(raceSessionProvider);
+      session?.clock.addListener(_onClockTick);
+    });
+  }
+
+  void _onClockTick(Duration elapsed) {
+    if (mounted) setState(() => _elapsed = elapsed);
+  }
+
+  @override
+  void dispose() {
+    ref.read(raceSessionProvider)?.clock.removeListener(_onClockTick);
+    super.dispose();
+  }
+
+  // ═══════════════════════════════════════
+  // Actions
+  // ═══════════════════════════════════════
+
   void _tryStart(VoidCallback onStart) {
     if (_isSynced || _preFlightPassed) {
       onStart();
@@ -34,8 +60,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
       initialHeight: 0.5,
       actions: [
         AppButton.primary(
-          text: 'Стартовать всё равно',
-          backgroundColor: cs.tertiary,
+          text: 'Всё готово, продолжить',
           onPressed: () {
             setState(() => _preFlightPassed = true);
             Navigator.of(context, rootNavigator: true).pop();
@@ -44,56 +69,81 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
         ),
       ],
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Проверка готовности постов перед стартом:'),
-        const SizedBox(height: 12),
+        AppInfoBanner.info(title: 'Время не синхронизировано с Финишем. Рекомендуется синхронизация.'),
+        const SizedBox(height: 16),
         AppCard(
           padding: const EdgeInsets.all(12),
           children: [
-            AppStatusRow(icon: Icons.check_circle, title: 'Финиш: Готов (Синхронизировано)', contentPadding: EdgeInsets.zero),
-            const Divider(),
-            AppStatusRow(icon: Icons.error, iconColor: cs.error, title: 'КП1 (Маршал): Нет связи', contentPadding: EdgeInsets.zero),
-          ]
+            _checkRow(cs, 'Mesh-сеть', _isSynced, true),
+            _checkRow(cs, 'Стартовый лист загружен', true, false),
+            _checkRow(cs, 'GPS-координаты', true, false),
+            _checkRow(cs, 'Синхронизация часов', _isSynced, true),
+          ],
         ),
-        const SizedBox(height: 12),
-        AppInfoBanner.error(title: 'Время на несинхронизированных постах будет неточным.'),
+      ]),
+    );
+  }
+
+  Widget _checkRow(ColorScheme cs, String label, bool ok, bool critical) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Icon(ok ? Icons.check_circle : (critical ? Icons.warning : Icons.info_outline), size: 16,
+          color: ok ? cs.primary : (critical ? cs.tertiary : cs.onSurfaceVariant)),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(fontSize: 13, color: ok ? cs.onSurface : cs.onSurfaceVariant)),
       ]),
     );
   }
 
   void _markStarted() {
     final session = ref.read(raceSessionProvider);
-    final current = session?.startList.currentAthlete;
+    if (session == null) return;
+    final current = session.startList.currentAthlete;
     if (current == null) return;
     ref.read(raceSessionProvider.notifier).markStarted(current.bib);
-    AppSnackBar.success(context, 'Ушёл!');
+    AppSnackBar.success(context, 'BIB ${current.bib} — УШЁЛ! ✅');
   }
 
   void _markDns(String bib) {
     ref.read(raceSessionProvider.notifier).markDns(bib);
-    AppSnackBar.info(context, 'DNS — BIB $bib');
+    AppSnackBar.info(context, 'BIB $bib — DNS');
   }
 
-  void _showAthleteMenu(StartEntry athlete) {
-    final cs = Theme.of(context).colorScheme;
-    AppBottomSheet.show(context,
-      title: 'BIB ${athlete.bib} — ${athlete.name}',
+  void _showAthleteMenu(StartEntry a) {
+    AppBottomSheet.show(
+      context,
+      title: 'BIB ${a.bib} — ${a.name}',
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (athlete.status == AthleteStatus.dns)
-          ListTile(leading: Icon(Icons.undo, color: cs.tertiary), title: const Text('Отменить DNS'), onTap: () {
-            ref.read(raceSessionProvider.notifier).undoDns(athlete.bib);
-            Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.info(context, 'DNS отменён — BIB ${athlete.bib}');
-          }),
-        if (athlete.status == AthleteStatus.waiting)
-          ListTile(leading: Icon(Icons.play_arrow, color: cs.primary), title: const Text('Стартовать принудительно'), onTap: () {
-            ref.read(raceSessionProvider.notifier).forceStart(athlete.bib);
-            Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.info(context, 'Принудительный старт — BIB ${athlete.bib} → Audit Log');
-          }),
-        ListTile(leading: Icon(Icons.block, color: cs.error), title: const Text('DNS'), onTap: () {
-          _markDns(athlete.bib);
-          Navigator.of(context, rootNavigator: true).pop();
-        }),
+        if (a.status == AthleteStatus.waiting || a.status == AthleteStatus.current)
+          ListTile(
+            leading: const Icon(Icons.block, color: Colors.red),
+            title: const Text('Отметить DNS'),
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              _markDns(a.bib);
+            },
+          ),
+        if (a.status == AthleteStatus.dns)
+          ListTile(
+            leading: const Icon(Icons.undo),
+            title: const Text('Отменить DNS'),
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              ref.read(raceSessionProvider.notifier).undoDns(a.bib);
+              AppSnackBar.info(context, 'DNS отменён для BIB ${a.bib}');
+            },
+          ),
+        if (a.status == AthleteStatus.waiting)
+          ListTile(
+            leading: const Icon(Icons.flash_on, color: Colors.orange),
+            title: const Text('Принудительный старт'),
+            onTap: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              ref.read(raceSessionProvider.notifier).forceStart(a.bib);
+              AppSnackBar.info(context, 'BIB ${a.bib} — принудительный старт');
+            },
+          ),
       ]),
     );
   }
@@ -140,6 +190,31 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
     );
   }
 
+  // ═══════════════════════════════════════
+  // Helpers
+  // ═══════════════════════════════════════
+
+  String _fmtElapsed(Duration d) {
+    final neg = d.isNegative;
+    final abs = d.abs();
+    final h = abs.inHours.toString().padLeft(2, '0');
+    final m = abs.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = abs.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '${neg ? '-' : ''}$h:$m:$s';
+  }
+
+  String _fmtCountdown(Duration d) {
+    if (d.isNegative) {
+      final abs = d.abs();
+      final m = abs.inMinutes.remainder(60).toString().padLeft(2, '0');
+      final s = abs.inSeconds.remainder(60).toString().padLeft(2, '0');
+      return '+$m:$s';
+    }
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -153,11 +228,36 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
     }
     final current = session.startList.currentAthlete;
     final remaining = session.startList.remaining;
+    final hasAthletes = session.hasAthletes;
+
+    // Countdown to current athlete's planned start
+    Duration? countdown;
+    if (current != null) {
+      countdown = current.plannedStartTime.difference(session.clock.now);
+    }
+
+    // Is countdown urgent (< 10 sec)?
+    final isUrgent = countdown != null && countdown.inSeconds <= 10 && countdown.inSeconds >= 0;
+    // Is overdue?
+    final isOverdue = countdown != null && countdown.isNegative;
 
     return Scaffold(
       appBar: AppAppBar(
         title: const Text('Стартёр'),
         actions: [
+          // Race clock
+          Container(
+            margin: const EdgeInsets.only(right: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              _fmtElapsed(_elapsed),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.onSurface),
+            ),
+          ),
           IconButton(icon: Icon(Icons.bluetooth_connected, color: _isSynced ? cs.primary : cs.onSurfaceVariant), onPressed: () {}),
           IconButton(icon: Icon(Icons.sync_alt, color: _isSynced ? cs.primary : cs.tertiary), onPressed: _showTimeSyncWizard),
         ],
@@ -175,260 +275,320 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
           ]),
         ),
 
-        // ── Инфо-панель (Bento) ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-          child: Row(children: [
-            Expanded(
-              child: AppCard(
+        // ── Пустое состояние ──
+        if (!hasAthletes) Expanded(
+          child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+            Icon(Icons.people_outline, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+            const SizedBox(height: 16),
+            Text('Нет спортсменов', style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
+            const SizedBox(height: 4),
+            Text('Добавьте спортсменов через Посты Хронометража', style: TextStyle(fontSize: 12, color: cs.outline)),
+          ])),
+        ),
+
+        if (hasAthletes) ...[
+          // ── Инфо-панель (Bento) ──
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+            child: Row(children: [
+              Expanded(
+                child: AppCard(
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+                  backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                  children: [
+                    Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                      Text('Дисциплина', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold)),
+                      Text(session.config.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    ]),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              AppCard(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+                backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 children: [
-                  Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Дисциплина', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold)),
-                    Text(session.config.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                  Row(children: [
+                    Text('Осталось:', style: TextStyle(fontSize: 11, color: cs.primary, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 6),
+                    Text('$remaining', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
+                  ]),
+                ],
+              ),
+            ]),
+          ),
+
+          // ── Переключатель ──
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            child: AppCard(
+              padding: const EdgeInsets.all(4),
+              backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(20),
+              children: [
+                SizedBox(
+                  height: 38,
+                  child: Row(children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isMassStart = false),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: !_isMassStart ? cs.surface : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            border: !_isMassStart ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
+                            boxShadow: !_isMassStart ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.timer, size: 18, color: !_isMassStart ? cs.onSurface : cs.onSurfaceVariant),
+                            const SizedBox(width: 8),
+                            Text('Раздельный', style: TextStyle(fontSize: 14, fontWeight: !_isMassStart ? FontWeight.w700 : FontWeight.w500, color: !_isMassStart ? cs.onSurface : cs.onSurfaceVariant)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _isMassStart = true),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: _isMassStart ? cs.surface : Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            border: _isMassStart ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
+                            boxShadow: _isMassStart ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                            Icon(Icons.groups, size: 20, color: _isMassStart ? cs.onSurface : cs.onSurfaceVariant),
+                            const SizedBox(width: 8),
+                            Text('Масс-старт', style: TextStyle(fontSize: 14, fontWeight: _isMassStart ? FontWeight.w700 : FontWeight.w500, color: _isMassStart ? cs.onSurface : cs.onSurfaceVariant)),
+                          ]),
+                        ),
+                      ),
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Живой обратный отсчёт (раздельный) ──
+          if (!_isMassStart && current != null && countdown != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                backgroundColor: isOverdue
+                    ? cs.error.withValues(alpha: 0.15)
+                    : isUrgent
+                        ? cs.errorContainer.withValues(alpha: 0.15)
+                        : cs.primaryContainer.withValues(alpha: 0.1),
+                borderColor: isOverdue
+                    ? cs.error.withValues(alpha: 0.4)
+                    : isUrgent
+                        ? cs.error.withValues(alpha: 0.3)
+                        : cs.primary.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(16),
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            isOverdue ? 'ОПОЗДАНИЕ!' : isUrgent ? 'ВНИМАНИЕ НА СТАРТ' : 'ДО СТАРТА',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: isOverdue || isUrgent ? cs.error : cs.primary,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.0,
+                            ),
+                          ),
+                          Text(
+                            _fmtCountdown(countdown),
+                            style: TextStyle(
+                              fontSize: 48,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'monospace',
+                              color: isOverdue || isUrgent ? cs.error : cs.primary,
+                              height: 1.1,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Icon(
+                        isOverdue ? Icons.error : isUrgent ? Icons.volume_up : Icons.schedule,
+                        size: 36,
+                        color: (isOverdue || isUrgent ? cs.error : cs.primary).withValues(alpha: 0.8),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: cs.primary.withValues(alpha: 0.15))),
+                    child: Row(
+                      children: [
+                        Text('СЛЕДУЮЩИЙ:', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                        const Spacer(),
+                        Text('${current.bib} — ${current.name}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.primary)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // Все стартовали
+          if (!_isMassStart && current == null && remaining == 0 && hasAthletes)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: AppCard(
+                padding: const EdgeInsets.all(16),
+                backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(16),
+                children: [
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(Icons.check_circle, color: cs.primary, size: 28),
+                    const SizedBox(width: 8),
+                    Text('Все спортсмены стартовали!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.primary)),
                   ]),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            AppCard(
-              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-              children: [
-                Row(children: [
-                  Text('Осталось:', style: TextStyle(fontSize: 11, color: cs.primary, fontWeight: FontWeight.bold)),
-                  const SizedBox(width: 6),
-                  Text('$remaining', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
-                ]),
-              ],
-            ),
-          ]),
-        ),
 
-        // ── Переключатель ──
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-          child: AppCard(
-            padding: const EdgeInsets.all(4),
-            backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(20),
-            children: [
-              SizedBox(
-                height: 38,
-                child: Row(children: [
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _isMassStart = false),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: !_isMassStart ? cs.surface : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          border: !_isMassStart ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
-                          boxShadow: !_isMassStart ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
-                        ),
-                        alignment: Alignment.center,
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(Icons.timer, size: 18, color: !_isMassStart ? cs.onSurface : cs.onSurfaceVariant),
-                          const SizedBox(width: 8),
-                          Text('Раздельный', style: TextStyle(fontSize: 14, fontWeight: !_isMassStart ? FontWeight.w700 : FontWeight.w500, color: !_isMassStart ? cs.onSurface : cs.onSurfaceVariant)),
-                        ]),
-                      ),
-                    ),
-                  ),
-                  Expanded(
-                    child: GestureDetector(
-                      onTap: () => setState(() => _isMassStart = true),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: _isMassStart ? cs.surface : Colors.transparent,
-                          borderRadius: BorderRadius.circular(16),
-                          border: _isMassStart ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
-                          boxShadow: _isMassStart ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
-                        ),
-                        alignment: Alignment.center,
-                        child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                          Icon(Icons.groups, size: 20, color: _isMassStart ? cs.onSurface : cs.onSurfaceVariant),
-                          const SizedBox(width: 8),
-                          Text('Масс-старт', style: TextStyle(fontSize: 14, fontWeight: _isMassStart ? FontWeight.w700 : FontWeight.w500, color: _isMassStart ? cs.onSurface : cs.onSurfaceVariant)),
-                        ]),
-                      ),
-                    ),
-                  ),
-                ]),
-              ),
-            ],
-          ),
-        ),
-
-        // ── Обратный отсчёт (раздельный) ──
-        if (!_isMassStart && current != null)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: AppCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              backgroundColor: cs.errorContainer.withValues(alpha: 0.1),
-              borderColor: cs.error.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('ВНИМАНИЕ НА СТАРТ', style: TextStyle(fontSize: 11, color: cs.error, fontWeight: FontWeight.w800, letterSpacing: 1.0)),
-                        Text('00:03', style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.error, height: 1.1)),
-                      ],
-                    ),
-                    Icon(Icons.volume_up, size: 36, color: cs.error.withValues(alpha: 0.8)),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: cs.primary.withValues(alpha: 0.15))),
-                  child: Row(
-                    children: [
-                      Text('СЛЕДУЮЩИЙ:', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                      const Spacer(),
-                      Text('${current.bib} — ${current.name}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.primary)),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        // ── Масс-старт — кнопка GUN ──
-        if (_isMassStart)
-          Padding(
-            padding: const EdgeInsets.all(12),
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              backgroundColor: (!_isSynced && !_preFlightPassed) ? cs.tertiaryContainer.withValues(alpha: 0.2) : cs.errorContainer.withValues(alpha: 0.15),
-              borderColor: (!_isSynced && !_preFlightPassed) ? cs.tertiary.withValues(alpha: 0.3) : cs.error.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(16),
-              children: [
-                InkWell(
-                  onTap: () => _tryStart(_showGunStart),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-                    child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.campaign, size: 36, color: (!_isSynced && !_preFlightPassed) ? cs.tertiary : cs.error),
-                        const SizedBox(width: 12),
-                        Text('GUN START', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: (!_isSynced && !_preFlightPassed) ? cs.tertiary : cs.error, letterSpacing: 1.5)),
-                      ]),
-                      const SizedBox(height: 8),
-                      if (!_isSynced && !_preFlightPassed) Text('Требуется Pre-Flight Check', style: TextStyle(fontSize: 12, color: cs.tertiary, fontWeight: FontWeight.bold)),
-                      if (_isSynced || _preFlightPassed) Text('Всем запущен таймер', style: TextStyle(fontSize: 12, color: cs.error, fontWeight: FontWeight.bold)),
-                    ]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-        // ── Очередь ──
-        Expanded(
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // ── Масс-старт — кнопка GUN ──
+          if (_isMassStart)
             Padding(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
-              child: Text('СТАРТ-ЛИСТ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 1.2)),
-            ),
-            Expanded(
-              child: ListView.separated(
-                padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
-                itemCount: session.startList.all.length,
-                separatorBuilder: (ctx, i) => const SizedBox(height: 6),
-                itemBuilder: (context, i) {
-                  final a = session.startList.all[i];
-                  final isCurrent = a.status == AthleteStatus.current;
-                  final isStarted = a.status == AthleteStatus.started;
-                  final isDns = a.status == AthleteStatus.dns;
-
-                  String fmtTime(DateTime dt) {
-                    final h = dt.hour.toString().padLeft(2, '0');
-                    final m = dt.minute.toString().padLeft(2, '0');
-                    final s = dt.second.toString().padLeft(2, '0');
-                    return '$h:$m:$s';
-                  }
-
-                  final color = isStarted ? cs.primary : isDns ? cs.error : isCurrent ? cs.tertiary : cs.onSurfaceVariant;
-                  final icon = isStarted ? Icons.check_circle : isDns ? Icons.block : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
-                  final statusText = isStarted ? 'Ушёл' : isDns ? 'DNS' : isCurrent ? 'Текущий' : fmtTime(a.plannedStartTime);
-
-                  return AppCard(
-                    padding: EdgeInsets.zero,
-                    backgroundColor: isCurrent ? cs.tertiaryContainer.withValues(alpha: 0.1) : isStarted ? cs.primaryContainer.withValues(alpha: 0.05) : cs.surfaceContainerHighest.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(12),
-                    borderColor: isCurrent ? cs.tertiary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.1),
-                    children: [
-                      InkWell(
-                        onTap: () => _showAthleteMenu(a),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          child: Row(children: [
-                            Icon(icon, color: color, size: 24),
-                            const SizedBox(width: 12),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(6)),
-                              child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: cs.onSurfaceVariant)),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(a.name, style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: isDns ? cs.outline : cs.onSurface, decoration: isDns ? TextDecoration.lineThrough : null)),
-                                const SizedBox(height: 2),
-                                Text(statusText, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
-                              ]),
-                            ),
-                            Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
-                          ]),
-                        ),
-                      ),
-                    ],
-                  );
-                },
+              padding: const EdgeInsets.all(12),
+              child: AppCard(
+                padding: EdgeInsets.zero,
+                backgroundColor: (!_isSynced && !_preFlightPassed) ? cs.tertiaryContainer.withValues(alpha: 0.2) : cs.errorContainer.withValues(alpha: 0.15),
+                borderColor: (!_isSynced && !_preFlightPassed) ? cs.tertiary.withValues(alpha: 0.3) : cs.error.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(16),
+                children: [
+                  InkWell(
+                    onTap: () => _tryStart(_showGunStart),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                          Icon(Icons.campaign, size: 36, color: (!_isSynced && !_preFlightPassed) ? cs.tertiary : cs.error),
+                          const SizedBox(width: 12),
+                          Text('GUN START', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: (!_isSynced && !_preFlightPassed) ? cs.tertiary : cs.error, letterSpacing: 1.5)),
+                        ]),
+                        const SizedBox(height: 8),
+                        if (!_isSynced && !_preFlightPassed) Text('Требуется Pre-Flight Check', style: TextStyle(fontSize: 12, color: cs.tertiary, fontWeight: FontWeight.bold)),
+                        if (_isSynced || _preFlightPassed) Text('Всем запущен таймер', style: TextStyle(fontSize: 12, color: cs.error, fontWeight: FontWeight.bold)),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ]),
-        ),
 
-        // ── DNS / Ушёл ──
-        if (!_isMassStart)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              child: Row(children: [
-                Expanded(child: SizedBox(height: 52, child: OutlinedButton(
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: cs.error,
-                    side: BorderSide(color: cs.error.withValues(alpha: 0.3), width: 1.5),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: current != null ? () => _markDns(current.bib) : null,
-                  child: const Text('DNS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                ))),
-                const SizedBox(width: 12),
-                Expanded(flex: 2, child: SizedBox(height: 52, child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: !_isSynced && !_preFlightPassed ? cs.tertiary : cs.primary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  onPressed: current != null ? () => _tryStart(_markStarted) : null,
-                  child: Text(!_isSynced && !_preFlightPassed ? 'ПРОВЕРКА' : 'УШЁЛ ✅', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                ))),
-              ]),
-            ),
+          // ── Очередь ──
+          Expanded(
+            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                child: Text('СТАРТ-ЛИСТ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 1.2)),
+              ),
+              Expanded(
+                child: ListView.separated(
+                  padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+                  itemCount: session.startList.all.length,
+                  separatorBuilder: (ctx, i) => const SizedBox(height: 6),
+                  itemBuilder: (context, i) {
+                    final a = session.startList.all[i];
+                    final isCurrent = a.status == AthleteStatus.current;
+                    final isStarted = a.status == AthleteStatus.started;
+                    final isDns = a.status == AthleteStatus.dns;
+
+                    String fmtTime(DateTime dt) {
+                      final h = dt.hour.toString().padLeft(2, '0');
+                      final m = dt.minute.toString().padLeft(2, '0');
+                      final s = dt.second.toString().padLeft(2, '0');
+                      return '$h:$m:$s';
+                    }
+
+                    final color = isStarted ? cs.primary : isDns ? cs.error : isCurrent ? cs.tertiary : cs.onSurfaceVariant;
+                    final icon = isStarted ? Icons.check_circle : isDns ? Icons.block : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
+                    final statusText = isStarted ? 'Ушёл' : isDns ? 'DNS' : isCurrent ? 'Текущий' : fmtTime(a.plannedStartTime);
+
+                    return AppCard(
+                      padding: EdgeInsets.zero,
+                      backgroundColor: isCurrent ? cs.tertiaryContainer.withValues(alpha: 0.1) : isStarted ? cs.primaryContainer.withValues(alpha: 0.05) : cs.surfaceContainerHighest.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                      borderColor: isCurrent ? cs.tertiary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.1),
+                      children: [
+                        InkWell(
+                          onTap: () => _showAthleteMenu(a),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                            child: Row(children: [
+                              Icon(icon, color: color, size: 24),
+                              const SizedBox(width: 12),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(6)),
+                                child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: cs.onSurfaceVariant)),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                  Text(a.name, style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: isDns ? cs.outline : cs.onSurface, decoration: isDns ? TextDecoration.lineThrough : null)),
+                                  const SizedBox(height: 2),
+                                  Text(statusText, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+                                ]),
+                              ),
+                              Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                            ]),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ]),
           ),
+
+          // ── DNS / Ушёл ──
+          if (!_isMassStart)
+            SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: Row(children: [
+                  Expanded(child: SizedBox(height: 52, child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: cs.error,
+                      side: BorderSide(color: cs.error.withValues(alpha: 0.3), width: 1.5),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: current != null ? () => _markDns(current.bib) : null,
+                    child: const Text('DNS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  ))),
+                  const SizedBox(width: 12),
+                  Expanded(flex: 2, child: SizedBox(height: 52, child: FilledButton(
+                    style: FilledButton.styleFrom(
+                      backgroundColor: !_isSynced && !_preFlightPassed ? cs.tertiary : cs.primary,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    onPressed: current != null ? () => _tryStart(_markStarted) : null,
+                    child: Text(!_isSynced && !_preFlightPassed ? 'ПРОВЕРКА' : 'УШЁЛ ✅', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                  ))),
+                ]),
+              ),
+            ),
+        ],
       ]),
     );
   }

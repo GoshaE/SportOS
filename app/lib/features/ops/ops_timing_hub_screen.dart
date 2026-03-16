@@ -23,7 +23,6 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
   @override
   void initState() {
     super.initState();
-    // Инициализировать RaceSession если ещё нет
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _ensureSession();
     });
@@ -31,11 +30,10 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
 
   void _ensureSession() {
     final session = ref.read(raceSessionProvider);
-    if (session != null) return; // уже инициализирована
+    if (session != null) return;
 
-    // TODO: загружать из БД (Drift) по eventId
-    // Сейчас — мок-данные для демо
-    final raceStart = DateTime.now().add(const Duration(minutes: 5));
+    // Пустая сессия — спортсмены добавляются через UI
+    final raceStart = DateTime.now().add(const Duration(minutes: 2));
 
     final config = DisciplineConfig(
       id: 'disc-${widget.eventId}',
@@ -48,17 +46,79 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
       minLapTime: const Duration(seconds: 20),
     );
 
-    ref.read(raceSessionProvider.notifier).startSession(config, [
-      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: 'Скидж.', waveId: null),
-      (entryId: 'e2', bib: '12', name: 'Сидоров Б.Б.', category: 'Скидж.', waveId: null),
-      (entryId: 'e3', bib: '24', name: 'Иванов В.В.', category: 'Нарты', waveId: null),
-      (entryId: 'e4', bib: '31', name: 'Козлов В.В.', category: 'Нарты', waveId: null),
-      (entryId: 'e5', bib: '42', name: 'Морозов Д.Д.', category: 'Скидж.', waveId: null),
-      (entryId: 'e6', bib: '55', name: 'Волков Е.Е.', category: 'Пулка', waveId: null),
-      (entryId: 'e7', bib: '63', name: 'Лебедев С.С.', category: 'Скидж.', waveId: null),
-      (entryId: 'e8', bib: '77', name: 'Новиков З.З.', category: 'Нарты', waveId: null),
-      (entryId: 'e9', bib: '88', name: 'Кузнецов П.П.', category: 'Скидж.', waveId: null),
-    ]);
+    // Стартуем сессию без спортсменов
+    ref.read(raceSessionProvider.notifier).startSession(config, []);
+  }
+
+  // ═══════════════════════════════════════
+  // Добавление спортсмена из реестра
+  // ═══════════════════════════════════════
+
+  void _showAddAthleteSheet() {
+    final session = ref.read(raceSessionProvider);
+    if (session == null) return;
+
+
+
+    AppBottomSheet.show(
+      context,
+      title: 'Добавить спортсмена',
+      initialHeight: 0.7,
+      child: StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          // re-read session to see updates
+          final currentSession = ref.read(raceSessionProvider);
+          final currentBibs = currentSession?.startList.all.map((e) => e.bib).toSet() ?? {};
+
+          return ListView(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: AthleteRegistry.athletes.map((a) {
+              final alreadyAdded = currentBibs.contains(a.bib);
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: alreadyAdded
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Theme.of(context).colorScheme.surfaceContainerHighest,
+                  child: Text(
+                    a.bib,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: alreadyAdded
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                title: Text(a.name, style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  decoration: alreadyAdded ? TextDecoration.lineThrough : null,
+                  color: alreadyAdded ? Theme.of(context).colorScheme.outline : null,
+                )),
+                subtitle: Text(a.category, style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                )),
+                trailing: alreadyAdded
+                    ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+                    : Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                onTap: alreadyAdded ? null : () {
+                  ref.read(raceSessionProvider.notifier).addAthlete(
+                    entryId: a.entryId,
+                    bib: a.bib,
+                    name: a.name,
+                    category: a.category,
+                  );
+                  setSheetState(() {}); // обновить BottomSheet
+                  setState(() {}); // обновить основной экран
+                  AppSnackBar.success(context, 'BIB ${a.bib} ${a.name} — добавлен');
+                },
+              );
+            }).toList(),
+          );
+        },
+      ),
+    );
   }
 
   @override
@@ -67,6 +127,8 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
     final cs = theme.colorScheme;
     final session = ref.watch(raceSessionProvider);
     final eventId = widget.eventId;
+    final athleteCount = session?.startList.all.length ?? 0;
+    final startedCount = session?.startList.startedCount ?? 0;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -90,7 +152,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
                   ),
                   const SizedBox(width: 8),
                   Expanded(child: Text(
-                    '${session.config.name} · ${session.startList.all.length} участников · ${session.config.laps} круга',
+                    '${session.config.name} · $athleteCount участников · $startedCount стартовали',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: cs.primary),
                   )),
                 ]),
@@ -98,6 +160,11 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
             ),
             const SizedBox(height: 8),
           ],
+
+          // Athlete management
+          _buildAthleteSection(cs, theme, session, athleteCount),
+
+          const SizedBox(height: 12),
 
           Text(
             'Выберите вашу роль на текущую смену. Данные синхронизируются между всеми постами.',
@@ -138,6 +205,62 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildAthleteSection(ColorScheme cs, ThemeData theme, RaceSession? session, int athleteCount) {
+    return AppCard(
+      padding: const EdgeInsets.all(14),
+      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(14),
+      children: [
+        Row(children: [
+          Icon(Icons.people_alt, size: 20, color: cs.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Expanded(child: Text(
+            'Спортсмены ($athleteCount)',
+            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+          )),
+          SizedBox(
+            height: 32,
+            child: FilledButton.icon(
+              onPressed: _showAddAthleteSheet,
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('Добавить'),
+              style: FilledButton.styleFrom(textStyle: const TextStyle(fontSize: 12)),
+            ),
+          ),
+        ]),
+        if (athleteCount > 0 && session != null) ...[
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: session.startList.all.map((a) {
+              final isStarted = a.status == AthleteStatus.started;
+              return Chip(
+                avatar: CircleAvatar(
+                  backgroundColor: isStarted ? cs.primary : cs.surfaceContainerHighest,
+                  child: Text(a.bib, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: isStarted ? cs.onPrimary : cs.onSurfaceVariant)),
+                ),
+                label: Text(a.name.split(' ').first, style: const TextStyle(fontSize: 12)),
+                deleteIcon: isStarted ? null : const Icon(Icons.close, size: 14),
+                onDeleted: isStarted ? null : () {
+                  ref.read(raceSessionProvider.notifier).removeAthlete(a.bib);
+                },
+                visualDensity: VisualDensity.compact,
+              );
+            }).toList(),
+          ),
+        ],
+        if (athleteCount == 0) ...[
+          const SizedBox(height: 10),
+          Text(
+            'Добавьте спортсменов из реестра для начала работы',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          ),
+        ],
+      ],
     );
   }
 

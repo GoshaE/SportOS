@@ -95,6 +95,56 @@ class StartListService {
     }
   }
 
+  // ─── Add Athlete (after build) ───────────────────────────────
+
+  /// Добавить спортсмена в уже сформированный стартовый лист.
+  ///
+  /// Рассчитывает plannedStartTime на основе текущей позиции в списке.
+  void addAthlete({
+    required String entryId,
+    required String bib,
+    required String name,
+    String? category,
+    String? waveId,
+    Duration? pursuitGap,
+  }) {
+    final position = _entries.length;
+    final planned = _calculatePlannedStart(position, waveId, pursuitGap);
+
+    final entry = StartEntry(
+      entryId: entryId,
+      bib: bib,
+      name: name,
+      categoryName: category,
+      waveId: waveId,
+      startPosition: position,
+      plannedStartTime: planned,
+      pursuitGap: pursuitGap,
+    );
+
+    _entries.add(entry);
+
+    // Если это первый атлет — сделать его текущим
+    if (_entries.length == 1) {
+      _entries[0].status = AthleteStatus.current;
+      _currentIndex = 0;
+    }
+  }
+
+  /// Удалить спортсмена из стартового листа (только если waiting/current).
+  void removeAthlete(String bib) {
+    final entry = _find(bib);
+    if (entry == null) return;
+    if (entry.status == AthleteStatus.started) return; // нельзя удалить стартовавшего
+
+    final wasCurrent = entry.status == AthleteStatus.current;
+    _entries.remove(entry);
+
+    if (wasCurrent && _entries.isNotEmpty) {
+      _advanceToNext();
+    }
+  }
+
   // ─── Actions ─────────────────────────────────────────────────
 
   /// Отметить «Ушёл» — текущий атлет стартовал.
