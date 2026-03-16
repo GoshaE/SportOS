@@ -256,17 +256,26 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
             const SizedBox(height: 8),
             const AppTextField(label: 'Текст', hintText: 'Напишите объявление для участников клуба...', maxLines: 4),
             const SizedBox(height: 12),
-            Row(children: [
-              FilterChip(label: const Text('📌 Закрепить'), selected: false, onSelected: (_) {}),
-              const SizedBox(width: 8),
-              FilterChip(label: const Text('🔔 Push всем'), selected: true, onSelected: (_) {}),
-              const Spacer(),
-              FilledButton.icon(
-                onPressed: () => AppSnackBar.success(context, 'Объявление опубликовано! 📢'),
-                icon: const Icon(Icons.send, size: 16),
-                label: const Text('Отправить'),
-              ),
-            ]),
+            Wrap(
+              spacing: 8,
+              runSpacing: 12,
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                Wrap(
+                  spacing: 8,
+                  children: [
+                    FilterChip(label: const Text('📌 Закрепить'), selected: false, onSelected: (_) {}),
+                    FilterChip(label: const Text('🔔 Push всем'), selected: true, onSelected: (_) {}),
+                  ],
+                ),
+                FilledButton.icon(
+                  onPressed: () => AppSnackBar.success(context, 'Объявление опубликовано! 📢'),
+                  icon: const Icon(Icons.send, size: 16),
+                  label: const Text('Отправить'),
+                ),
+              ],
+            ),
           ]),
         ),
       ),

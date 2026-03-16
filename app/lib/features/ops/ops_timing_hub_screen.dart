@@ -57,6 +57,14 @@ class OpsTimingHubScreen extends StatelessWidget {
             color: cs.error,
             route: '/ops/$eventId/timing/dictator',
           ),
+          _buildPostCard(
+            context, cs, theme,
+            title: 'Тренерский Пост',
+            desc: 'Персональные отсечки, разрывы между спортсменами, аналитика.',
+            icon: Icons.sports,
+            color: Colors.deepOrange,
+            route: '/ops/$eventId/timing/coach',
+          ),
         ],
       ),
     );

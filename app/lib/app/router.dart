@@ -49,6 +49,7 @@ import '../features/ops/finish_screen.dart';
 import '../features/ops/marshal_screen.dart';
 import '../features/ops/dictator_screen.dart';
 import '../features/ops/gps_map_screen.dart';
+import '../features/coach/coach_timing_screen.dart';
 
 // Results
 import '../features/results/live_results_screen.dart';
@@ -409,6 +410,11 @@ final GoRouter router = GoRouter(
               path: 'map',
               name: 'ops-map',
               builder: (context, state) => const GpsMapScreen(),
+            ),
+            GoRoute(
+              path: 'coach',
+              name: 'ops-coach',
+              builder: (context, state) => const CoachTimingScreen(),
             ),
           ],
         ),
