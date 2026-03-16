@@ -208,7 +208,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
     );
   }
 
-  Widget _buildAthleteSection(ColorScheme cs, ThemeData theme, RaceSession? session, int athleteCount) {
+  Widget _buildAthleteSection(ColorScheme cs, ThemeData theme, RaceSessionState? session, int athleteCount) {
     return AppCard(
       padding: const EdgeInsets.all(14),
       backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),

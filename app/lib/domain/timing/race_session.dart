@@ -74,6 +74,42 @@ class RaceSession {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// RACE SESSION STATE (versioned wrapper for Riverpod)
+// ─────────────────────────────────────────────────────────────────
+
+/// Обёртка для RaceSession с версией — Riverpod сравнивает по ==,
+/// поэтому мутация in-place одного объекта НЕ вызывает rebuild.
+/// Version counter гарантирует что каждый _notify() создаёт «новый» state.
+///
+/// Делегирует все геттеры RaceSession — consumer code не меняется.
+class RaceSessionState {
+  final RaceSession session;
+  final int version;
+
+  const RaceSessionState(this.session, this.version);
+
+  // ── Delegate getters ──
+  DisciplineConfig get config => session.config;
+  RaceClock get clock => session.clock;
+  StartListService get startList => session.startList;
+  MarkingService get marking => session.marking;
+  ElapsedCalculator get elapsed => session.elapsed;
+  GapCalculator get gap => session.gap;
+  ResultCalculator get results => session.results;
+  List<StartEntry> get startedAthletes => session.startedAthletes;
+  bool get hasAthletes => session.hasAthletes;
+  List<RaceResult> calculateResults() => session.calculateResults();
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is RaceSessionState && version == other.version;
+
+  @override
+  int get hashCode => version.hashCode;
+}
+
+// ─────────────────────────────────────────────────────────────────
 // NOTIFIER
 // ─────────────────────────────────────────────────────────────────
 
@@ -81,19 +117,21 @@ class RaceSession {
 ///
 /// Lifecycle:
 /// 1. `startSession(config, athletes)` — при входе в Ops Mode
-/// 2. Экраны читают `ref.watch(raceSessionProvider)`
+/// 2. Экраны читают `ref.watch(raceSessionProvider)?.session`
 /// 3. Мутации через `ref.read(raceSessionProvider.notifier).действие()`
 /// 4. `endSession()` — при выходе из Ops Mode
-class RaceSessionNotifier extends Notifier<RaceSession?> {
+class RaceSessionNotifier extends Notifier<RaceSessionState?> {
+  int _version = 0;
+
   @override
-  RaceSession? build() => null;
+  RaceSessionState? build() => null;
+
+  /// Текущая сессия (shortcut).
+  RaceSession? get _session => state?.session;
 
   // ─── Lifecycle ────────────────────────────────────────────────
 
   /// Инициализировать сессию гонки.
-  ///
-  /// Создаёт все сервисы, строит стартовый лист.
-  /// [athletes] — список из `(entryId, bib, name, category, waveId)`.
   void startSession(
     DisciplineConfig config,
     List<({String entryId, String bib, String name, String? category, String? waveId})> athletes, {
@@ -101,7 +139,7 @@ class RaceSessionNotifier extends Notifier<RaceSession?> {
     List<StartWave> waves = const [],
   }) {
     // Если есть активная сессия — очистить
-    final old = state;
+    final old = _session;
     if (old != null) {
       old.clock.dispose();
     }
@@ -117,49 +155,52 @@ class RaceSessionNotifier extends Notifier<RaceSession?> {
       totalLaps: config.laps,
     );
 
-    state = RaceSession(
+    final session = RaceSession(
       config: config,
       clock: clock,
       startList: startList,
       marking: marking,
     );
+
+    _version++;
+    state = RaceSessionState(session, _version);
   }
 
   /// Завершить сессию.
   void endSession() {
-    state?.clock.dispose();
+    _session?.clock.dispose();
     state = null;
   }
 
   // ─── StartList Actions ────────────────────────────────────────
 
   void markStarted(String bib, {DateTime? actualTime}) {
-    state?.startList.markStarted(bib, actualTime: actualTime);
+    _session?.startList.markStarted(bib, actualTime: actualTime);
     _notify();
   }
 
   void markStartedAll({DateTime? gunTime}) {
-    state?.startList.markStartedAll(gunTime: gunTime);
+    _session?.startList.markStartedAll(gunTime: gunTime);
     _notify();
   }
 
   void markDns(String bib) {
-    state?.startList.markDns(bib);
+    _session?.startList.markDns(bib);
     _notify();
   }
 
   void undoDns(String bib) {
-    state?.startList.undoDns(bib);
+    _session?.startList.undoDns(bib);
     _notify();
   }
 
   void forceStart(String bib, {DateTime? actualTime}) {
-    state?.startList.forceStart(bib, actualTime: actualTime);
+    _session?.startList.forceStart(bib, actualTime: actualTime);
     _notify();
   }
 
   void relayHandoff(String nextBib, DateTime handoffTime) {
-    state?.startList.relayHandoff(nextBib, handoffTime);
+    _session?.startList.relayHandoff(nextBib, handoffTime);
     _notify();
   }
 
@@ -172,7 +213,7 @@ class RaceSessionNotifier extends Notifier<RaceSession?> {
     String? category,
     String? waveId,
   }) {
-    state?.startList.addAthlete(
+    _session?.startList.addAthlete(
       entryId: entryId,
       bib: bib,
       name: name,
@@ -183,61 +224,62 @@ class RaceSessionNotifier extends Notifier<RaceSession?> {
   }
 
   void removeAthlete(String bib) {
-    state?.startList.removeAthlete(bib);
+    _session?.startList.removeAthlete(bib);
     _notify();
   }
 
   // ─── Marking Actions ─────────────────────────────────────────
 
   TimeMark? addMark({MarkType type = MarkType.finish}) {
-    final mark = state?.marking.addMark(type: type);
+    final mark = _session?.marking.addMark(type: type);
     _notify();
     return mark;
   }
 
   bool assignBib(String markId, String bib, {String? entryId}) {
-    final result = state?.marking.assignBib(markId, bib, entryId: entryId) ?? false;
+    final result = _session?.marking.assignBib(markId, bib, entryId: entryId) ?? false;
     _notify();
     return result;
   }
 
   void unassignBib(String markId) {
-    state?.marking.unassignBib(markId);
+    _session?.marking.unassignBib(markId);
     _notify();
   }
 
   void correctTime(String markId, DateTime newTime, String reason) {
-    state?.marking.correctTime(markId, newTime, reason);
+    _session?.marking.correctTime(markId, newTime, reason);
     _notify();
   }
 
   TimeMark? insertMark(DateTime time, {String? bib, String? entryId, String reason = ''}) {
-    final mark = state?.marking.insertMark(time, bib: bib, entryId: entryId, reason: reason);
+    final mark = _session?.marking.insertMark(time, bib: bib, entryId: entryId, reason: reason);
     _notify();
     return mark;
   }
 
   void deleteMark(String markId) {
-    state?.marking.deleteMark(markId);
+    _session?.marking.deleteMark(markId);
     _notify();
   }
 
   // ─── Clock Actions ────────────────────────────────────────────
 
   void applyOffset(Duration offset) {
-    state?.clock.applyOffset(offset);
+    _session?.clock.applyOffset(offset);
   }
 
-  DateTime stamp() => state?.clock.stamp() ?? DateTime.now();
+  DateTime stamp() => _session?.clock.stamp() ?? DateTime.now();
 
   // ─── Internal ─────────────────────────────────────────────────
 
-  /// Force Riverpod rebuild for all subscribers.
-  ///
-  /// Поскольку мы мутируем сервисы in-place (не immutable state),
-  /// нужно принудительно уведомить подписчиков.
+  /// Force Riverpod rebuild: новый version → новый RaceSessionState → rebuild.
   void _notify() {
-    state = state; // triggers rebuild
+    final s = _session;
+    if (s != null) {
+      _version++;
+      state = RaceSessionState(s, _version);
+    }
   }
 }
 
@@ -245,6 +287,7 @@ class RaceSessionNotifier extends Notifier<RaceSession?> {
 // PROVIDER
 // ─────────────────────────────────────────────────────────────────
 
-final raceSessionProvider = NotifierProvider<RaceSessionNotifier, RaceSession?>(
+final raceSessionProvider = NotifierProvider<RaceSessionNotifier, RaceSessionState?>(
   RaceSessionNotifier.new,
 );
+
