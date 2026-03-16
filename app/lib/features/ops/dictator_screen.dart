@@ -1,102 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R4 — Диктор (с тап на атлета → карточка)
-class DictatorScreen extends StatefulWidget {
+class DictatorScreen extends ConsumerStatefulWidget {
   const DictatorScreen({super.key});
 
   @override
-  State<DictatorScreen> createState() => _DictatorScreenState();
+  ConsumerState<DictatorScreen> createState() => _DictatorScreenState();
 }
 
-class _DictatorScreenState extends State<DictatorScreen> {
+class _DictatorScreenState extends ConsumerState<DictatorScreen> {
   String _disc = 'Sprint 5km';
-
-  // ── Timing Engine ──
-  late final RaceClock _raceClock;
-  late final StartListService _startListService;
-  late final MarkingService _markingService;
-  late final ResultCalculator _resultCalc;
-  late final DisciplineConfig _config;
-
-  late List<RaceResult> _results;
-
-  @override
-  void initState() {
-    super.initState();
-
-    final raceStart = DateTime.now().subtract(const Duration(minutes: 42));
-
-    _config = DisciplineConfig(
-      id: 'disc-dictator',
-      name: 'Sprint 5km',
-      distanceKm: 5.0,
-      startType: StartType.individual,
-      interval: const Duration(seconds: 30),
-      firstStartTime: raceStart,
-      laps: 3,
-    );
-
-    _raceClock = RaceClock();
-    _raceClock.start(raceStart);
-
-    _startListService = StartListService(config: _config);
-    _startListService.buildStartList([
-      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: 'Скидж.', waveId: null),
-      (entryId: 'e2', bib: '24', name: 'Иванов В.В.', category: 'Нарты', waveId: null),
-      (entryId: 'e3', bib: '55', name: 'Волков Е.Е.', category: 'Пулка', waveId: null),
-      (entryId: 'e4', bib: '12', name: 'Сидоров Б.Б.', category: 'Скидж.', waveId: null),
-      (entryId: 'e5', bib: '77', name: 'Новиков З.З.', category: 'Нарты', waveId: null),
-      (entryId: 'e6', bib: '42', name: 'Морозов Д.Д.', category: 'Скидж.', waveId: null),
-      (entryId: 'e7', bib: '88', name: 'Кузнецов П.П.', category: 'Скидж.', waveId: null),
-    ]);
-
-    // Все стартовали
-    for (final entry in _startListService.all) {
-      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
-    }
-
-    _markingService = MarkingService(
-      minLapTime: const Duration(seconds: 10),
-      totalLaps: 3,
-    );
-
-    // Demo: 5 финишировали с 3 кругами
-    _addDemoFinish('07', const Duration(minutes: 38, seconds: 12));
-    _addDemoFinish('24', const Duration(minutes: 39, seconds: 45));
-    _addDemoFinish('55', const Duration(minutes: 41, seconds: 2));
-    _addDemoFinish('12', const Duration(minutes: 41, seconds: 33));
-    _addDemoFinish('77', const Duration(minutes: 42, seconds: 15));
-
-    _resultCalc = const ResultCalculator();
-
-    _results = _resultCalc.calculate(
-      config: _config,
-      startList: _startListService.all,
-      marks: _markingService.marks,
-      penalties: [],
-    );
-  }
-
-  void _addDemoFinish(String bib, Duration elapsed) {
-    final athlete = _startListService.findByBib(bib);
-    if (athlete == null) return;
-
-    // Add 3 laps per athlete
-    for (var lap = 1; lap <= 3; lap++) {
-      final lapTime = athlete.plannedStartTime.add(elapsed * lap ~/ 3);
-      _markingService.insertMark(lapTime, bib: bib, entryId: bib, reason: 'demo');
-    }
-  }
-
-  @override
-  void dispose() {
-    _raceClock.dispose();
-    super.dispose();
-  }
 
   // ═══════════════════════════════════════
   // Athlete card
@@ -207,8 +125,18 @@ class _DictatorScreenState extends State<DictatorScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final finishedCount = _markingService.finishedCount;
-    final totalAthletes = _startListService.all.length;
+    final session = ref.watch(raceSessionProvider);
+
+    if (session == null) {
+      return Scaffold(
+        appBar: AppAppBar(title: const Text('Диктор')),
+        body: const Center(child: Text('Нет активной сессии.')),
+      );
+    }
+
+    final results = session.calculateResults();
+    final finishedCount = session.marking.finishedCount;
+    final totalAthletes = session.startList.all.length;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -256,7 +184,7 @@ class _DictatorScreenState extends State<DictatorScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: AppDisciplineChips(
-            items: const ['Sprint 5km', 'Sprint 10km', 'Каникросс', 'Нарты'],
+            items: [session.config.name, 'Каникросс', 'Нарты', 'Пулка'],
             selected: _disc,
             onSelected: (v) => setState(() => _disc = v),
           ),
@@ -267,8 +195,8 @@ class _DictatorScreenState extends State<DictatorScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text('ТОП-5', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         ),
-        ...List.generate(_results.length.clamp(0, 5), (i) {
-          final result = _results[i];
+        ...List.generate(results.length.clamp(0, 5), (i) {
+          final result = results[i];
           final medal = switch (i) { 0 => '🥇', 1 => '🥈', 2 => '🥉', _ => null };
           final bool isTop3 = i < 3;
           final netStr = _fmtDur(result.netTime);
@@ -326,9 +254,9 @@ class _DictatorScreenState extends State<DictatorScreen> {
                     Expanded(child: Text('Последний финиш', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary))),
                   ]),
                   const SizedBox(height: 8),
-                  if (_results.isNotEmpty) ...[
-                    Text('BIB ${_results.last.bib} ${_results.last.name.split(' ').first}', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                    Text('${_fmtDur(_results.last.netTime)} (${_results.last.position}-е место)', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  if (results.isNotEmpty) ...[
+                    Text('BIB ${results.last.bib} ${results.last.name.split(' ').first}', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Text('${_fmtDur(results.last.netTime)} (${results.last.position}-е место)', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                   ],
                 ],
               ),
@@ -347,8 +275,8 @@ class _DictatorScreenState extends State<DictatorScreen> {
                     Expanded(child: Text('На трассе: ${totalAthletes - finishedCount}', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
                   ]),
                   const SizedBox(height: 8),
-                  Text('~2 мин до финиша', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  Text('BIB 42 Морозов', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  Text('Ожидается финиш', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                  Text('${totalAthletes - finishedCount} участников', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                 ],
               ),
             ),
@@ -361,12 +289,12 @@ class _DictatorScreenState extends State<DictatorScreen> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: Text('Подсказки', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
         ),
-        if (_results.length >= 3)
-          _hintCard(cs, theme, Icons.local_fire_department, 'BIB ${_results[2].bib} вошёл в ТОП-3!', cs.tertiary),
-        if (_results.length > 1)
-          _hintCard(cs, theme, Icons.emoji_events, '${_results.first.name} лидирует с отрывом +${_fmtDur(_results[1].gapToLeader ?? Duration.zero)}', cs.primary),
-        _hintCard(cs, theme, Icons.timer, 'Последний на трассе: BIB 88 Кузнецов — на 2-м кругу', cs.primary),
-        _hintCard(cs, theme, Icons.trending_up, 'Средняя скорость лидера: ${_results.isNotEmpty ? (_results.first.speedKmh?.toStringAsFixed(1) ?? '?') : '?'} км/ч', cs.onSurfaceVariant),
+        if (results.length >= 3)
+          _hintCard(cs, theme, Icons.local_fire_department, 'BIB ${results[2].bib} вошёл в ТОП-3!', cs.tertiary),
+        if (results.length > 1)
+          _hintCard(cs, theme, Icons.emoji_events, '${results.first.name} лидирует с отрывом +${_fmtDur(results[1].gapToLeader ?? Duration.zero)}', cs.primary),
+        if (results.isNotEmpty)
+          _hintCard(cs, theme, Icons.trending_up, 'Средняя скорость лидера: ${results.first.speedKmh?.toStringAsFixed(1) ?? '?'} км/ч', cs.onSurfaceVariant),
         const SizedBox(height: 24),
       ]),
     );

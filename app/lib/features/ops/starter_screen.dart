@@ -1,55 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R1 — Стартёр (раздельный + масс-старт)
-class StarterScreen extends StatefulWidget {
+class StarterScreen extends ConsumerStatefulWidget {
   const StarterScreen({super.key});
 
   @override
-  State<StarterScreen> createState() => _StarterScreenState();
+  ConsumerState<StarterScreen> createState() => _StarterScreenState();
 }
 
-class _StarterScreenState extends State<StarterScreen> {
+class _StarterScreenState extends ConsumerState<StarterScreen> {
   bool _isMassStart = false;
   bool _isSynced = false;
   bool _preFlightPassed = false;
-
-  // ── Timing Engine ──
-  late final StartListService _startListService;
-
-  @override
-  void initState() {
-    super.initState();
-
-    final raceStart = DateTime.now().add(const Duration(minutes: 5));
-    final config = DisciplineConfig(
-      id: 'disc-starter',
-      name: 'Sprint 5km',
-      distanceKm: 5.0,
-      startType: StartType.individual,
-      interval: const Duration(seconds: 30),
-      firstStartTime: raceStart,
-      laps: 3,
-    );
-
-    _startListService = StartListService(config: config);
-    _startListService.buildStartList([
-      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: null, waveId: null),
-      (entryId: 'e2', bib: '24', name: 'Иванов В.В.', category: null, waveId: null),
-      (entryId: 'e3', bib: '31', name: 'Козлов Г.Г.', category: null, waveId: null),
-      (entryId: 'e4', bib: '42', name: 'Морозов Д.Д.', category: null, waveId: null),
-      (entryId: 'e5', bib: '55', name: 'Волков Е.Е.', category: null, waveId: null),
-      (entryId: 'e6', bib: '12', name: 'Сидоров Б.Б.', category: null, waveId: null),
-      (entryId: 'e7', bib: '63', name: 'Лебедев Ж.Ж.', category: null, waveId: null),
-      (entryId: 'e8', bib: '77', name: 'Новиков З.З.', category: null, waveId: null),
-    ]);
-
-    // Первый уже стартовал (demo state)
-    _startListService.markStarted('07');
-  }
 
   void _tryStart(VoidCallback onStart) {
     if (_isSynced || _preFlightPassed) {
@@ -94,16 +61,15 @@ class _StarterScreenState extends State<StarterScreen> {
   }
 
   void _markStarted() {
-    final current = _startListService.currentAthlete;
+    final session = ref.read(raceSessionProvider);
+    final current = session?.startList.currentAthlete;
     if (current == null) return;
-    setState(() {
-      _startListService.markStarted(current.bib);
-    });
+    ref.read(raceSessionProvider.notifier).markStarted(current.bib);
     AppSnackBar.success(context, 'Ушёл!');
   }
 
   void _markDns(String bib) {
-    setState(() => _startListService.markDns(bib));
+    ref.read(raceSessionProvider.notifier).markDns(bib);
     AppSnackBar.info(context, 'DNS — BIB $bib');
   }
 
@@ -114,13 +80,13 @@ class _StarterScreenState extends State<StarterScreen> {
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         if (athlete.status == AthleteStatus.dns)
           ListTile(leading: Icon(Icons.undo, color: cs.tertiary), title: const Text('Отменить DNS'), onTap: () {
-            setState(() => _startListService.undoDns(athlete.bib));
+            ref.read(raceSessionProvider.notifier).undoDns(athlete.bib);
             Navigator.of(context, rootNavigator: true).pop();
             AppSnackBar.info(context, 'DNS отменён — BIB ${athlete.bib}');
           }),
         if (athlete.status == AthleteStatus.waiting)
           ListTile(leading: Icon(Icons.play_arrow, color: cs.primary), title: const Text('Стартовать принудительно'), onTap: () {
-            setState(() => _startListService.forceStart(athlete.bib));
+            ref.read(raceSessionProvider.notifier).forceStart(athlete.bib);
             Navigator.of(context, rootNavigator: true).pop();
             AppSnackBar.info(context, 'Принудительный старт — BIB ${athlete.bib} → Audit Log');
           }),
@@ -141,7 +107,7 @@ class _StarterScreenState extends State<StarterScreen> {
       isDanger: true,
     );
     if (confirm == true && mounted) {
-      setState(() => _startListService.markStartedAll());
+      ref.read(raceSessionProvider.notifier).markStartedAll();
       AppSnackBar.success(context, 'GUN START! Все стартовали.');
     }
   }
@@ -178,8 +144,15 @@ class _StarterScreenState extends State<StarterScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final current = _startListService.currentAthlete;
-    final remaining = _startListService.remaining;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) {
+      return Scaffold(
+        appBar: AppAppBar(title: const Text('Стартёр')),
+        body: const Center(child: Text('Нет активной сессии.\nОткройте Посты Хронометража для начала.')),
+      );
+    }
+    final current = session.startList.currentAthlete;
+    final remaining = session.startList.remaining;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -214,7 +187,7 @@ class _StarterScreenState extends State<StarterScreen> {
                 children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Text('Дисциплина', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold)),
-                    const Text('Sprint 5km', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                    Text(session.config.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                   ]),
                 ],
               ),
@@ -371,10 +344,10 @@ class _StarterScreenState extends State<StarterScreen> {
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
-                itemCount: _startListService.all.length,
+                itemCount: session.startList.all.length,
                 separatorBuilder: (ctx, i) => const SizedBox(height: 6),
                 itemBuilder: (context, i) {
-                  final a = _startListService.all[i];
+                  final a = session.startList.all[i];
                   final isCurrent = a.status == AthleteStatus.current;
                   final isStarted = a.status == AthleteStatus.started;
                   final isDns = a.status == AthleteStatus.dns;

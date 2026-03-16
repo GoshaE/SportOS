@@ -15,3 +15,4 @@ export 'elapsed_calculator.dart';
 export 'gap_calculator.dart';
 export 'result_calculator.dart';
 export 'providers.dart';
+export 'race_session.dart';

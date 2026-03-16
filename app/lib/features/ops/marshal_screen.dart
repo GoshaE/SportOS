@@ -1,82 +1,31 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R3 — Маршал (с модалками R3.1–R3.3)
-class MarshalScreen extends StatefulWidget {
+class MarshalScreen extends ConsumerStatefulWidget {
   const MarshalScreen({super.key});
 
   @override
-  State<MarshalScreen> createState() => _MarshalScreenState();
+  ConsumerState<MarshalScreen> createState() => _MarshalScreenState();
 }
 
-class _MarshalScreenState extends State<MarshalScreen> {
+class _MarshalScreenState extends ConsumerState<MarshalScreen> {
   bool _isSynced = false;
-
-  // ── Timing Engine ──
-  late final RaceClock _raceClock;
-  late final StartListService _startListService;
-  late final MarkingService _markingService;
   final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
-
-  @override
-  void initState() {
-    super.initState();
-
-    final raceStart = DateTime.now().subtract(const Duration(minutes: 10));
-
-    final config = DisciplineConfig(
-      id: 'disc-marshal',
-      name: 'Sprint 5km',
-      distanceKm: 5.0,
-      startType: StartType.individual,
-      interval: const Duration(seconds: 30),
-      firstStartTime: raceStart,
-      laps: 3,
-      minLapTime: const Duration(seconds: 10),
-    );
-
-    _raceClock = RaceClock();
-    _raceClock.start(raceStart);
-
-    _startListService = StartListService(config: config);
-    _startListService.buildStartList([
-      (entryId: 'e1', bib: '07', name: 'Петров', category: 'Скидж.', waveId: null),
-      (entryId: 'e2', bib: '12', name: 'Сидоров', category: 'Скидж.', waveId: null),
-      (entryId: 'e3', bib: '24', name: 'Иванов', category: 'Нарты', waveId: null),
-      (entryId: 'e4', bib: '31', name: 'Козлов', category: 'Нарты', waveId: null),
-      (entryId: 'e5', bib: '42', name: 'Морозов', category: 'Скидж.', waveId: null),
-      (entryId: 'e6', bib: '55', name: 'Волков', category: 'Пулка', waveId: null),
-      (entryId: 'e7', bib: '63', name: 'Лебедев', category: 'Скидж.', waveId: null),
-      (entryId: 'e8', bib: '77', name: 'Новиков', category: 'Нарты', waveId: null),
-      (entryId: 'e9', bib: '88', name: 'Кузнецов', category: 'Скидж.', waveId: null),
-    ]);
-
-    // Все стартовали
-    for (final entry in _startListService.all) {
-      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
-    }
-
-    _markingService = MarkingService(
-      minLapTime: const Duration(seconds: 10),
-      totalLaps: 3,
-    );
-  }
-
-  @override
-  void dispose() {
-    _raceClock.dispose();
-    super.dispose();
-  }
 
   // ═══════════════════════════════════════
   // Marking actions
   // ═══════════════════════════════════════
 
-  bool _isMarked(String bib) => _markingService.marksForBib(bib).isNotEmpty;
+  bool _isMarked(String bib) {
+    final session = ref.read(raceSessionProvider);
+    return session?.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint).isNotEmpty ?? false;
+  }
 
   void _tryTogglePassed(String bib) {
     if (!mounted) return;
@@ -100,26 +49,28 @@ class _MarshalScreenState extends State<MarshalScreen> {
   }
 
   void _togglePassed(String bib) {
+    final session = ref.read(raceSessionProvider);
+    if (session == null) return;
+    final notifier = ref.read(raceSessionProvider.notifier);
+
     if (_isMarked(bib)) {
       AppDialog.confirm(context, title: 'Отменить отметку BIB $bib?', message: 'Атлет будет снова показан как "не прошёл", а время отсечки будет удалено.').then((ok) {
         if (ok == true) {
-          setState(() {
-            final bibMarks = _markingService.marksForBib(bib);
-            for (final m in bibMarks) {
-              _markingService.deleteMark(m.id);
-            }
-          });
+          final bibMarks = session.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint).toList();
+          for (final m in bibMarks) {
+            notifier.deleteMark(m.id);
+          }
         }
       });
     } else {
       HapticFeedback.mediumImpact();
-      setState(() {
-        final mark = _markingService.addMark(type: MarkType.checkpoint);
-        _markingService.assignBib(mark.id, bib, entryId: bib);
-      });
+      final mark = notifier.addMark(type: MarkType.checkpoint);
+      if (mark != null) {
+        notifier.assignBib(mark.id, bib, entryId: bib);
+      }
 
-      final athlete = _startListService.findByBib(bib);
-      final bibMarks = _markingService.marksForBib(bib);
+      final athlete = session.startList.findByBib(bib);
+      final bibMarks = session.marking.marksForBib(bib);
       if (athlete != null && bibMarks.isNotEmpty) {
         final elapsed = _elapsedCalc.netTime(athlete, bibMarks.last.correctedTime);
         AppSnackBar.success(context, 'BIB $bib — отсечка: ${_fmtDur(elapsed)}');
@@ -277,8 +228,15 @@ class _MarshalScreenState extends State<MarshalScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final athletes = _startListService.all;
-    final passedCount = _markingService.assigned.length;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) {
+      return Scaffold(
+        appBar: AppAppBar(title: const Text('Маршал')),
+        body: const Center(child: Text('Нет активной сессии.')),
+      );
+    }
+    final athletes = session.startList.all;
+    final passedCount = session.marking.assigned.where((m) => m.type == MarkType.checkpoint).length;
 
     // Сортировка: непрошедшие первые
     final sorted = List<StartEntry>.from(athletes)
@@ -362,7 +320,7 @@ class _MarshalScreenState extends State<MarshalScreen> {
               final passed = _isMarked(a.bib);
               String? timeStr;
               if (passed) {
-                final bibMarks = _markingService.marksForBib(a.bib);
+                final bibMarks = session.marking.marksForBib(a.bib);
                 if (bibMarks.isNotEmpty) {
                   timeStr = _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
                 }

@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -12,30 +13,24 @@ import 'package:sportos_app/domain/timing/timing.dart';
 /// 1. Гонка — live-таблица соревнования (read-only)
 /// 2. Мои отсечки — BIB-сетка + Секундомер + таблица разрывов
 /// 3. Аналитика — полная таблица сплитов + экспорт
-class CoachTimingScreen extends StatefulWidget {
+class CoachTimingScreen extends ConsumerStatefulWidget {
   const CoachTimingScreen({super.key});
 
   @override
-  State<CoachTimingScreen> createState() => _CoachTimingScreenState();
+  ConsumerState<CoachTimingScreen> createState() => _CoachTimingScreenState();
 }
 
-class _CoachTimingScreenState extends State<CoachTimingScreen>
+class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
 
   // ── Режим ввода: сетка или секундомер ──
   bool _isStopwatchMode = false;
 
-  // ── Timing Engine ──
-  late final RaceClock _raceClock;
-  late final StartListService _startListService;
-  late final MarkingService _markingService;
   final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
-  late final GapCalculator _gapCalc;
 
   // ── UI state ──
   Duration _elapsed = Duration.zero;
-  int _totalLaps = 3;
   int _selectedLapFilter = 0; // 0 = все
 
   // ── Mock: официальные результаты (таб "Гонка") ──
@@ -55,48 +50,11 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
 
-    // ── Инициализация Timing Engine ──
-    final raceStart = DateTime.now().subtract(const Duration(minutes: 15));
-
-    final config = DisciplineConfig(
-      id: 'disc-demo',
-      name: 'Sprint 5km',
-      distanceKm: 5.0,
-      startType: StartType.individual,
-      interval: const Duration(seconds: 30),
-      firstStartTime: raceStart,
-      laps: _totalLaps,
-      minLapTime: const Duration(seconds: 10),
-    );
-
-    _raceClock = RaceClock();
-    _raceClock.start(raceStart);
-    _raceClock.addListener(_onClockTick);
-
-    _startListService = StartListService(config: config);
-    _startListService.buildStartList([
-      (entryId: 'e1', bib: '07', name: 'Петров А.', category: 'Скидж.', waveId: null),
-      (entryId: 'e2', bib: '12', name: 'Сидоров Б.', category: 'Скидж.', waveId: null),
-      (entryId: 'e3', bib: '24', name: 'Иванов В.', category: 'Нарты', waveId: null),
-      (entryId: 'e4', bib: '31', name: 'Козлов Г.', category: 'Нарты', waveId: null),
-      (entryId: 'e5', bib: '42', name: 'Морозов Д.', category: 'Скидж.', waveId: null),
-      (entryId: 'e6', bib: '55', name: 'Волков Е.', category: 'Пулка', waveId: null),
-      (entryId: 'e7', bib: '63', name: 'Лебедев Ж.', category: 'Скидж.', waveId: null),
-      (entryId: 'e8', bib: '77', name: 'Новиков З.', category: 'Нарты', waveId: null),
-      (entryId: 'e9', bib: '88', name: 'Кузнецов И.', category: 'Скидж.', waveId: null),
-    ]);
-
-    // Отметить всех как стартовавших (для demo)
-    for (final entry in _startListService.all) {
-      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
-    }
-
-    _markingService = MarkingService(
-      minLapTime: const Duration(seconds: 10),
-      totalLaps: _totalLaps,
-    );
-
-    _gapCalc = GapCalculator(_elapsedCalc);
+    // Подписка на тик часов из сессии
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final session = ref.read(raceSessionProvider);
+      session?.clock.addListener(_onClockTick);
+    });
   }
 
   void _onClockTick(Duration elapsed) {
@@ -106,8 +64,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   @override
   void dispose() {
     _tabController.dispose();
-    _raceClock.removeListener(_onClockTick);
-    _raceClock.dispose();
+    ref.read(raceSessionProvider)?.clock.removeListener(_onClockTick);
     super.dispose();
   }
 
@@ -118,31 +75,29 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   /// Добавить быструю отсечку (секундомер) без BIB
   void _addQuickMark() {
     HapticFeedback.heavyImpact();
-    setState(() {
-      _markingService.addMark();
-    });
+    ref.read(raceSessionProvider.notifier).addMark();
   }
 
   /// Назначить BIB конкретной отсечке
   void _assignBib(String markId, String bib) {
-    setState(() {
-      _markingService.assignBib(markId, bib, entryId: bib);
-    });
+    ref.read(raceSessionProvider.notifier).assignBib(markId, bib, entryId: bib);
   }
 
   /// Отсечка из сетки BIB (тап по плитке)
   void _markFromGrid(String bib) {
     HapticFeedback.mediumImpact();
-    final athlete = _startListService.findByBib(bib);
+    final session = ref.read(raceSessionProvider);
+    if (session == null) return;
+    final athlete = session.startList.findByBib(bib);
     if (athlete == null) return;
 
-    final mark = _markingService.addMark();
+    final notifier = ref.read(raceSessionProvider.notifier);
+    final mark = notifier.addMark();
+    if (mark == null) return;
 
-    setState(() {
-      _markingService.assignBib(mark.id, bib, entryId: bib);
-    });
+    notifier.assignBib(mark.id, bib, entryId: bib);
 
-    final lap = _markingService.resolveCurrentLap(bib);
+    final lap = session.marking.resolveCurrentLap(bib);
     final elapsed = _elapsedCalc.netTime(athlete, mark.correctedTime);
 
     AppSnackBar.success(context, 'BIB $bib · Круг ${lap - 1} · ${_fmtDur(elapsed)} от старта');
@@ -150,7 +105,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
 
   /// Удалить отсечку
   void _removeMark(String markId) {
-    setState(() => _markingService.deleteMark(markId));
+    ref.read(raceSessionProvider.notifier).deleteMark(markId);
   }
 
   /// BIB-пикер
@@ -159,15 +114,18 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
       context,
       title: 'Назначить BIB',
       initialHeight: 0.6,
-      child: GridView.extent(
+      child: Builder(builder: (ctx) {
+        final session = ref.read(raceSessionProvider);
+        if (session == null) return const SizedBox();
+        return GridView.extent(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         maxCrossAxisExtent: 130,
         childAspectRatio: 1.1,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        children: _startListService.all.map((a) {
-          final bibMarks = _markingService.marksForBib(a.bib);
+        children: session.startList.all.map((a) {
+          final bibMarks = session.marking.marksForBib(a.bib);
           final alreadyMarked = bibMarks.isNotEmpty;
           return AppBibTile(
             bib: a.bib,
@@ -183,7 +141,8 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
             },
           );
         }).toList(),
-      ),
+      );
+      }),
     );
   }
 
@@ -221,8 +180,11 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
 
   /// Построить таблицу разрывов через GapCalculator
   List<GapRow> _buildGapRows(int lap) {
-    final marks = _markingService.marks;
-    final starts = _startListService.all;
+    final session = ref.read(raceSessionProvider);
+    if (session == null) return [];
+    final marks = session.marking.marks;
+    final starts = session.startList.all;
+    final gapCalc = session.gap;
 
     // Отфильтровать tracked BIBs (те, у кого есть отсечки)
     final trackedBibs = marks
@@ -235,7 +197,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
 
     if (lap == 0) {
       // "Все" — показать последний круг каждого
-      final allRows = _gapCalc.gapTable(trackedBibs, marks, starts);
+      final allRows = gapCalc.gapTable(trackedBibs, marks, starts);
       // Взять последний круг каждого BIB
       final Map<String, GapRow> latest = {};
       for (final r in allRows) {
@@ -246,7 +208,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
       return rows;
     } else {
       // Конкретный круг
-      final ranked = _gapCalc.rankedAtLap(lap, marks, starts);
+      final ranked = gapCalc.rankedAtLap(lap, marks, starts);
       return ranked.asMap().entries.map((e) {
         final i = e.key;
         final r = e.value;
@@ -263,8 +225,8 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
           name: r.name,
           lap: lap,
           elapsed: r.elapsed,
-          gapToLeader: i == 0 ? null : _gapCalc.gapToLeader(r.bib, lap, marks, starts),
-          trend: _gapCalc.trend(r.bib, lap, marks, starts),
+          gapToLeader: i == 0 ? null : gapCalc.gapToLeader(r.bib, lap, marks, starts),
+          trend: gapCalc.trend(r.bib, lap, marks, starts),
           gapToPrev: lapSplit,
         );
       }).toList();
@@ -335,8 +297,8 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
               padding: const EdgeInsets.only(right: 8),
               child: ChoiceChip(
                 label: Text('$n'),
-                selected: _totalLaps == n,
-                onSelected: (_) => setState(() => _totalLaps = n),
+                selected: (ref.read(raceSessionProvider)?.config.laps ?? 3) == n,
+                onSelected: (_) {},  // TODO: Laps come from session config
               ),
             ),
         ]),
@@ -362,7 +324,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('Sprint 5km · $_totalLaps кр.', style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
+                  Text('${ref.watch(raceSessionProvider)?.config.name ?? 'Sprint'} · ${ref.watch(raceSessionProvider)?.config.laps ?? 0} кр.', style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
@@ -437,7 +399,9 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   // Таб 2: Мои отсечки
   // ═══════════════════════════════════════
   Widget _buildMarksTab(ThemeData theme, ColorScheme cs) {
-    final marks = _markingService.marks;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) return const Center(child: Text('Нет сессии'));
+    final marks = session.marking.marks;
     final assignedMarks = marks.where((m) => m.isAssigned).toList();
 
     return Column(children: [
@@ -513,14 +477,17 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
 
   // ── Режим Сетка BIB ──
   Widget _buildGridMode(ThemeData theme, ColorScheme cs) {
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) return const Center(child: Text('Нет сессии'));
+    final totalLaps = session.config.laps;
     return GridView.extent(
       maxCrossAxisExtent: 130,
       childAspectRatio: 0.85,
       padding: const EdgeInsets.all(16),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      children: _startListService.all.map((a) {
-        final bibMarks = _markingService.marksForBib(a.bib);
+      children: session.startList.all.map((a) {
+        final bibMarks = session.marking.marksForBib(a.bib);
         final lapCount = bibMarks.length;
         final hasMarks = lapCount > 0;
 
@@ -532,7 +499,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
         }
 
         final lapInfo = hasMarks
-            ? 'Круг $lapCount/$_totalLaps${splitInfo != null ? '\n⏱$splitInfo' : ''}'
+            ? 'Круг $lapCount/$totalLaps${splitInfo != null ? '\n⏱$splitInfo' : ''}'
             : 'Старт: ${_fmtTime(a.effectiveStartTime)}';
 
         return AppBibTile(
@@ -540,7 +507,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
           name: a.name,
           lapInfo: lapInfo,
           state: hasMarks
-              ? (lapCount >= _totalLaps ? BibState.finished : BibState.current)
+              ? (lapCount >= totalLaps ? BibState.finished : BibState.current)
               : BibState.available,
           onTap: () => _markFromGrid(a.bib),
         );
@@ -550,7 +517,9 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
 
   // ── Режим Секундомер ──
   Widget _buildStopwatchMode(ThemeData theme, ColorScheme cs) {
-    final unassignedMarks = _markingService.unassigned;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) return const Center(child: Text('Нет сессии'));
+    final unassignedMarks = session.marking.unassigned;
 
     return Column(children: [
       if (unassignedMarks.isNotEmpty)
@@ -560,7 +529,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
             itemCount: unassignedMarks.length,
             itemBuilder: (context, i) {
               final mark = unassignedMarks[i];
-              final raceTime = mark.correctedTime.difference(_raceClock.zeroTime!);
+              final raceTime = mark.correctedTime.difference(session.clock.zeroTime!);
               return Dismissible(
                 key: ValueKey('mark-${mark.id}'),
                 direction: DismissDirection.endToStart,
@@ -658,7 +627,9 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   // Таблица разрывов (через Timing Engine)
   // ═══════════════════════════════════════
   Widget _buildGapTable(ThemeData theme, ColorScheme cs) {
-    final assignedMarks = _markingService.assigned;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) return const Center(child: Text('Нет сессии'));
+    final assignedMarks = session.marking.assigned;
     final lapsWithData = <int>{};
     for (final m in assignedMarks) {
       if (m.lapNumber != null) lapsWithData.add(m.lapNumber!);
@@ -781,7 +752,9 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   // Таб 3: Аналитика
   // ═══════════════════════════════════════
   Widget _buildAnalyticsTab(ThemeData theme, ColorScheme cs) {
-    final marks = _markingService.marks;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) return const Center(child: Text('Нет сессии'));
+    final marks = session.marking.marks;
     final assignedMarks = marks.where((m) => m.isAssigned).toList();
 
     if (assignedMarks.isEmpty) {
@@ -801,7 +774,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
     }
 
     // Сортируем BIB по elapsed (кто быстрее)
-    final starts = _startListService.all;
+    final starts = session.startList.all;
     final sortedBibs = byBib.entries.toList()
       ..sort((a, b) {
         final aAthlete = starts.where((s) => s.bib == a.key).firstOrNull;
@@ -819,7 +792,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
         const SizedBox(width: 8),
         AppStatCard(value: '${assignedMarks.length}', label: 'Отсечек', icon: Icons.timer),
         const SizedBox(width: 8),
-        AppStatCard(value: '$_totalLaps', label: 'Кругов', icon: Icons.loop, color: cs.tertiary),
+        AppStatCard(value: '${session.config.laps}', label: 'Кругов', icon: Icons.loop, color: cs.tertiary),
       ]),
       const SizedBox(height: 16),
 
@@ -839,7 +812,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
           Row(children: [
             SizedBox(width: 40, child: Text('BIB', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
             Expanded(child: Text('Имя', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
-            for (int lap = 1; lap <= _totalLaps; lap++)
+            for (int lap = 1; lap <= session.config.laps; lap++)
               SizedBox(width: 55, child: Text('Кр.$lap', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
             SizedBox(width: 55, child: Text('Δ лидер', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
           ]),
@@ -876,7 +849,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
               child: Row(children: [
                 SizedBox(width: 40, child: Text(bib, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: isLeader ? cs.primary : cs.onSurface))),
                 Expanded(child: Text(athlete?.name ?? '?', style: TextStyle(fontSize: 12, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
-                for (int lap = 1; lap <= _totalLaps; lap++)
+                for (int lap = 1; lap <= session.config.laps; lap++)
                   SizedBox(width: 55, child: () {
                     if (lap <= splits.length) {
                       return Text(_fmtDur(splits[lap - 1]), style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurface), textAlign: TextAlign.center);

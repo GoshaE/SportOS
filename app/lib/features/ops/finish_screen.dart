@@ -1,84 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R2 — Финиш (с модалками R2.1–R2.4)
-class FinishScreen extends StatefulWidget {
+class FinishScreen extends ConsumerStatefulWidget {
   const FinishScreen({super.key});
 
   @override
-  State<FinishScreen> createState() => _FinishScreenState();
+  ConsumerState<FinishScreen> createState() => _FinishScreenState();
 }
 
-class _FinishScreenState extends State<FinishScreen> {
-  // ── Timing Engine ──
-  late final RaceClock _raceClock;
-  late final StartListService _startListService;
-  late final MarkingService _markingService;
+class _FinishScreenState extends ConsumerState<FinishScreen> {
   final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
-
-  @override
-  void initState() {
-    super.initState();
-
-    final raceStart = DateTime.now().subtract(const Duration(minutes: 38));
-
-    final config = DisciplineConfig(
-      id: 'disc-finish',
-      name: 'Sprint 5km',
-      distanceKm: 5.0,
-      startType: StartType.individual,
-      interval: const Duration(seconds: 30),
-      firstStartTime: raceStart,
-      laps: 1,
-    );
-
-    _raceClock = RaceClock();
-    _raceClock.start(raceStart);
-
-    _startListService = StartListService(config: config);
-    _startListService.buildStartList([
-      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: 'Скидж.', waveId: null),
-      (entryId: 'e2', bib: '24', name: 'Иванов В.В.', category: 'Нарты', waveId: null),
-      (entryId: 'e3', bib: '31', name: 'Козлов В.В.', category: 'Нарты', waveId: null),
-      (entryId: 'e4', bib: '42', name: 'Морозов А.А.', category: 'Скидж.', waveId: null),
-      (entryId: 'e5', bib: '55', name: 'Волков Д.Д.', category: 'Пулка', waveId: null),
-      (entryId: 'e6', bib: '63', name: 'Лебедев С.С.', category: 'Скидж.', waveId: null),
-      (entryId: 'e7', bib: '77', name: 'Новиков И.И.', category: 'Нарты', waveId: null),
-      (entryId: 'e8', bib: '88', name: 'Кузнецов П.П.', category: 'Скидж.', waveId: null),
-    ]);
-
-    // Все стартовали
-    for (final entry in _startListService.all) {
-      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
-    }
-
-    _markingService = MarkingService(
-      minLapTime: const Duration(seconds: 10),
-      totalLaps: 1,
-    );
-
-    // Demo: 2 уже финишировали
-    _addDemoMark('07', raceStart.add(const Duration(minutes: 38, seconds: 12, milliseconds: 345)));
-    _addDemoMark('24', raceStart.add(const Duration(minutes: 39, seconds: 45, milliseconds: 112)));
-    // 2 неназначенных
-    _markingService.addMark();
-    _markingService.addMark();
-  }
-
-  void _addDemoMark(String bib, DateTime time) {
-    final mark = _markingService.insertMark(time, bib: bib, entryId: bib, reason: 'demo');
-    _markingService.assignBib(mark.id, bib, entryId: bib);
-  }
-
-  @override
-  void dispose() {
-    _raceClock.dispose();
-    super.dispose();
-  }
 
   // ═══════════════════════════════════════
   // Actions
@@ -86,7 +23,7 @@ class _FinishScreenState extends State<FinishScreen> {
 
   void _addMark() {
     HapticFeedback.heavyImpact();
-    setState(() => _markingService.addMark());
+    ref.read(raceSessionProvider.notifier).addMark();
     AppSnackBar.success(context, 'Отсечка зафиксирована!');
   }
 
@@ -132,33 +69,35 @@ class _FinishScreenState extends State<FinishScreen> {
           ]),
         ),
         const SizedBox(height: 16),
-        GridView.extent(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          maxCrossAxisExtent: 130,
-          childAspectRatio: 1.25,
-          mainAxisSpacing: 10,
-          crossAxisSpacing: 10,
-          children: _startListService.all.map((a) {
-            final bibMarks = _markingService.marksForBib(a.bib);
-            final isFinished = bibMarks.isNotEmpty;
-            return AppBibTile(
-              bib: a.bib,
-              name: a.name,
-              lapInfo: isFinished
-                  ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
-                  : 'На трассе',
-              state: isFinished ? BibState.finished : BibState.available,
-              onTap: isFinished ? null : () {
-                setState(() {
-                  _markingService.assignBib(markId, a.bib, entryId: a.bib);
-                });
-                Navigator.of(context, rootNavigator: true).pop();
-                AppSnackBar.success(context, 'BIB ${a.bib} назначен');
-              },
-            );
-          }).toList(),
-        ),
+        Builder(builder: (ctx) {
+          final session = ref.read(raceSessionProvider);
+          if (session == null) return const SizedBox();
+          return GridView.extent(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            maxCrossAxisExtent: 130,
+            childAspectRatio: 1.25,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            children: session.startList.all.map((a) {
+              final bibMarks = session.marking.marksForBib(a.bib);
+              final isFinished = bibMarks.isNotEmpty;
+              return AppBibTile(
+                bib: a.bib,
+                name: a.name,
+                lapInfo: isFinished
+                    ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
+                    : 'На трассе',
+                state: isFinished ? BibState.finished : BibState.available,
+                onTap: isFinished ? null : () {
+                  ref.read(raceSessionProvider.notifier).assignBib(markId, a.bib, entryId: a.bib);
+                  Navigator.of(context, rootNavigator: true).pop();
+                  AppSnackBar.success(context, 'BIB ${a.bib} назначен');
+                },
+              );
+            }).toList(),
+          );
+        }),
       ]),
     );
   }
@@ -225,7 +164,7 @@ class _FinishScreenState extends State<FinishScreen> {
             const SizedBox(height: 8),
             TextField(
               decoration: _glassInputDecoration('Точное время (HH:mm:ss.SSS)', cs),
-              controller: TextEditingController(text: _fmtDurMs(mark.correctedTime.difference(_raceClock.zeroTime!))),
+              controller: TextEditingController(text: _fmtDurMs(mark.correctedTime.difference(ref.read(raceSessionProvider)!.clock.zeroTime!))),
             ),
             const SizedBox(height: 16),
             Text('Обоснование', style: Theme.of(ctx).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -258,7 +197,7 @@ class _FinishScreenState extends State<FinishScreen> {
           text: 'Добавить',
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
-            setState(() => _markingService.insertMark(DateTime.now(), reason: 'Ручная вставка'));
+            ref.read(raceSessionProvider.notifier).insertMark(DateTime.now(), reason: 'Ручная вставка');
             AppSnackBar.info(context, 'Метка добавлена → Audit Log');
           },
         ),
@@ -341,9 +280,16 @@ class _FinishScreenState extends State<FinishScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final marks = _markingService.marks;
-    final finishCount = _markingService.finishedCount;
-    final totalAthletes = _startListService.all.length;
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) {
+      return Scaffold(
+        appBar: AppAppBar(title: const Text('Финиш')),
+        body: const Center(child: Text('Нет активной сессии.')),
+      );
+    }
+    final marks = session.marking.marks;
+    final finishCount = session.marking.finishedCount;
+    final totalAthletes = session.startList.all.length;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -365,7 +311,7 @@ class _FinishScreenState extends State<FinishScreen> {
                 borderRadius: BorderRadius.circular(12),
                 children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                    Text('Sprint 5km', style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
+                    Text(session.config.name, style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
@@ -398,12 +344,12 @@ class _FinishScreenState extends State<FinishScreen> {
             itemBuilder: (context, index) {
               final mark = marks[index];
               final assigned = mark.isAssigned;
-              final raceTime = mark.correctedTime.difference(_raceClock.zeroTime!);
+              final raceTime = mark.correctedTime.difference(session.clock.zeroTime!);
 
               // Formatted time
               String timeStr;
               if (assigned) {
-                final athlete = _startListService.findByBib(mark.bib!);
+                final athlete = session.startList.findByBib(mark.bib!);
                 if (athlete != null) {
                   timeStr = _fmtDurMs(_elapsedCalc.netTime(athlete, mark.correctedTime));
                 } else {
@@ -420,7 +366,7 @@ class _FinishScreenState extends State<FinishScreen> {
                   if (!assigned) return true;
                   return AppDialog.confirm(context, title: 'Удалить метку?', message: 'BIB ${mark.bib} — $timeStr\nМетка будет удалена. Продолжить?');
                 },
-                onDismissed: (_) => setState(() => _markingService.deleteMark(mark.id)),
+                onDismissed: (_) => ref.read(raceSessionProvider.notifier).deleteMark(mark.id),
                 background: Container(color: cs.error, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 16), child: Icon(Icons.delete, color: cs.onError)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -454,7 +400,7 @@ class _FinishScreenState extends State<FinishScreen> {
                                       child: Text('BIB ${mark.bib}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: cs.onSurfaceVariant)),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text(_startListService.findByBib(mark.bib!)?.name ?? '?', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 12)),
+                                    Text(session.startList.findByBib(mark.bib!)?.name ?? '?', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 12)),
                                   ])
                                 else
                                   Text('Назначить BIB', style: TextStyle(color: cs.tertiary, fontWeight: FontWeight.bold, fontSize: 13)),
