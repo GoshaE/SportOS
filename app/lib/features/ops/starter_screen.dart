@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R1 — Стартёр (раздельный + масс-старт)
 class StarterScreen extends StatefulWidget {
@@ -13,20 +14,42 @@ class StarterScreen extends StatefulWidget {
 
 class _StarterScreenState extends State<StarterScreen> {
   bool _isMassStart = false;
-  int _currentIndex = 1;
   bool _isSynced = false;
   bool _preFlightPassed = false;
 
-  final List<Map<String, dynamic>> _queue = [
-    {'bib': '07', 'name': 'Петров А.А.', 'time': '10:00:00', 'status': 'started'},
-    {'bib': '24', 'name': 'Иванов В.В.', 'time': '10:00:30', 'status': 'current'},
-    {'bib': '31', 'name': 'Козлов Г.Г.', 'time': '10:01:00', 'status': 'waiting'},
-    {'bib': '42', 'name': 'Морозов Д.Д.', 'time': '10:01:30', 'status': 'waiting'},
-    {'bib': '55', 'name': 'Волков Е.Е.', 'time': '10:02:00', 'status': 'waiting'},
-    {'bib': '12', 'name': 'Сидоров Б.Б.', 'time': '10:02:30', 'status': 'waiting'},
-    {'bib': '63', 'name': 'Лебедев Ж.Ж.', 'time': '10:03:00', 'status': 'waiting'},
-    {'bib': '77', 'name': 'Новиков З.З.', 'time': '10:03:30', 'status': 'waiting'},
-  ];
+  // ── Timing Engine ──
+  late final StartListService _startListService;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final raceStart = DateTime.now().add(const Duration(minutes: 5));
+    final config = DisciplineConfig(
+      id: 'disc-starter',
+      name: 'Sprint 5km',
+      distanceKm: 5.0,
+      startType: StartType.individual,
+      interval: const Duration(seconds: 30),
+      firstStartTime: raceStart,
+      laps: 3,
+    );
+
+    _startListService = StartListService(config: config);
+    _startListService.buildStartList([
+      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: null, waveId: null),
+      (entryId: 'e2', bib: '24', name: 'Иванов В.В.', category: null, waveId: null),
+      (entryId: 'e3', bib: '31', name: 'Козлов Г.Г.', category: null, waveId: null),
+      (entryId: 'e4', bib: '42', name: 'Морозов Д.Д.', category: null, waveId: null),
+      (entryId: 'e5', bib: '55', name: 'Волков Е.Е.', category: null, waveId: null),
+      (entryId: 'e6', bib: '12', name: 'Сидоров Б.Б.', category: null, waveId: null),
+      (entryId: 'e7', bib: '63', name: 'Лебедев Ж.Ж.', category: null, waveId: null),
+      (entryId: 'e8', bib: '77', name: 'Новиков З.З.', category: null, waveId: null),
+    ]);
+
+    // Первый уже стартовал (demo state)
+    _startListService.markStarted('07');
+  }
 
   void _tryStart(VoidCallback onStart) {
     if (_isSynced || _preFlightPassed) {
@@ -71,41 +94,38 @@ class _StarterScreenState extends State<StarterScreen> {
   }
 
   void _markStarted() {
+    final current = _startListService.currentAthlete;
+    if (current == null) return;
     setState(() {
-      _queue[_currentIndex]['status'] = 'started';
-      if (_currentIndex < _queue.length - 1) {
-        _currentIndex++;
-        _queue[_currentIndex]['status'] = 'current';
-      }
+      _startListService.markStarted(current.bib);
     });
     AppSnackBar.success(context, 'Ушёл!');
   }
 
-  void _markDns(int index) {
-    setState(() => _queue[index]['status'] = 'dns');
-    AppSnackBar.info(context, 'DNS — BIB ${_queue[index]['bib']}');
+  void _markDns(String bib) {
+    setState(() => _startListService.markDns(bib));
+    AppSnackBar.info(context, 'DNS — BIB $bib');
   }
 
-  void _showAthleteMenu(int index) {
+  void _showAthleteMenu(StartEntry athlete) {
     final cs = Theme.of(context).colorScheme;
-    final athlete = _queue[index];
     AppBottomSheet.show(context,
-      title: 'BIB ${athlete['bib']} — ${athlete['name']}',
+      title: 'BIB ${athlete.bib} — ${athlete.name}',
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        if (athlete['status'] == 'dns')
+        if (athlete.status == AthleteStatus.dns)
           ListTile(leading: Icon(Icons.undo, color: cs.tertiary), title: const Text('Отменить DNS'), onTap: () {
-            setState(() => athlete['status'] = 'waiting');
+            setState(() => _startListService.undoDns(athlete.bib));
             Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.info(context, 'DNS отменён — BIB ${athlete['bib']}');
+            AppSnackBar.info(context, 'DNS отменён — BIB ${athlete.bib}');
           }),
-        if (athlete['status'] == 'waiting')
+        if (athlete.status == AthleteStatus.waiting)
           ListTile(leading: Icon(Icons.play_arrow, color: cs.primary), title: const Text('Стартовать принудительно'), onTap: () {
-            setState(() => athlete['status'] = 'started');
+            setState(() => _startListService.forceStart(athlete.bib));
             Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.info(context, 'Принудительный старт — BIB ${athlete['bib']} → Audit Log');
+            AppSnackBar.info(context, 'Принудительный старт — BIB ${athlete.bib} → Audit Log');
           }),
         ListTile(leading: Icon(Icons.block, color: cs.error), title: const Text('DNS'), onTap: () {
-          _markDns(index);
+          _markDns(athlete.bib);
           Navigator.of(context, rootNavigator: true).pop();
         }),
       ]),
@@ -121,7 +141,7 @@ class _StarterScreenState extends State<StarterScreen> {
       isDanger: true,
     );
     if (confirm == true && mounted) {
-      setState(() { for (var a in _queue) { a['status'] = 'started'; } });
+      setState(() => _startListService.markStartedAll());
       AppSnackBar.success(context, 'GUN START! Все стартовали.');
     }
   }
@@ -158,8 +178,8 @@ class _StarterScreenState extends State<StarterScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final current = _currentIndex < _queue.length ? _queue[_currentIndex] : null;
-    final remaining = _queue.where((a) => a['status'] == 'waiting' || a['status'] == 'current').length;
+    final current = _startListService.currentAthlete;
+    final remaining = _startListService.remaining;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -302,7 +322,7 @@ class _StarterScreenState extends State<StarterScreen> {
                     children: [
                       Text('СЛЕДУЮЩИЙ:', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       const Spacer(),
-                      Text('${current['bib']} — ${current['name']}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.primary)),
+                      Text('${current.bib} — ${current.name}', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.primary)),
                     ],
                   ),
                 ),
@@ -351,18 +371,24 @@ class _StarterScreenState extends State<StarterScreen> {
             Expanded(
               child: ListView.separated(
                 padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
-                itemCount: _queue.length,
+                itemCount: _startListService.all.length,
                 separatorBuilder: (ctx, i) => const SizedBox(height: 6),
                 itemBuilder: (context, i) {
-                  final a = _queue[i];
-                  final status = a['status'] as String;
-                  final isCurrent = status == 'current';
-                  final isStarted = status == 'started';
-                  final isDns = status == 'dns';
+                  final a = _startListService.all[i];
+                  final isCurrent = a.status == AthleteStatus.current;
+                  final isStarted = a.status == AthleteStatus.started;
+                  final isDns = a.status == AthleteStatus.dns;
+
+                  String fmtTime(DateTime dt) {
+                    final h = dt.hour.toString().padLeft(2, '0');
+                    final m = dt.minute.toString().padLeft(2, '0');
+                    final s = dt.second.toString().padLeft(2, '0');
+                    return '$h:$m:$s';
+                  }
 
                   final color = isStarted ? cs.primary : isDns ? cs.error : isCurrent ? cs.tertiary : cs.onSurfaceVariant;
                   final icon = isStarted ? Icons.check_circle : isDns ? Icons.block : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
-                  final statusText = isStarted ? 'Ушёл' : isDns ? 'DNS' : isCurrent ? 'Текущий' : a['time'];
+                  final statusText = isStarted ? 'Ушёл' : isDns ? 'DNS' : isCurrent ? 'Текущий' : fmtTime(a.plannedStartTime);
 
                   return AppCard(
                     padding: EdgeInsets.zero,
@@ -371,7 +397,7 @@ class _StarterScreenState extends State<StarterScreen> {
                     borderColor: isCurrent ? cs.tertiary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.1),
                     children: [
                       InkWell(
-                        onTap: () => _showAthleteMenu(i),
+                        onTap: () => _showAthleteMenu(a),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           child: Row(children: [
@@ -380,12 +406,12 @@ class _StarterScreenState extends State<StarterScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(6)),
-                              child: Text('${a['bib']}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: cs.onSurfaceVariant)),
+                              child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: cs.onSurfaceVariant)),
                             ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text('${a['name']}', style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: isDns ? cs.outline : cs.onSurface, decoration: isDns ? TextDecoration.lineThrough : null)),
+                                Text(a.name, style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: isDns ? cs.outline : cs.onSurface, decoration: isDns ? TextDecoration.lineThrough : null)),
                                 const SizedBox(height: 2),
                                 Text(statusText, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
                               ]),
@@ -415,7 +441,7 @@ class _StarterScreenState extends State<StarterScreen> {
                     side: BorderSide(color: cs.error.withValues(alpha: 0.3), width: 1.5),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: current != null ? () => _markDns(_currentIndex) : null,
+                  onPressed: current != null ? () => _markDns(current.bib) : null,
                   child: const Text('DNS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ))),
                 const SizedBox(width: 12),

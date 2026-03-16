@@ -1,10 +1,10 @@
-import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: CT1 — Тренерский Хронометраж (Live-отсечки + разрывы)
 ///
@@ -22,22 +22,21 @@ class CoachTimingScreen extends StatefulWidget {
 class _CoachTimingScreenState extends State<CoachTimingScreen>
     with SingleTickerProviderStateMixin {
   late final TabController _tabController;
-  Timer? _clockTimer;
 
   // ── Режим ввода: сетка или секундомер ──
   bool _isStopwatchMode = false;
 
-  // ── Данные тренера ──
-  final List<_CoachMark> _marks = [];
-  final Map<String, int> _lapCounters = {}; // bib -> текущий круг
+  // ── Timing Engine ──
+  late final RaceClock _raceClock;
+  late final StartListService _startListService;
+  late final MarkingService _markingService;
+  final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
+  late final GapCalculator _gapCalc;
 
-  // ── Часы мероприятия ──
-  /// Время старта первого спортсмена = «нулевая точка» мероприятия.
-  late final DateTime _raceStartTime;
+  // ── UI state ──
   Duration _elapsed = Duration.zero;
-
-  // ── Mock-данные: все спортсмены (с интервалом старта!) ──
-  late final List<_Athlete> _athletes;
+  int _totalLaps = 3;
+  int _selectedLapFilter = 0; // 0 = все
 
   // ── Mock: официальные результаты (таб "Гонка") ──
   final List<Map<String, dynamic>> _raceResults = [
@@ -51,135 +50,111 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
     {'pos': 8, 'bib': '77', 'name': 'Новиков З.', 'split1': null, 'finish': null, 'gap': null, 'status': 'dns'},
   ];
 
-  int _totalLaps = 3;
-  int _selectedLapFilter = 0; // 0 = все
-
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
 
-    // Симуляция: старт мероприятия был «сейчас минус 15 минут»
-    _raceStartTime = DateTime.now().subtract(const Duration(minutes: 15));
+    // ── Инициализация Timing Engine ──
+    final raceStart = DateTime.now().subtract(const Duration(minutes: 15));
 
-    // Спортсмены с интервальными стартами (каждые 30 сек)
-    _athletes = [
-      _Athlete(bib: '07', name: 'Петров А.', disc: 'Скидж.', startTime: _raceStartTime),
-      _Athlete(bib: '12', name: 'Сидоров Б.', disc: 'Скидж.', startTime: _raceStartTime.add(const Duration(seconds: 30))),
-      _Athlete(bib: '24', name: 'Иванов В.', disc: 'Нарты', startTime: _raceStartTime.add(const Duration(seconds: 60))),
-      _Athlete(bib: '31', name: 'Козлов Г.', disc: 'Нарты', startTime: _raceStartTime.add(const Duration(seconds: 90))),
-      _Athlete(bib: '42', name: 'Морозов Д.', disc: 'Скидж.', startTime: _raceStartTime.add(const Duration(seconds: 120))),
-      _Athlete(bib: '55', name: 'Волков Е.', disc: 'Пулка', startTime: _raceStartTime.add(const Duration(seconds: 150))),
-      _Athlete(bib: '63', name: 'Лебедев Ж.', disc: 'Скидж.', startTime: _raceStartTime.add(const Duration(seconds: 180))),
-      _Athlete(bib: '77', name: 'Новиков З.', disc: 'Нарты', startTime: _raceStartTime.add(const Duration(seconds: 210))),
-      _Athlete(bib: '88', name: 'Кузнецов И.', disc: 'Скидж.', startTime: _raceStartTime.add(const Duration(seconds: 240))),
-    ];
+    final config = DisciplineConfig(
+      id: 'disc-demo',
+      name: 'Sprint 5km',
+      distanceKm: 5.0,
+      startType: StartType.individual,
+      interval: const Duration(seconds: 30),
+      firstStartTime: raceStart,
+      laps: _totalLaps,
+      minLapTime: const Duration(seconds: 10),
+    );
 
-    // Таймер для часов мероприятия (обновление каждую секунду)
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) {
-        setState(() {
-          _elapsed = DateTime.now().difference(_raceStartTime);
-        });
-      }
-    });
+    _raceClock = RaceClock();
+    _raceClock.start(raceStart);
+    _raceClock.addListener(_onClockTick);
+
+    _startListService = StartListService(config: config);
+    _startListService.buildStartList([
+      (entryId: 'e1', bib: '07', name: 'Петров А.', category: 'Скидж.', waveId: null),
+      (entryId: 'e2', bib: '12', name: 'Сидоров Б.', category: 'Скидж.', waveId: null),
+      (entryId: 'e3', bib: '24', name: 'Иванов В.', category: 'Нарты', waveId: null),
+      (entryId: 'e4', bib: '31', name: 'Козлов Г.', category: 'Нарты', waveId: null),
+      (entryId: 'e5', bib: '42', name: 'Морозов Д.', category: 'Скидж.', waveId: null),
+      (entryId: 'e6', bib: '55', name: 'Волков Е.', category: 'Пулка', waveId: null),
+      (entryId: 'e7', bib: '63', name: 'Лебедев Ж.', category: 'Скидж.', waveId: null),
+      (entryId: 'e8', bib: '77', name: 'Новиков З.', category: 'Нарты', waveId: null),
+      (entryId: 'e9', bib: '88', name: 'Кузнецов И.', category: 'Скидж.', waveId: null),
+    ]);
+
+    // Отметить всех как стартовавших (для demo)
+    for (final entry in _startListService.all) {
+      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
+    }
+
+    _markingService = MarkingService(
+      minLapTime: const Duration(seconds: 10),
+      totalLaps: _totalLaps,
+    );
+
+    _gapCalc = GapCalculator(_elapsedCalc);
+  }
+
+  void _onClockTick(Duration elapsed) {
+    if (mounted) setState(() => _elapsed = elapsed);
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _clockTimer?.cancel();
+    _raceClock.removeListener(_onClockTick);
+    _raceClock.dispose();
     super.dispose();
   }
 
   // ═══════════════════════════════════════
-  // Логика отсечек
+  // Логика отсечек (через MarkingService)
   // ═══════════════════════════════════════
 
   /// Добавить быструю отсечку (секундомер) без BIB
   void _addQuickMark() {
     HapticFeedback.heavyImpact();
     setState(() {
-      _marks.add(_CoachMark(timestamp: DateTime.now()));
+      _markingService.addMark();
     });
   }
 
-  /// Найти спортсмена по BIB
-  _Athlete _findAthlete(String bib) {
-    return _athletes.firstWhere(
-      (a) => a.bib == bib,
-      orElse: () => _Athlete(bib: bib, name: '?', disc: '?', startTime: _raceStartTime),
-    );
-  }
-
   /// Назначить BIB конкретной отсечке
-  void _assignBib(int markIndex, String bib) {
-    final lap = (_lapCounters[bib] ?? 0) + 1;
-    _lapCounters[bib] = lap;
-
-    final athlete = _findAthlete(bib);
-    final markTime = _marks[markIndex].timestamp;
-    final elapsedFromStart = markTime.difference(athlete.startTime);
-
-    // Сплит круга (время между этой и предыдущей отсечкой этого BIB)
-    Duration? lapSplit;
-    final prevMarks = _marks.where((m) => m.bib == bib).toList();
-    if (prevMarks.isNotEmpty) {
-      lapSplit = markTime.difference(prevMarks.last.timestamp);
-    }
-
+  void _assignBib(String markId, String bib) {
     setState(() {
-      _marks[markIndex] = _marks[markIndex].copyWith(
-        bib: bib,
-        name: athlete.name,
-        lap: lap,
-        lapSplit: lapSplit,
-        elapsedFromStart: elapsedFromStart,
-      );
+      _markingService.assignBib(markId, bib, entryId: bib);
     });
   }
 
   /// Отсечка из сетки BIB (тап по плитке)
   void _markFromGrid(String bib) {
     HapticFeedback.mediumImpact();
-    final lap = (_lapCounters[bib] ?? 0) + 1;
-    _lapCounters[bib] = lap;
+    final athlete = _startListService.findByBib(bib);
+    if (athlete == null) return;
 
-    final athlete = _findAthlete(bib);
-    final now = DateTime.now();
-    final elapsedFromStart = now.difference(athlete.startTime);
-
-    Duration? lapSplit;
-    final prevMarks = _marks.where((m) => m.bib == bib).toList();
-    if (prevMarks.isNotEmpty) {
-      lapSplit = now.difference(prevMarks.last.timestamp);
-    }
+    final mark = _markingService.addMark();
 
     setState(() {
-      _marks.add(_CoachMark(
-        timestamp: now,
-        bib: bib,
-        name: athlete.name,
-        lap: lap,
-        lapSplit: lapSplit,
-        elapsedFromStart: elapsedFromStart,
-      ));
+      _markingService.assignBib(mark.id, bib, entryId: bib);
     });
 
-    AppSnackBar.success(context, 'BIB $bib · Круг $lap · ${_fmtDur(elapsedFromStart)} от старта');
+    final lap = _markingService.resolveCurrentLap(bib);
+    final elapsed = _elapsedCalc.netTime(athlete, mark.correctedTime);
+
+    AppSnackBar.success(context, 'BIB $bib · Круг ${lap - 1} · ${_fmtDur(elapsed)} от старта');
   }
 
   /// Удалить отсечку
-  void _removeMark(int index) {
-    final mark = _marks[index];
-    if (mark.bib != null && _lapCounters.containsKey(mark.bib)) {
-      _lapCounters[mark.bib!] = (_lapCounters[mark.bib!]! - 1).clamp(0, 999);
-    }
-    setState(() => _marks.removeAt(index));
+  void _removeMark(String markId) {
+    setState(() => _markingService.deleteMark(markId));
   }
 
   /// BIB-пикер
-  void _showBibPicker(int markIndex) {
+  void _showBibPicker(String markId) {
     AppBottomSheet.show(
       context,
       title: 'Назначить BIB',
@@ -191,17 +166,18 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
         childAspectRatio: 1.1,
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
-        children: _athletes.map((a) {
-          final alreadyMarked = _marks.any((m) => m.bib == a.bib);
+        children: _startListService.all.map((a) {
+          final bibMarks = _markingService.marksForBib(a.bib);
+          final alreadyMarked = bibMarks.isNotEmpty;
           return AppBibTile(
             bib: a.bib,
             name: a.name,
             lapInfo: alreadyMarked
-                ? 'Круг ${_lapCounters[a.bib] ?? 0}'
-                : 'Старт: ${_fmtTime(a.startTime)}',
+                ? 'Круг ${bibMarks.length}'
+                : 'Старт: ${_fmtTime(a.effectiveStartTime)}',
             state: alreadyMarked ? BibState.assigned : BibState.available,
             onTap: () {
-              _assignBib(markIndex, a.bib);
+              _assignBib(markId, a.bib);
               Navigator.of(context, rootNavigator: true).pop();
               AppSnackBar.success(context, 'BIB ${a.bib} назначен');
             },
@@ -243,62 +219,56 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
     return '$h:$m:$s';
   }
 
-  /// Построить таблицу разрывов: для каждого круга группируем по BIB,
-  /// считаем elapsed от старта, сортируем, выводим разрыв от лидера.
-  List<_GapRow> _buildGapRows(int lap) {
-    List<_CoachMark> marksForLap;
+  /// Построить таблицу разрывов через GapCalculator
+  List<GapRow> _buildGapRows(int lap) {
+    final marks = _markingService.marks;
+    final starts = _startListService.all;
+
+    // Отфильтровать tracked BIBs (те, у кого есть отсечки)
+    final trackedBibs = marks
+        .where((m) => m.bib != null)
+        .map((m) => m.bib!)
+        .toSet()
+        .toList();
+
+    if (trackedBibs.isEmpty) return [];
+
     if (lap == 0) {
-      // Берём последнюю отсечку каждого BIB
-      final Map<String, _CoachMark> latest = {};
-      for (final m in _marks) {
-        if (m.bib != null) latest[m.bib!] = m;
+      // "Все" — показать последний круг каждого
+      final allRows = _gapCalc.gapTable(trackedBibs, marks, starts);
+      // Взять последний круг каждого BIB
+      final Map<String, GapRow> latest = {};
+      for (final r in allRows) {
+        latest[r.bib] = r;
       }
-      marksForLap = latest.values.toList();
+      final rows = latest.values.toList()
+        ..sort((a, b) => a.elapsed.compareTo(b.elapsed));
+      return rows;
     } else {
-      marksForLap = _marks.where((m) => m.bib != null && m.lap == lap).toList();
+      // Конкретный круг
+      final ranked = _gapCalc.rankedAtLap(lap, marks, starts);
+      return ranked.asMap().entries.map((e) {
+        final i = e.key;
+        final r = e.value;
+        final athlete = starts.where((s) => s.bib == r.bib).firstOrNull;
+
+        // Lap split
+        final laps = athlete != null
+            ? _elapsedCalc.lapTimes(r.bib, marks, athlete)
+            : <Duration>[];
+        final lapSplit = lap <= laps.length ? laps[lap - 1] : null;
+
+        return GapRow(
+          bib: r.bib,
+          name: r.name,
+          lap: lap,
+          elapsed: r.elapsed,
+          gapToLeader: i == 0 ? null : _gapCalc.gapToLeader(r.bib, lap, marks, starts),
+          trend: _gapCalc.trend(r.bib, lap, marks, starts),
+          gapToPrev: lapSplit,
+        );
+      }).toList();
     }
-
-    if (marksForLap.isEmpty) return [];
-
-    // Сортируем по elapsed from start (кто быстрее дошёл)
-    marksForLap.sort((a, b) => (a.elapsedFromStart ?? Duration.zero).compareTo(b.elapsedFromStart ?? Duration.zero));
-
-    final leaderElapsed = marksForLap.first.elapsedFromStart ?? Duration.zero;
-    final rows = <_GapRow>[];
-
-    for (int i = 0; i < marksForLap.length; i++) {
-      final m = marksForLap[i];
-      final elapsed = m.elapsedFromStart ?? Duration.zero;
-      final gapFromLeader = elapsed - leaderElapsed;
-
-      // Динамика: сравнить разрыв на этом круге vs предыдущем
-      Duration? prevGap;
-      if (lap > 1 && m.bib != null) {
-        final prevLapMark = _marks.where((pm) => pm.bib == m.bib && pm.lap == lap - 1).firstOrNull;
-        final prevLeaderMark = _marks.where((pm) => pm.bib == marksForLap.first.bib && pm.lap == lap - 1).firstOrNull;
-        if (prevLapMark != null && prevLeaderMark != null && prevLapMark.elapsedFromStart != null && prevLeaderMark.elapsedFromStart != null) {
-          prevGap = prevLapMark.elapsedFromStart! - prevLeaderMark.elapsedFromStart!;
-        }
-      }
-
-      rows.add(_GapRow(
-        pos: i + 1,
-        bib: m.bib!,
-        name: m.name ?? '?',
-        elapsed: elapsed,
-        lapSplit: m.lapSplit,
-        gapFromLeader: gapFromLeader,
-        trend: prevGap != null ? _calcTrend(gapFromLeader, prevGap) : null,
-      ));
-    }
-
-    return rows;
-  }
-
-  _GapTrend? _calcTrend(Duration currentGap, Duration prevGap) {
-    final diff = currentGap.inMilliseconds - prevGap.inMilliseconds;
-    if (diff.abs() < 500) return _GapTrend.same; // Менее 0.5 сек — без изменений
-    return diff > 0 ? _GapTrend.losing : _GapTrend.gaining;
   }
 
   @override
@@ -467,8 +437,8 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   // Таб 2: Мои отсечки
   // ═══════════════════════════════════════
   Widget _buildMarksTab(ThemeData theme, ColorScheme cs) {
-    final assignedMarks = _marks.where((m) => m.bib != null).toList()
-      ..sort((a, b) => a.timestamp.compareTo(b.timestamp));
+    final marks = _markingService.marks;
+    final assignedMarks = marks.where((m) => m.isAssigned).toList();
 
     return Column(children: [
       // ── Переключатель: Сетка / Секундомер ──
@@ -549,20 +519,21 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
       padding: const EdgeInsets.all(16),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      children: _athletes.map((a) {
-        final lapCount = _lapCounters[a.bib] ?? 0;
+      children: _startListService.all.map((a) {
+        final bibMarks = _markingService.marksForBib(a.bib);
+        final lapCount = bibMarks.length;
         final hasMarks = lapCount > 0;
 
-        // Последний сплит + тренд
-        final bibMarks = _marks.where((m) => m.bib == a.bib).toList();
+        // Последний сплит
         String? splitInfo;
-        if (bibMarks.isNotEmpty && bibMarks.last.elapsedFromStart != null) {
-          splitInfo = _fmtDur(bibMarks.last.elapsedFromStart!);
+        if (hasMarks) {
+          final elapsed = _elapsedCalc.netTime(a, bibMarks.last.correctedTime);
+          splitInfo = _fmtDur(elapsed);
         }
 
         final lapInfo = hasMarks
             ? 'Круг $lapCount/$_totalLaps${splitInfo != null ? '\n⏱$splitInfo' : ''}'
-            : 'Старт: ${_fmtTime(a.startTime)}';
+            : 'Старт: ${_fmtTime(a.effectiveStartTime)}';
 
         return AppBibTile(
           bib: a.bib,
@@ -579,25 +550,21 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
 
   // ── Режим Секундомер ──
   Widget _buildStopwatchMode(ThemeData theme, ColorScheme cs) {
-    final unassigned = <int>[];
-    for (int i = 0; i < _marks.length; i++) {
-      if (_marks[i].bib == null) unassigned.add(i);
-    }
+    final unassignedMarks = _markingService.unassigned;
 
     return Column(children: [
-      if (unassigned.isNotEmpty)
+      if (unassignedMarks.isNotEmpty)
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: unassigned.length,
+            itemCount: unassignedMarks.length,
             itemBuilder: (context, i) {
-              final idx = unassigned[i];
-              final mark = _marks[idx];
-              final raceTime = mark.timestamp.difference(_raceStartTime);
+              final mark = unassignedMarks[i];
+              final raceTime = mark.correctedTime.difference(_raceClock.zeroTime!);
               return Dismissible(
-                key: ValueKey('mark-$idx-${mark.timestamp}'),
+                key: ValueKey('mark-${mark.id}'),
                 direction: DismissDirection.endToStart,
-                onDismissed: (_) => _removeMark(idx),
+                onDismissed: (_) => _removeMark(mark.id),
                 background: Container(
                   color: cs.error,
                   alignment: Alignment.centerRight,
@@ -613,7 +580,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
                     borderRadius: BorderRadius.circular(12),
                     children: [
                       InkWell(
-                        onTap: () => _showBibPicker(idx),
+                        onTap: () => _showBibPicker(mark.id),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           child: Row(children: [
@@ -625,7 +592,7 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
                             const SizedBox(width: 12),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                               Text(_fmtDurMs(raceTime), style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
-                              Text('🕐 ${_fmtTime(mark.timestamp)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                              Text('🕐 ${_fmtTime(mark.correctedTime)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                             ])),
                             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                               Text('Назначить BIB', style: TextStyle(color: cs.tertiary, fontWeight: FontWeight.bold, fontSize: 12)),
@@ -688,13 +655,13 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   }
 
   // ═══════════════════════════════════════
-  // Таблица разрывов (с elapsed от старта)
+  // Таблица разрывов (через Timing Engine)
   // ═══════════════════════════════════════
   Widget _buildGapTable(ThemeData theme, ColorScheme cs) {
-    final assignedMarks = _marks.where((m) => m.bib != null).toList();
+    final assignedMarks = _markingService.assigned;
     final lapsWithData = <int>{};
     for (final m in assignedMarks) {
-      lapsWithData.add(m.lap);
+      if (m.lapNumber != null) lapsWithData.add(m.lapNumber!);
     }
 
     final gapRows = _buildGapRows(_selectedLapFilter);
@@ -752,14 +719,14 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
             itemBuilder: (context, i) {
               final r = gapRows[i];
               final isLeader = i == 0;
-              final trendIcon = r.trend == _GapTrend.gaining ? '▲' : r.trend == _GapTrend.losing ? '▼' : r.trend == _GapTrend.same ? '=' : '';
-              final trendColor = r.trend == _GapTrend.gaining ? Colors.green : r.trend == _GapTrend.losing ? cs.error : cs.onSurfaceVariant;
+              final trendIcon = r.trend == '▲' ? '▲' : r.trend == '▼' ? '▼' : r.trend == '=' ? '=' : '';
+              final trendColor = r.trend == '▲' ? Colors.green : r.trend == '▼' ? cs.error : cs.onSurfaceVariant;
 
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(children: [
                   // Позиция
-                  SizedBox(width: 18, child: Text('${r.pos}', style: TextStyle(fontSize: 11, fontWeight: isLeader ? FontWeight.w900 : FontWeight.w600, color: isLeader ? cs.primary : cs.onSurfaceVariant))),
+                  SizedBox(width: 18, child: Text('${i + 1}', style: TextStyle(fontSize: 11, fontWeight: isLeader ? FontWeight.w900 : FontWeight.w600, color: isLeader ? cs.primary : cs.onSurfaceVariant))),
                   // BIB
                   SizedBox(width: 28, child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
@@ -772,13 +739,13 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
                   // Elapsed от старта
                   SizedBox(width: 50, child: Text(_fmtDur(r.elapsed), style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600, color: cs.onSurface), textAlign: TextAlign.center)),
                   // Сплит круга
-                  SizedBox(width: 45, child: Text(r.lapSplit != null ? _fmtDur(r.lapSplit!) : '—', style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
+                  SizedBox(width: 45, child: Text(r.gapToPrev != null ? _fmtDur(r.gapToPrev!) : '—', style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
                   // Разрыв от лидера + тренд
                   SizedBox(width: 60, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     if (trendIcon.isNotEmpty) Text(trendIcon, style: TextStyle(fontSize: 10, color: trendColor)),
                     const SizedBox(width: 2),
                     Text(
-                      isLeader ? '—' : '+${_fmtDur(r.gapFromLeader)}',
+                      isLeader ? '—' : '+${_fmtDur(r.gapToLeader ?? Duration.zero)}',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isLeader ? cs.primary : cs.error),
                     ),
                   ])),
@@ -814,7 +781,8 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
   // Таб 3: Аналитика
   // ═══════════════════════════════════════
   Widget _buildAnalyticsTab(ThemeData theme, ColorScheme cs) {
-    final assignedMarks = _marks.where((m) => m.bib != null).toList();
+    final marks = _markingService.marks;
+    final assignedMarks = marks.where((m) => m.isAssigned).toList();
 
     if (assignedMarks.isEmpty) {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -827,16 +795,20 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
     }
 
     // Группируем по BIB
-    final Map<String, List<_CoachMark>> byBib = {};
+    final Map<String, List<TimeMark>> byBib = {};
     for (final m in assignedMarks) {
       byBib.putIfAbsent(m.bib!, () => []).add(m);
     }
 
     // Сортируем BIB по elapsed (кто быстрее)
+    final starts = _startListService.all;
     final sortedBibs = byBib.entries.toList()
       ..sort((a, b) {
-        final aElapsed = a.value.last.elapsedFromStart ?? Duration.zero;
-        final bElapsed = b.value.last.elapsedFromStart ?? Duration.zero;
+        final aAthlete = starts.where((s) => s.bib == a.key).firstOrNull;
+        final bAthlete = starts.where((s) => s.bib == b.key).firstOrNull;
+        if (aAthlete == null || bAthlete == null) return 0;
+        final aElapsed = _elapsedCalc.netTime(aAthlete, a.value.last.correctedTime);
+        final bElapsed = _elapsedCalc.netTime(bAthlete, b.value.last.correctedTime);
         return aElapsed.compareTo(bElapsed);
       });
 
@@ -876,17 +848,25 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
           ...sortedBibs.asMap().entries.map((entry) {
             final i = entry.key;
             final bib = entry.value.key;
-            final bibMarks = entry.value.value..sort((a, b) => a.lap.compareTo(b.lap));
+            final bibMarks = entry.value.value..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
             final isLeader = i == 0;
+            final athlete = starts.where((s) => s.bib == bib).firstOrNull;
+
+            // Splits через ElapsedCalculator
+            final splits = athlete != null
+                ? _elapsedCalc.splitTimes(bib, marks, athlete)
+                : <Duration>[];
 
             // Разрыв от лидера
             String gapText = '—';
-            if (!isLeader && bibMarks.isNotEmpty) {
-              final leaderBibMarks = sortedBibs.first.value;
-              final myLastElapsed = bibMarks.last.elapsedFromStart;
-              final leaderLastElapsed = leaderBibMarks.last.elapsedFromStart;
-              if (myLastElapsed != null && leaderLastElapsed != null) {
-                final gap = myLastElapsed - leaderLastElapsed;
+            if (!isLeader && athlete != null && bibMarks.isNotEmpty) {
+              final leaderBib = sortedBibs.first.key;
+              final leaderAthlete = starts.where((s) => s.bib == leaderBib).firstOrNull;
+              if (leaderAthlete != null) {
+                final leaderBibMarks = sortedBibs.first.value;
+                final myElapsed = _elapsedCalc.netTime(athlete, bibMarks.last.correctedTime);
+                final leaderElapsed = _elapsedCalc.netTime(leaderAthlete, leaderBibMarks.last.correctedTime);
+                final gap = myElapsed - leaderElapsed;
                 gapText = '+${_fmtDur(gap)}';
               }
             }
@@ -895,12 +875,13 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(children: [
                 SizedBox(width: 40, child: Text(bib, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: isLeader ? cs.primary : cs.onSurface))),
-                Expanded(child: Text(bibMarks.first.name ?? '?', style: TextStyle(fontSize: 12, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
+                Expanded(child: Text(athlete?.name ?? '?', style: TextStyle(fontSize: 12, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
                 for (int lap = 1; lap <= _totalLaps; lap++)
                   SizedBox(width: 55, child: () {
-                    final lapMark = bibMarks.where((m) => m.lap == lap).firstOrNull;
-                    if (lapMark?.elapsedFromStart == null) return Text('—', style: TextStyle(fontSize: 11, color: cs.outline), textAlign: TextAlign.center);
-                    return Text(_fmtDur(lapMark!.elapsedFromStart!), style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurface), textAlign: TextAlign.center);
+                    if (lap <= splits.length) {
+                      return Text(_fmtDur(splits[lap - 1]), style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurface), textAlign: TextAlign.center);
+                    }
+                    return Text('—', style: TextStyle(fontSize: 11, color: cs.outline), textAlign: TextAlign.center);
                   }()),
                 SizedBox(width: 55, child: Text(gapText, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: gapText == '—' ? cs.primary : cs.error), textAlign: TextAlign.center)),
               ]),
@@ -927,81 +908,3 @@ class _CoachTimingScreenState extends State<CoachTimingScreen>
     ]);
   }
 }
-
-// ═══════════════════════════════════════
-// Data Models
-// ═══════════════════════════════════════
-
-/// Спортсмен с интервалом старта
-class _Athlete {
-  final String bib;
-  final String name;
-  final String disc;
-  final DateTime startTime;
-
-  const _Athlete({
-    required this.bib,
-    required this.name,
-    required this.disc,
-    required this.startTime,
-  });
-}
-
-/// Отсечка тренера
-class _CoachMark {
-  final DateTime timestamp;
-  final String? bib;
-  final String? name;
-  final int lap;
-  final Duration? lapSplit;
-  final Duration? elapsedFromStart; // Время от старта спортсмена до этой отсечки
-
-  const _CoachMark({
-    required this.timestamp,
-    this.bib,
-    this.name,
-    this.lap = 0,
-    this.lapSplit,
-    this.elapsedFromStart,
-  });
-
-  _CoachMark copyWith({
-    String? bib,
-    String? name,
-    int? lap,
-    Duration? lapSplit,
-    Duration? elapsedFromStart,
-  }) {
-    return _CoachMark(
-      timestamp: timestamp,
-      bib: bib ?? this.bib,
-      name: name ?? this.name,
-      lap: lap ?? this.lap,
-      lapSplit: lapSplit ?? this.lapSplit,
-      elapsedFromStart: elapsedFromStart ?? this.elapsedFromStart,
-    );
-  }
-}
-
-/// Строка таблицы разрывов
-class _GapRow {
-  final int pos;
-  final String bib;
-  final String name;
-  final Duration elapsed;
-  final Duration? lapSplit;
-  final Duration gapFromLeader;
-  final _GapTrend? trend;
-
-  const _GapRow({
-    required this.pos,
-    required this.bib,
-    required this.name,
-    required this.elapsed,
-    this.lapSplit,
-    required this.gapFromLeader,
-    this.trend,
-  });
-}
-
-enum _GapTrend { gaining, losing, same }
