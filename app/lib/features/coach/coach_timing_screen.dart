@@ -1,4 +1,5 @@
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,27 +33,26 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   // ── UI state ──
   Duration _elapsed = Duration.zero;
   int _selectedLapFilter = 0; // 0 = все
+  Timer? _uiTimer;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this, initialIndex: 1);
 
-    // Подписка на тик часов из сессии
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Собственный таймер вместо RaceClock listener (безопасен при навигации)
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       final session = ref.read(raceSessionProvider);
-      session?.clock.addListener(_onClockTick);
+      if (session != null && mounted) {
+        setState(() => _elapsed = session.clock.elapsed);
+      }
     });
-  }
-
-  void _onClockTick(Duration elapsed) {
-    if (mounted) setState(() => _elapsed = elapsed);
   }
 
   @override
   void dispose() {
+    _uiTimer?.cancel();
     _tabController.dispose();
-    ref.read(raceSessionProvider)?.clock.removeListener(_onClockTick);
     super.dispose();
   }
 

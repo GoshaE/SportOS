@@ -28,8 +28,31 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
     super.initState();
     _uiTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       final session = ref.read(raceSessionProvider);
-      if (session != null && mounted) {
-        setState(() => _elapsed = session.clock.elapsed);
+      if (session == null || !mounted) return;
+
+      // Обновить elapsed для UI
+      setState(() => _elapsed = session.clock.elapsed);
+
+      // ── Авто-старт (раздельный без ручного подтверждения) ──
+      // Если manualStart = false, атлеты уходят автоматически
+      // когда наступает их plannedStartTime.
+      if (!_isMassStart &&
+          !session.config.manualStart &&
+          session.config.startType == StartType.individual) {
+        final now = session.clock.now;
+        // Проверяем всех waiting/current — вдруг несколько опоздали
+        bool changed = false;
+        for (final a in session.startList.all) {
+          if ((a.status == AthleteStatus.waiting || a.status == AthleteStatus.current) &&
+              !a.plannedStartTime.isAfter(now)) {
+            ref.read(raceSessionProvider.notifier).markStarted(
+              a.bib,
+              actualTime: a.plannedStartTime, // точное запланированное время
+            );
+            changed = true;
+          }
+        }
+        if (changed) setState(() {});
       }
     });
   }
@@ -560,7 +583,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
             ]),
           ),
 
-          // ── DNS / Ушёл ──
+          // ── DNS / Ушёл / Авто ──
           if (!_isMassStart)
             SafeArea(
               top: false,
@@ -577,14 +600,31 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                     child: const Text('DNS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ))),
                   const SizedBox(width: 12),
-                  Expanded(flex: 2, child: SizedBox(height: 52, child: FilledButton(
-                    style: FilledButton.styleFrom(
-                      backgroundColor: !_isSynced && !_preFlightPassed ? cs.tertiary : cs.primary,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
-                    onPressed: current != null ? () => _tryStart(_markStarted) : null,
-                    child: Text(!_isSynced && !_preFlightPassed ? 'ПРОВЕРКА' : 'УШЁЛ ✅', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                  ))),
+                  if (session.config.manualStart)
+                    // Ручной режим — кнопка «УШЁЛ»
+                    Expanded(flex: 2, child: SizedBox(height: 52, child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: !_isSynced && !_preFlightPassed ? cs.tertiary : cs.primary,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      ),
+                      onPressed: current != null ? () => _tryStart(_markStarted) : null,
+                      child: Text(!_isSynced && !_preFlightPassed ? 'ПРОВЕРКА' : 'УШЁЛ ✅', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                    )))
+                  else
+                    // Авто-режим — индикатор
+                    Expanded(flex: 2, child: Container(
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer.withValues(alpha: 0.2),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+                      ),
+                      child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                        Icon(Icons.auto_mode, size: 20, color: cs.primary),
+                        const SizedBox(width: 8),
+                        Text('АВТО-СТАРТ', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.primary, letterSpacing: 0.5)),
+                      ]),
+                    )),
                 ]),
               ),
             ),

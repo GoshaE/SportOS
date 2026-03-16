@@ -45,6 +45,11 @@ class DisciplineConfig {
   final String tieBreakMode; // 'shared' | 'start_order'
   final Duration bufferBetweenWaves;
 
+  /// Ручной старт — стартёр подтверждает «УШЁЛ» для каждого.
+  /// Если false (по умолчанию) — атлеты уходят автоматически
+  /// по наступлению plannedStartTime.
+  final bool manualStart;
+
   const DisciplineConfig({
     required this.id,
     required this.name,
@@ -57,6 +62,7 @@ class DisciplineConfig {
     this.cutoffTime,
     this.tieBreakMode = 'shared',
     this.bufferBetweenWaves = Duration.zero,
+    this.manualStart = false,
   });
 
   DisciplineConfig copyWith({
@@ -71,6 +77,7 @@ class DisciplineConfig {
     Duration? cutoffTime,
     String? tieBreakMode,
     Duration? bufferBetweenWaves,
+    bool? manualStart,
   }) {
     return DisciplineConfig(
       id: id ?? this.id,
@@ -84,6 +91,7 @@ class DisciplineConfig {
       cutoffTime: cutoffTime ?? this.cutoffTime,
       tieBreakMode: tieBreakMode ?? this.tieBreakMode,
       bufferBetweenWaves: bufferBetweenWaves ?? this.bufferBetweenWaves,
+      manualStart: manualStart ?? this.manualStart,
     );
   }
 }
