@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -18,25 +19,24 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
   bool _isSynced = false;
   bool _preFlightPassed = false;
 
-  // Live clock
+  // Собственный таймер для обновления UI (500ms — плавный обратный отсчёт)
+  Timer? _uiTimer;
   Duration _elapsed = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    _uiTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       final session = ref.read(raceSessionProvider);
-      session?.clock.addListener(_onClockTick);
+      if (session != null && mounted) {
+        setState(() => _elapsed = session.clock.elapsed);
+      }
     });
-  }
-
-  void _onClockTick(Duration elapsed) {
-    if (mounted) setState(() => _elapsed = elapsed);
   }
 
   @override
   void dispose() {
-    ref.read(raceSessionProvider)?.clock.removeListener(_onClockTick);
+    _uiTimer?.cancel();
     super.dispose();
   }
 
