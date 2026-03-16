@@ -360,15 +360,16 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             itemCount: started.length,
             itemBuilder: (context, i) {
               final a = started[i];
-              final bibMarks = session.marking.marksForBib(a.bib);
-              final hasFinish = bibMarks.isNotEmpty;
+              final allBibMarks = session.marking.marksForBib(a.bib);
+              final finishMarks = allBibMarks.where((m) => m.type == MarkType.finish).toList();
+              final hasFinish = finishMarks.length >= session.config.laps;
               final statusColor = hasFinish ? cs.primary : cs.tertiary;
               final statusIcon = hasFinish ? Icons.check_circle : Icons.directions_run;
-              final splitText = bibMarks.isNotEmpty
-                  ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.first.correctedTime))
+              final splitText = allBibMarks.isNotEmpty
+                  ? _fmtDur(_elapsedCalc.netTime(a, allBibMarks.first.correctedTime))
                   : '—';
-              final finishText = bibMarks.length >= session.config.laps
-                  ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
+              final finishText = hasFinish
+                  ? _fmtDur(_elapsedCalc.netTime(a, finishMarks.last.correctedTime))
                   : '...';
 
               return Container(
@@ -387,7 +388,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   )),
                   const SizedBox(width: 4),
                   Expanded(child: Text(a.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
-                  SizedBox(width: 55, child: Text(splitText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: bibMarks.isNotEmpty ? cs.onSurface : cs.outline), textAlign: TextAlign.center)),
+                  SizedBox(width: 55, child: Text(splitText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: allBibMarks.isNotEmpty ? cs.onSurface : cs.outline), textAlign: TextAlign.center)),
                   SizedBox(width: 60, child: Text(finishText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', fontWeight: hasFinish ? FontWeight.bold : FontWeight.normal, color: hasFinish ? cs.primary : cs.outline), textAlign: TextAlign.center)),
                   SizedBox(width: 55, child: Text(i == 0 ? '—' : '', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary), textAlign: TextAlign.center)),
                 ]),

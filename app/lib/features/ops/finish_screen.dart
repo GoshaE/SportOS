@@ -80,7 +80,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             children: session.startedAthletes.map((a) {
-              final bibMarks = session.marking.marksForBib(a.bib);
+              final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.type == MarkType.finish).toList();
               final isFinished = bibMarks.isNotEmpty;
               return AppBibTile(
                 bib: a.bib,
