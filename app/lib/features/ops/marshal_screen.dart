@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R3 — Маршал (с модалками R3.1–R3.3)
 class MarshalScreen extends StatefulWidget {
@@ -12,29 +14,75 @@ class MarshalScreen extends StatefulWidget {
 }
 
 class _MarshalScreenState extends State<MarshalScreen> {
-  final Set<String> _passed = {};
-  final Map<String, String> _splitTimes = {};
-  int _passedCount = 0;
   bool _isSynced = false;
 
-  final List<Map<String, String>> _athletes = [
-    {'bib': '07', 'name': 'Петров', 'disc': 'Скидж.'},
-    {'bib': '12', 'name': 'Сидоров', 'disc': 'Скидж.'},
-    {'bib': '24', 'name': 'Иванов', 'disc': 'Нарты'},
-    {'bib': '31', 'name': 'Козлов', 'disc': 'Нарты'},
-    {'bib': '42', 'name': 'Морозов', 'disc': 'Скидж.'},
-    {'bib': '55', 'name': 'Волков', 'disc': 'Пулка'},
-    {'bib': '63', 'name': 'Лебедев', 'disc': 'Скидж.'},
-    {'bib': '77', 'name': 'Новиков', 'disc': 'Нарты'},
-    {'bib': '88', 'name': 'Кузнецов', 'disc': 'Скидж.'},
-  ];
+  // ── Timing Engine ──
+  late final RaceClock _raceClock;
+  late final StartListService _startListService;
+  late final MarkingService _markingService;
+  final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
+
+  @override
+  void initState() {
+    super.initState();
+
+    final raceStart = DateTime.now().subtract(const Duration(minutes: 10));
+
+    final config = DisciplineConfig(
+      id: 'disc-marshal',
+      name: 'Sprint 5km',
+      distanceKm: 5.0,
+      startType: StartType.individual,
+      interval: const Duration(seconds: 30),
+      firstStartTime: raceStart,
+      laps: 3,
+      minLapTime: const Duration(seconds: 10),
+    );
+
+    _raceClock = RaceClock();
+    _raceClock.start(raceStart);
+
+    _startListService = StartListService(config: config);
+    _startListService.buildStartList([
+      (entryId: 'e1', bib: '07', name: 'Петров', category: 'Скидж.', waveId: null),
+      (entryId: 'e2', bib: '12', name: 'Сидоров', category: 'Скидж.', waveId: null),
+      (entryId: 'e3', bib: '24', name: 'Иванов', category: 'Нарты', waveId: null),
+      (entryId: 'e4', bib: '31', name: 'Козлов', category: 'Нарты', waveId: null),
+      (entryId: 'e5', bib: '42', name: 'Морозов', category: 'Скидж.', waveId: null),
+      (entryId: 'e6', bib: '55', name: 'Волков', category: 'Пулка', waveId: null),
+      (entryId: 'e7', bib: '63', name: 'Лебедев', category: 'Скидж.', waveId: null),
+      (entryId: 'e8', bib: '77', name: 'Новиков', category: 'Нарты', waveId: null),
+      (entryId: 'e9', bib: '88', name: 'Кузнецов', category: 'Скидж.', waveId: null),
+    ]);
+
+    // Все стартовали
+    for (final entry in _startListService.all) {
+      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
+    }
+
+    _markingService = MarkingService(
+      minLapTime: const Duration(seconds: 10),
+      totalLaps: 3,
+    );
+  }
+
+  @override
+  void dispose() {
+    _raceClock.dispose();
+    super.dispose();
+  }
+
+  // ═══════════════════════════════════════
+  // Marking actions
+  // ═══════════════════════════════════════
+
+  bool _isMarked(String bib) => _markingService.marksForBib(bib).isNotEmpty;
 
   void _tryTogglePassed(String bib) {
     if (!mounted) return;
-    if (_passed.contains(bib)) {
+    if (_isMarked(bib)) {
       _togglePassed(bib);
     } else if (!_isSynced) {
-      
       AppDialog.confirm(
         context,
         title: 'Нет синхронизации',
@@ -52,29 +100,47 @@ class _MarshalScreenState extends State<MarshalScreen> {
   }
 
   void _togglePassed(String bib) {
-    if (_passed.contains(bib)) {
+    if (_isMarked(bib)) {
       AppDialog.confirm(context, title: 'Отменить отметку BIB $bib?', message: 'Атлет будет снова показан как "не прошёл", а время отсечки будет удалено.').then((ok) {
         if (ok == true) {
           setState(() {
-            _passed.remove(bib);
-            _splitTimes.remove(bib);
-            _passedCount--;
+            final bibMarks = _markingService.marksForBib(bib);
+            for (final m in bibMarks) {
+              _markingService.deleteMark(m.id);
+            }
           });
         }
       });
     } else {
+      HapticFeedback.mediumImpact();
       setState(() {
-        _passed.add(bib);
-        final m = (DateTime.now().minute % 60).toString().padLeft(2, '0');
-        final s = (DateTime.now().second % 60).toString().padLeft(2, '0');
-        _splitTimes[bib] = '00:1$m:$s';
-        _passedCount++;
+        final mark = _markingService.addMark(type: MarkType.checkpoint);
+        _markingService.assignBib(mark.id, bib, entryId: bib);
       });
-      AppSnackBar.success(context, 'BIB $bib — отсечка: ${_splitTimes[bib]}');
+
+      final athlete = _startListService.findByBib(bib);
+      final bibMarks = _markingService.marksForBib(bib);
+      if (athlete != null && bibMarks.isNotEmpty) {
+        final elapsed = _elapsedCalc.netTime(athlete, bibMarks.last.correctedTime);
+        AppSnackBar.success(context, 'BIB $bib — отсечка: ${_fmtDur(elapsed)}');
+      }
     }
   }
 
+  // ═══════════════════════════════════════
+  // Helpers
+  // ═══════════════════════════════════════
+
+  String _fmtDur(Duration d) {
+    final h = d.inHours.toString().padLeft(2, '0');
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+
+  // ═══════════════════════════════════════
   // R3.1 — Нарушение
+  // ═══════════════════════════════════════
   void _showViolation(String bib, String name) {
     final cs = Theme.of(context).colorScheme;
     AppBottomSheet.show(
@@ -211,11 +277,14 @@ class _MarshalScreenState extends State<MarshalScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final athletes = _startListService.all;
+    final passedCount = _markingService.assigned.length;
 
-    final sorted = List<Map<String, String>>.from(_athletes)
+    // Сортировка: непрошедшие первые
+    final sorted = List<StartEntry>.from(athletes)
       ..sort((a, b) {
-        final ap = _passed.contains(a['bib']);
-        final bp = _passed.contains(b['bib']);
+        final ap = _isMarked(a.bib);
+        final bp = _isMarked(b.bib);
         if (ap == bp) return 0;
         return ap ? 1 : -1;
       });
@@ -274,7 +343,7 @@ class _MarshalScreenState extends State<MarshalScreen> {
                 Row(children: [
                   Icon(Icons.people_alt, size: 14, color: cs.primary),
                   const SizedBox(width: 6),
-                  Text('$_passedCount/${_athletes.length}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
+                  Text('$passedCount/${athletes.length}', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
                 ]),
               ],
             ),
@@ -290,23 +359,29 @@ class _MarshalScreenState extends State<MarshalScreen> {
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             children: sorted.map((a) {
-              final passed = _passed.contains(a['bib']);
-              final time = passed && _splitTimes.containsKey(a['bib']) ? _splitTimes[a['bib']] : null;
-              
+              final passed = _isMarked(a.bib);
+              String? timeStr;
+              if (passed) {
+                final bibMarks = _markingService.marksForBib(a.bib);
+                if (bibMarks.isNotEmpty) {
+                  timeStr = _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
+                }
+              }
+
               return GestureDetector(
                 onLongPress: () => AppBottomSheet.show(context,
-                  title: 'BIB ${a['bib']} — ${a['name']}',
+                  title: 'BIB ${a.bib} — ${a.name}',
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    ListTile(leading: Icon(Icons.gavel, color: cs.tertiary), title: const Text('Зафиксировать нарушение'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showViolation(a['bib']!, a['name']!); }),
-                    ListTile(leading: Icon(Icons.block, color: cs.error), title: const Text('Запрос DNF'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showDnfRequest(a['bib']!, a['name']!); }),
+                    ListTile(leading: Icon(Icons.gavel, color: cs.tertiary), title: const Text('Зафиксировать нарушение'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showViolation(a.bib, a.name); }),
+                    ListTile(leading: Icon(Icons.block, color: cs.error), title: const Text('Запрос DNF'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showDnfRequest(a.bib, a.name); }),
                   ]),
                 ),
                 child: AppBibTile(
-                  bib: a['bib']!,
-                  name: a['name']!,
-                  lapInfo: passed ? time : a['disc'],
+                  bib: a.bib,
+                  name: a.name,
+                  lapInfo: passed ? timeStr : a.categoryName,
                   state: passed ? BibState.finished : BibState.available,
-                  onTap: () => _tryTogglePassed(a['bib']!),
+                  onTap: () => _tryTogglePassed(a.bib),
                 ),
               );
             }).toList(),

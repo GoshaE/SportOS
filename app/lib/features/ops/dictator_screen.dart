@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R4 — Диктор (с тап на атлета → карточка)
 class DictatorScreen extends StatefulWidget {
@@ -14,21 +15,114 @@ class DictatorScreen extends StatefulWidget {
 class _DictatorScreenState extends State<DictatorScreen> {
   String _disc = 'Sprint 5km';
 
-  void _showAthleteCard(BuildContext context, String bib, String name, String time, String place) {
+  // ── Timing Engine ──
+  late final RaceClock _raceClock;
+  late final StartListService _startListService;
+  late final MarkingService _markingService;
+  late final ResultCalculator _resultCalc;
+  late final DisciplineConfig _config;
+
+  late List<RaceResult> _results;
+
+  @override
+  void initState() {
+    super.initState();
+
+    final raceStart = DateTime.now().subtract(const Duration(minutes: 42));
+
+    _config = DisciplineConfig(
+      id: 'disc-dictator',
+      name: 'Sprint 5km',
+      distanceKm: 5.0,
+      startType: StartType.individual,
+      interval: const Duration(seconds: 30),
+      firstStartTime: raceStart,
+      laps: 3,
+    );
+
+    _raceClock = RaceClock();
+    _raceClock.start(raceStart);
+
+    _startListService = StartListService(config: _config);
+    _startListService.buildStartList([
+      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: 'Скидж.', waveId: null),
+      (entryId: 'e2', bib: '24', name: 'Иванов В.В.', category: 'Нарты', waveId: null),
+      (entryId: 'e3', bib: '55', name: 'Волков Е.Е.', category: 'Пулка', waveId: null),
+      (entryId: 'e4', bib: '12', name: 'Сидоров Б.Б.', category: 'Скидж.', waveId: null),
+      (entryId: 'e5', bib: '77', name: 'Новиков З.З.', category: 'Нарты', waveId: null),
+      (entryId: 'e6', bib: '42', name: 'Морозов Д.Д.', category: 'Скидж.', waveId: null),
+      (entryId: 'e7', bib: '88', name: 'Кузнецов П.П.', category: 'Скидж.', waveId: null),
+    ]);
+
+    // Все стартовали
+    for (final entry in _startListService.all) {
+      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
+    }
+
+    _markingService = MarkingService(
+      minLapTime: const Duration(seconds: 10),
+      totalLaps: 3,
+    );
+
+    // Demo: 5 финишировали с 3 кругами
+    _addDemoFinish('07', const Duration(minutes: 38, seconds: 12));
+    _addDemoFinish('24', const Duration(minutes: 39, seconds: 45));
+    _addDemoFinish('55', const Duration(minutes: 41, seconds: 2));
+    _addDemoFinish('12', const Duration(minutes: 41, seconds: 33));
+    _addDemoFinish('77', const Duration(minutes: 42, seconds: 15));
+
+    _resultCalc = const ResultCalculator();
+
+    _results = _resultCalc.calculate(
+      config: _config,
+      startList: _startListService.all,
+      marks: _markingService.marks,
+      penalties: [],
+    );
+  }
+
+  void _addDemoFinish(String bib, Duration elapsed) {
+    final athlete = _startListService.findByBib(bib);
+    if (athlete == null) return;
+
+    // Add 3 laps per athlete
+    for (var lap = 1; lap <= 3; lap++) {
+      final lapTime = athlete.plannedStartTime.add(elapsed * lap ~/ 3);
+      _markingService.insertMark(lapTime, bib: bib, entryId: bib, reason: 'demo');
+    }
+  }
+
+  @override
+  void dispose() {
+    _raceClock.dispose();
+    super.dispose();
+  }
+
+  // ═══════════════════════════════════════
+  // Athlete card
+  // ═══════════════════════════════════════
+
+  void _showAthleteCard(BuildContext context, RaceResult result) {
     final cs = Theme.of(context).colorScheme;
     final theme = Theme.of(context);
+    final position = '${result.position}-е место';
+    final netStr = _fmtDur(result.netTime);
+
+    // Split times from result
+    final splitDurations = result.splitTimes;
+
     AppBottomSheet.show(
       context,
-      title: 'BIB $bib — $name',
+      title: 'BIB ${result.bib} — ${result.name}',
       initialHeight: 0.65,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         // Header
         Row(children: [
-          CircleAvatar(radius: 28, backgroundColor: cs.primaryContainer, child: Text(bib, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cs.primary))),
+          CircleAvatar(radius: 28, backgroundColor: cs.primaryContainer, child: Text(result.bib, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: cs.primary))),
           const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
-            Text('$place · $time', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
+            Text(result.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            Text('$position · $netStr', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
             Text('Клуб: Хаски Урал · Екатеринбург', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           ])),
         ]),
@@ -58,11 +152,14 @@ class _DictatorScreenState extends State<DictatorScreen> {
           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
           borderRadius: BorderRadius.circular(12),
           children: [
-            const AppSplitRow(label: 'Круг 1', time: '00:12:45'),
-            const SizedBox(height: 8),
-            const AppSplitRow(label: 'Круг 2', time: '00:12:30', delta: '-15с'),
-            const SizedBox(height: 8),
-            const AppSplitRow(label: 'Круг 3', time: '00:12:57', delta: '+12с'),
+            for (var i = 0; i < splitDurations.length; i++) ...[
+              if (i > 0) const SizedBox(height: 8),
+              AppSplitRow(
+                label: 'Круг ${i + 1}',
+                time: _fmtDurMs(splitDurations[i]),
+                delta: i == 0 ? null : _formatDelta(splitDurations[i] - splitDurations[i - 1]),
+              ),
+            ],
           ],
         ),
         const SizedBox(height: 16),
@@ -83,20 +180,35 @@ class _DictatorScreenState extends State<DictatorScreen> {
     );
   }
 
+  // ═══════════════════════════════════════
+  // Helpers
+  // ═══════════════════════════════════════
 
+  String _fmtDur(Duration d) {
+    final h = d.inHours.toString().padLeft(2, '0');
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$h:$m:$s';
+  }
+
+  String _fmtDurMs(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '00:$m:$s';
+  }
+
+  String? _formatDelta(Duration delta) {
+    final sign = delta.isNegative ? '-' : '+';
+    final abs = delta.abs();
+    return '$sign${abs.inSeconds}с';
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-
-    final top5 = [
-      {'bib': '07', 'name': 'Петров А.А.', 'time': '00:38:12', 'delta': '—'},
-      {'bib': '24', 'name': 'Иванов В.В.', 'time': '00:39:45', 'delta': '+1:33'},
-      {'bib': '55', 'name': 'Волков Е.Е.', 'time': '00:41:02', 'delta': '+2:50'},
-      {'bib': '12', 'name': 'Сидоров Б.Б.', 'time': '00:41:33', 'delta': '+3:21'},
-      {'bib': '77', 'name': 'Новиков З.З.', 'time': '00:42:15', 'delta': '+4:03'},
-    ];
+    final finishedCount = _markingService.finishedCount;
+    final totalAthletes = _startListService.all.length;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -135,7 +247,7 @@ class _DictatorScreenState extends State<DictatorScreen> {
                 const Spacer(),
                 Icon(Icons.directions_run, size: 16, color: cs.onSurfaceVariant),
                 const SizedBox(width: 4),
-                Text('23/35 финишировали', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
+                Text('$finishedCount/$totalAthletes финишировали', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
               ]),
             ],
           ),
@@ -155,10 +267,12 @@ class _DictatorScreenState extends State<DictatorScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: Text('ТОП-5', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
         ),
-        ...List.generate(top5.length, (i) {
-          final a = top5[i];
+        ...List.generate(_results.length.clamp(0, 5), (i) {
+          final result = _results[i];
           final medal = switch (i) { 0 => '🥇', 1 => '🥈', 2 => '🥉', _ => null };
           final bool isTop3 = i < 3;
+          final netStr = _fmtDur(result.netTime);
+          final gapStr = result.gapToLeader != null ? '+${_fmtDur(result.gapToLeader!)}' : '—';
           return Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
             child: AppCard(
@@ -176,17 +290,17 @@ class _DictatorScreenState extends State<DictatorScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(6)),
-                      child: Text(a['bib']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurfaceVariant)),
+                      child: Text(result.bib, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurfaceVariant)),
                     ),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(a['name']!, style: TextStyle(fontWeight: isTop3 ? FontWeight.bold : FontWeight.normal))),
+                    Expanded(child: Text(result.name, style: TextStyle(fontWeight: isTop3 ? FontWeight.bold : FontWeight.normal))),
                   ]),
                   subtitle: Row(children: [
-                    Text(a['time']!, style: TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.bold, color: i == 0 ? cs.primary : null)),
-                    if (a['delta'] != '—') ...[const SizedBox(width: 8), Text(a['delta']!, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant))],
+                    Text(netStr, style: TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.bold, color: i == 0 ? cs.primary : null)),
+                    if (gapStr != '—') ...[const SizedBox(width: 8), Text(gapStr, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant))],
                   ]),
                   trailing: Icon(Icons.info_outline, size: 18, color: cs.onSurfaceVariant),
-                  onTap: () => _showAthleteCard(context, a['bib']!, a['name']!, a['time']!, '${i + 1}-е место'),
+                  onTap: () => _showAthleteCard(context, result),
                 ),
               ],
             ),
@@ -212,8 +326,10 @@ class _DictatorScreenState extends State<DictatorScreen> {
                     Expanded(child: Text('Последний финиш', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary))),
                   ]),
                   const SizedBox(height: 8),
-                  Text('BIB 77 Новиков', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  Text('00:42:15 (5-е место)', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  if (_results.isNotEmpty) ...[
+                    Text('BIB ${_results.last.bib} ${_results.last.name.split(' ').first}', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Text('${_fmtDur(_results.last.netTime)} (${_results.last.position}-е место)', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  ],
                 ],
               ),
             ),
@@ -228,7 +344,7 @@ class _DictatorScreenState extends State<DictatorScreen> {
                   Row(children: [
                     Icon(Icons.timeline, color: cs.tertiary, size: 24),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('На трассе: 12', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
+                    Expanded(child: Text('На трассе: ${totalAthletes - finishedCount}', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
                   ]),
                   const SizedBox(height: 8),
                   Text('~2 мин до финиша', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -245,10 +361,12 @@ class _DictatorScreenState extends State<DictatorScreen> {
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
           child: Text('Подсказки', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
         ),
-        _hintCard(cs, theme, Icons.local_fire_department, 'BIB 55 вошёл в ТОП-3! Поднялся с 7-го места!', cs.tertiary),
+        if (_results.length >= 3)
+          _hintCard(cs, theme, Icons.local_fire_department, 'BIB ${_results[2].bib} вошёл в ТОП-3!', cs.tertiary),
+        if (_results.length > 1)
+          _hintCard(cs, theme, Icons.emoji_events, '${_results.first.name} лидирует с отрывом +${_fmtDur(_results[1].gapToLeader ?? Duration.zero)}', cs.primary),
         _hintCard(cs, theme, Icons.timer, 'Последний на трассе: BIB 88 Кузнецов — на 2-м кругу', cs.primary),
-        _hintCard(cs, theme, Icons.emoji_events, 'Петров А.А. лидирует с отрывом +1:33', cs.primary),
-        _hintCard(cs, theme, Icons.trending_up, 'Средняя скорость лидера: 15.3 км/ч', cs.onSurfaceVariant),
+        _hintCard(cs, theme, Icons.trending_up, 'Средняя скорость лидера: ${_results.isNotEmpty ? (_results.first.speedKmh?.toStringAsFixed(1) ?? '?') : '?'} км/ч', cs.onSurfaceVariant),
         const SizedBox(height: 24),
       ]),
     );
@@ -276,5 +394,4 @@ class _DictatorScreenState extends State<DictatorScreen> {
       ),
     );
   }
-
 }

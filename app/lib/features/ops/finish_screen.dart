@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R2 — Финиш (с модалками R2.1–R2.4)
 class FinishScreen extends StatefulWidget {
@@ -12,27 +14,86 @@ class FinishScreen extends StatefulWidget {
 }
 
 class _FinishScreenState extends State<FinishScreen> {
-  final List<Map<String, dynamic>> _marks = [
-    {'time': '00:38:12.345', 'bib': '07', 'name': 'Петров А.А.', 'assigned': true},
-    {'time': '00:39:45.112', 'bib': '24', 'name': 'Иванов В.В.', 'assigned': true},
-    {'time': '00:41:02.890', 'bib': null, 'name': null, 'assigned': false},
-    {'time': '00:41:33.201', 'bib': null, 'name': null, 'assigned': false},
-  ];
-  int _finishCount = 2;
+  // ── Timing Engine ──
+  late final RaceClock _raceClock;
+  late final StartListService _startListService;
+  late final MarkingService _markingService;
+  final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
+
+  @override
+  void initState() {
+    super.initState();
+
+    final raceStart = DateTime.now().subtract(const Duration(minutes: 38));
+
+    final config = DisciplineConfig(
+      id: 'disc-finish',
+      name: 'Sprint 5km',
+      distanceKm: 5.0,
+      startType: StartType.individual,
+      interval: const Duration(seconds: 30),
+      firstStartTime: raceStart,
+      laps: 1,
+    );
+
+    _raceClock = RaceClock();
+    _raceClock.start(raceStart);
+
+    _startListService = StartListService(config: config);
+    _startListService.buildStartList([
+      (entryId: 'e1', bib: '07', name: 'Петров А.А.', category: 'Скидж.', waveId: null),
+      (entryId: 'e2', bib: '24', name: 'Иванов В.В.', category: 'Нарты', waveId: null),
+      (entryId: 'e3', bib: '31', name: 'Козлов В.В.', category: 'Нарты', waveId: null),
+      (entryId: 'e4', bib: '42', name: 'Морозов А.А.', category: 'Скидж.', waveId: null),
+      (entryId: 'e5', bib: '55', name: 'Волков Д.Д.', category: 'Пулка', waveId: null),
+      (entryId: 'e6', bib: '63', name: 'Лебедев С.С.', category: 'Скидж.', waveId: null),
+      (entryId: 'e7', bib: '77', name: 'Новиков И.И.', category: 'Нарты', waveId: null),
+      (entryId: 'e8', bib: '88', name: 'Кузнецов П.П.', category: 'Скидж.', waveId: null),
+    ]);
+
+    // Все стартовали
+    for (final entry in _startListService.all) {
+      _startListService.markStarted(entry.bib, actualTime: entry.plannedStartTime);
+    }
+
+    _markingService = MarkingService(
+      minLapTime: const Duration(seconds: 10),
+      totalLaps: 1,
+    );
+
+    // Demo: 2 уже финишировали
+    _addDemoMark('07', raceStart.add(const Duration(minutes: 38, seconds: 12, milliseconds: 345)));
+    _addDemoMark('24', raceStart.add(const Duration(minutes: 39, seconds: 45, milliseconds: 112)));
+    // 2 неназначенных
+    _markingService.addMark();
+    _markingService.addMark();
+  }
+
+  void _addDemoMark(String bib, DateTime time) {
+    final mark = _markingService.insertMark(time, bib: bib, entryId: bib, reason: 'demo');
+    _markingService.assignBib(mark.id, bib, entryId: bib);
+  }
+
+  @override
+  void dispose() {
+    _raceClock.dispose();
+    super.dispose();
+  }
+
+  // ═══════════════════════════════════════
+  // Actions
+  // ═══════════════════════════════════════
 
   void _addMark() {
-    setState(() {
-      final ms = (DateTime.now().millisecondsSinceEpoch % 100000).toString().padLeft(5, '0');
-      _marks.add({'time': '00:4$ms', 'bib': null, 'name': null, 'assigned': false});
-    });
+    HapticFeedback.heavyImpact();
+    setState(() => _markingService.addMark());
     AppSnackBar.success(context, 'Отсечка зафиксирована!');
   }
 
   // R2.1 — BIB picker
-  void _showBibPicker(int markIndex) {
+  void _showBibPicker(String markId) {
     final cs = Theme.of(context).colorScheme;
-    final availableBibs = ['31', '42', '55', '63', '77', '88'];
-    
+
     AppBottomSheet.show(
       context,
       title: 'Назначить BIB',
@@ -78,27 +139,25 @@ class _FinishScreenState extends State<FinishScreen> {
           childAspectRatio: 1.25,
           mainAxisSpacing: 10,
           crossAxisSpacing: 10,
-          children: [
-            for (final bib in availableBibs)
-              AppBibTile(
-                bib: bib,
-                name: {'31': 'Козлов В.', '42': 'Морозов А.', '55': 'Волков Д.', '63': 'Лебедев С.', '77': 'Новиков И.', '88': 'Кузнецов П.'}[bib],
-                lapInfo: {'31': 'Круг 2/3', '42': 'Круг 1/3', '55': 'Круг 3/3'}[bib] ?? 'Круг 1/1',
-                state: BibState.available,
-                onTap: () {
-                  setState(() {
-                    _marks[markIndex]['bib'] = bib;
-                    _marks[markIndex]['name'] = {'31': 'Козлов В.', '42': 'Морозов А.', '55': 'Волков Д.', '63': 'Лебедев С.', '77': 'Новиков И.', '88': 'Кузнецов П.'}[bib];
-                    _marks[markIndex]['assigned'] = true;
-                    _finishCount++;
-                  });
-                  Navigator.of(context, rootNavigator: true).pop();
-                  AppSnackBar.success(context, 'BIB $bib назначен');
-                },
-              ),
-            const AppBibTile(bib: '07', name: 'Петров И.', lapInfo: 'Круг 3/3', state: BibState.finished),
-            const AppBibTile(bib: '24', name: 'Иванов С.', lapInfo: 'Круг 3/3', state: BibState.finished),
-          ],
+          children: _startListService.all.map((a) {
+            final bibMarks = _markingService.marksForBib(a.bib);
+            final isFinished = bibMarks.isNotEmpty;
+            return AppBibTile(
+              bib: a.bib,
+              name: a.name,
+              lapInfo: isFinished
+                  ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
+                  : 'На трассе',
+              state: isFinished ? BibState.finished : BibState.available,
+              onTap: isFinished ? null : () {
+                setState(() {
+                  _markingService.assignBib(markId, a.bib, entryId: a.bib);
+                });
+                Navigator.of(context, rootNavigator: true).pop();
+                AppSnackBar.success(context, 'BIB ${a.bib} назначен');
+              },
+            );
+          }).toList(),
         ),
       ]),
     );
@@ -119,23 +178,20 @@ class _FinishScreenState extends State<FinishScreen> {
     );
   }
 
-
-
   // R2.2 — Судейское решение
-  void _showTimeEdit(int index) {
+  void _showTimeEdit(TimeMark mark) {
     final cs = Theme.of(context).colorScheme;
     String status = 'OK';
 
     AppBottomSheet.show(
       context,
-      title: 'Судейское решение — BIB ${_marks[index]['bib'] ?? '???'}',
+      title: 'Судейское решение — BIB ${mark.bib ?? '???'}',
       initialHeight: 0.8,
       actions: [
         AppButton.primary(
           text: 'Применить',
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
-            if (status != 'OK') setState(() => _marks[index]['time'] = status);
             AppSnackBar.info(context, 'Решение применено → Audit Log');
           },
         ),
@@ -169,7 +225,7 @@ class _FinishScreenState extends State<FinishScreen> {
             const SizedBox(height: 8),
             TextField(
               decoration: _glassInputDecoration('Точное время (HH:mm:ss.SSS)', cs),
-              controller: TextEditingController(text: _marks[index]['time']),
+              controller: TextEditingController(text: _fmtDurMs(mark.correctedTime.difference(_raceClock.zeroTime!))),
             ),
             const SizedBox(height: 16),
             Text('Обоснование', style: Theme.of(ctx).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -202,7 +258,7 @@ class _FinishScreenState extends State<FinishScreen> {
           text: 'Добавить',
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
-            setState(() => _marks.add({'time': '00:43:00.000', 'bib': null, 'name': null, 'assigned': false}));
+            setState(() => _markingService.insertMark(DateTime.now(), reason: 'Ручная вставка'));
             AppSnackBar.info(context, 'Метка добавлена → Audit Log');
           },
         ),
@@ -250,6 +306,24 @@ class _FinishScreenState extends State<FinishScreen> {
     );
   }
 
+  // ═══════════════════════════════════════
+  // Helpers
+  // ═══════════════════════════════════════
+
+  String _fmtDur(Duration d) {
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  String _fmtDurMs(Duration d) {
+    final h = d.inHours.toString().padLeft(2, '0');
+    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final ms = (d.inMilliseconds.remainder(1000)).toString().padLeft(3, '0');
+    return '$h:$m:$s.$ms';
+  }
+
   InputDecoration _glassInputDecoration(String label, ColorScheme cs, {String? hint}) {
     return InputDecoration(
       labelText: label,
@@ -267,6 +341,9 @@ class _FinishScreenState extends State<FinishScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final marks = _markingService.marks;
+    final finishCount = _markingService.finishedCount;
+    final totalAthletes = _startListService.all.length;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -307,30 +384,43 @@ class _FinishScreenState extends State<FinishScreen> {
                 Row(children: [
                   Icon(Icons.flag, size: 14, color: cs.primary),
                   const SizedBox(width: 6),
-                  Text('$_finishCount/35', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
+                  Text('$finishCount/$totalAthletes', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
                 ]),
               ],
             ),
           ]),
         ),
 
-
         // ── Список отсечек ──
         Expanded(
           child: ListView.builder(
-            itemCount: _marks.length,
+            itemCount: marks.length,
             itemBuilder: (context, index) {
-              final mark = _marks[index];
-              final assigned = mark['assigned'] as bool;
+              final mark = marks[index];
+              final assigned = mark.isAssigned;
+              final raceTime = mark.correctedTime.difference(_raceClock.zeroTime!);
+
+              // Formatted time
+              String timeStr;
+              if (assigned) {
+                final athlete = _startListService.findByBib(mark.bib!);
+                if (athlete != null) {
+                  timeStr = _fmtDurMs(_elapsedCalc.netTime(athlete, mark.correctedTime));
+                } else {
+                  timeStr = _fmtDurMs(raceTime);
+                }
+              } else {
+                timeStr = _fmtDurMs(raceTime);
+              }
 
               return Dismissible(
-                key: ValueKey('mark-$index-${mark['time']}'),
+                key: ValueKey('mark-${mark.id}'),
                 direction: DismissDirection.endToStart,
                 confirmDismiss: (_) async {
                   if (!assigned) return true;
-                  return AppDialog.confirm(context, title: 'Удалить метку?', message: 'BIB ${mark['bib']} — ${mark['time']}\nМетка будет удалена. Продолжить?');
+                  return AppDialog.confirm(context, title: 'Удалить метку?', message: 'BIB ${mark.bib} — $timeStr\nМетка будет удалена. Продолжить?');
                 },
-                onDismissed: (_) => setState(() => _marks.removeAt(index)),
+                onDismissed: (_) => setState(() => _markingService.deleteMark(mark.id)),
                 background: Container(color: cs.error, alignment: Alignment.centerRight, padding: const EdgeInsets.only(right: 16), child: Icon(Icons.delete, color: cs.onError)),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -341,8 +431,8 @@ class _FinishScreenState extends State<FinishScreen> {
                     borderRadius: BorderRadius.circular(12),
                     children: [
                       InkWell(
-                        onTap: () => assigned ? null : _showBibPicker(index),
-                        onLongPress: () => _showTimeEdit(index),
+                        onTap: () => assigned ? null : _showBibPicker(mark.id),
+                        onLongPress: () => _showTimeEdit(mark),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                           child: Row(children: [
@@ -354,17 +444,17 @@ class _FinishScreenState extends State<FinishScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(mark['time'], style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
+                                Text(timeStr, style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
                                 const SizedBox(height: 4),
                                 if (assigned)
                                   Row(children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                       decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
-                                      child: Text('BIB ${mark['bib']}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: cs.onSurfaceVariant)),
+                                      child: Text('BIB ${mark.bib}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: cs.onSurfaceVariant)),
                                     ),
                                     const SizedBox(width: 8),
-                                    Text('${mark['name']}', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 12)),
+                                    Text(_startListService.findByBib(mark.bib!)?.name ?? '?', style: TextStyle(color: cs.onSurfaceVariant, fontWeight: FontWeight.w600, fontSize: 12)),
                                   ])
                                 else
                                   Text('Назначить BIB', style: TextStyle(color: cs.tertiary, fontWeight: FontWeight.bold, fontSize: 13)),
