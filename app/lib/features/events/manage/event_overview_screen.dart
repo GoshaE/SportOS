@@ -161,47 +161,6 @@ class EventOverviewScreen extends StatelessWidget {
         ),
         const SizedBox(height: 32),
 
-        // 3. Ops Mode Hero Button
-        GestureDetector(
-          onTap: () => context.go('/ops/$eventId/dash'),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [cs.error, cs.errorContainer],
-                begin: Alignment.centerLeft,
-                end: Alignment.centerRight,
-              ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(color: cs.error.withValues(alpha: 0.3), blurRadius: 20, offset: const Offset(0, 8)),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.white.withValues(alpha: 0.2), shape: BoxShape.circle),
-                  child: Icon(Icons.rocket_launch, size: 28, color: cs.onError),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Режим судьи (Ops)', style: TextStyle(color: cs.onError, fontSize: 20, fontWeight: FontWeight.w800, letterSpacing: -0.5)),
-                      const SizedBox(height: 4),
-                      Text('Тайминг · Штрафы · Live Дашборд', style: TextStyle(color: cs.onError.withValues(alpha: 0.8), fontSize: 13)),
-                    ],
-                  ),
-                ),
-                Icon(Icons.arrow_forward_ios, color: cs.onError.withValues(alpha: 0.5), size: 16),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 32),
-
         // 4. Preparation Checklist
         Text('Подготовка перед стартом', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface)),
         const SizedBox(height: 12),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../core/widgets/ops_context_banner.dart';
 import '../../core/widgets/floating_nav_bar.dart'; // Added import
 
 /// The Ops Shell wraps all judge/organizer screens with:
@@ -48,20 +47,7 @@ class OpsRootShell extends StatelessWidget {
     final hideNavBar = _shouldHideNavBar(location);
 
     return Scaffold(
-      body: Column(
-        children: [
-          // ── Orange context banner — always visible ──
-          const OpsContextBanner(),
-          // ── Actual page content ──
-          Expanded(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              child: child,
-            ),
-          ),
-        ],
-      ),
+      body: child,
       bottomNavigationBar: hideNavBar
           ? null
           : FloatingNavBar(

@@ -132,6 +132,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
 
     return Scaffold(
       appBar: AppAppBar(
+        forceBackButton: true,
         title: const Text('Посты Хронометража'),
       ),
       body: ListView(

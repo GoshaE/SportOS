@@ -245,7 +245,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
     final session = ref.watch(raceSessionProvider);
     if (session == null) {
       return Scaffold(
-        appBar: AppAppBar(title: const Text('Стартёр')),
+        appBar: AppAppBar(forceBackButton: true, title: const Text('Стартёр')),
         body: const Center(child: Text('Нет активной сессии.\nОткройте Посты Хронометража для начала.')),
       );
     }
@@ -266,6 +266,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
 
     return Scaffold(
       appBar: AppAppBar(
+        forceBackButton: true,
         title: const Text('Стартёр'),
         actions: [
           // Race clock

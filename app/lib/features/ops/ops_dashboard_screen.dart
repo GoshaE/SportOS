@@ -14,6 +14,7 @@ class OpsDashboardScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: const AppAppBar(
+        forceBackButton: true,
         title: Text('Дашборд Судьи'),
       ),
       body: ListView(

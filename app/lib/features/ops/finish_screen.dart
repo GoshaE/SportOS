@@ -271,7 +271,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
     final session = ref.watch(raceSessionProvider);
     if (session == null) {
       return Scaffold(
-        appBar: AppAppBar(title: const Text('Финиш')),
+        appBar: AppAppBar(forceBackButton: true, title: const Text('Финиш')),
         body: const Center(child: Text('Нет активной сессии.')),
       );
     }
@@ -282,6 +282,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
 
     return Scaffold(
       appBar: AppAppBar(
+        forceBackButton: true,
         title: const Text('Финиш'),
         actions: [
           IconButton(icon: const Icon(Icons.add_circle_outline), tooltip: 'Вставить метку', onPressed: _showInsertMark),

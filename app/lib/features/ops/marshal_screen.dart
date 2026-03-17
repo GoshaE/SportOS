@@ -226,7 +226,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
     final session = ref.watch(raceSessionProvider);
     if (session == null) {
       return Scaffold(
-        appBar: AppAppBar(title: const Text('Маршал')),
+        appBar: AppAppBar(forceBackButton: true, title: const Text('Маршал')),
         body: const Center(child: Text('Нет активной сессии.')),
       );
     }
@@ -244,6 +244,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
 
     return Scaffold(
       appBar: AppAppBar(
+        forceBackButton: true,
         title: const Text('Маршал'),
         actions: [
           IconButton(icon: Icon(Icons.bluetooth_connected, color: _isSynced ? cs.primary : cs.onSurfaceVariant), onPressed: () {}),

@@ -245,18 +245,24 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     for (final a in athletes) {
       final bibMarks = session.marking.officialMarksForBib(a.bib);
       final finishMarks = bibMarks.where((m) => m.type == MarkType.finish).toList();
-      final checkpointMarks = bibMarks.where((m) => m.type == MarkType.checkpoint).toList();
       final hasFinish = finishMarks.length >= session.config.laps;
 
-      // Build split display
-      String splitDisplay = '— / —';
-      if (checkpointMarks.isNotEmpty) {
-        final split1 = TimeFormatter.compact(_elapsedCalc.netTime(a, checkpointMarks.first.correctedTime));
-        final split2 = finishMarks.isNotEmpty
-            ? TimeFormatter.compact(_elapsedCalc.netTime(a, finishMarks.first.correctedTime))
-            : '—';
-        splitDisplay = '$split1 / $split2';
+      // Include ALL checkpoint marks (including marshal) for visual info
+      final allBibMarks = session.marking.marksForBib(a.bib);
+      final allCheckpoints = allBibMarks.where((m) => m.type == MarkType.checkpoint).toList()
+        ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+
+      // Build split display: checkpoint splits + finish lap times
+      final splitParts = <String>[];
+      for (final cp in allCheckpoints) {
+        splitParts.add(TimeFormatter.compact(_elapsedCalc.netTime(a, cp.correctedTime)));
       }
+      if (finishMarks.isNotEmpty) {
+        for (final fm in finishMarks) {
+          splitParts.add(TimeFormatter.compact(_elapsedCalc.netTime(a, fm.correctedTime)));
+        }
+      }
+      final splitDisplay = splitParts.isEmpty ? '—' : splitParts.join(' / ');
 
       if (a.status == AthleteStatus.dns) {
         statusRows.add(_ResultRow(

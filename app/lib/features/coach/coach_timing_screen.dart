@@ -740,7 +740,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   Widget _buildAnalyticsTab(ThemeData theme, ColorScheme cs) {
     final session = ref.watch(raceSessionProvider);
     if (session == null) return const Center(child: Text('Нет сессии'));
-    final marks = session.marking.marks;
+    final marks = session.marking.marksBy(MarkOwner.coach);
     final assignedMarks = marks.where((m) => m.isAssigned).toList();
 
     if (assignedMarks.isEmpty) {

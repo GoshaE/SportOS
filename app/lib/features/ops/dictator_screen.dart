@@ -129,7 +129,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
 
     if (session == null) {
       return Scaffold(
-        appBar: AppAppBar(title: const Text('Диктор')),
+        appBar: AppAppBar(forceBackButton: true, title: const Text('Диктор')),
         body: const Center(child: Text('Нет активной сессии.')),
       );
     }
@@ -140,6 +140,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
 
     return Scaffold(
       appBar: AppAppBar(
+        forceBackButton: true,
         title: const Text('Диктор'),
         actions: [
           Container(
