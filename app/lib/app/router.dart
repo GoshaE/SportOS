@@ -41,6 +41,7 @@ import '../features/events/manage/vet_settings_screen.dart';
 import '../features/events/manage/registration_settings_screen.dart';
 import '../features/events/manage/draw_settings_screen.dart';
 import '../features/events/manage/categories_screen.dart';
+import '../features/events/manage/pricing_screen.dart';
 import '../features/events/series_screen.dart';
 
 // Race Preparation
@@ -420,6 +421,11 @@ final GoRouter router = GoRouter(
           path: 'categories',
           name: 'manage-categories',
           builder: (context, state) => const CategoriesScreen(),
+        ),
+        GoRoute(
+          path: 'pricing',
+          name: 'manage-pricing',
+          builder: (context, state) => const PricingScreen(),
         ),
       ],
     ),

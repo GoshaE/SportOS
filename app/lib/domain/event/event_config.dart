@@ -200,6 +200,9 @@ class EventConfig {
   // ── Регистрация ──
   final RegistrationConfig registrationConfig;
 
+  // ── Цены ──
+  final PricingConfig pricingConfig;
+
   const EventConfig({
     required this.id,
     required this.name,
@@ -222,6 +225,7 @@ class EventConfig {
     this.raceCategories = const [],
     this.ageCalculation = AgeCalculation.byYear,
     this.registrationConfig = const RegistrationConfig(),
+    this.pricingConfig = const PricingConfig(),
   });
 
   EventConfig copyWith({
@@ -246,6 +250,7 @@ class EventConfig {
     List<RaceCategory>? raceCategories,
     AgeCalculation? ageCalculation,
     RegistrationConfig? registrationConfig,
+    PricingConfig? pricingConfig,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -269,6 +274,7 @@ class EventConfig {
       raceCategories: raceCategories ?? this.raceCategories,
       ageCalculation: ageCalculation ?? this.ageCalculation,
       registrationConfig: registrationConfig ?? this.registrationConfig,
+      pricingConfig: pricingConfig ?? this.pricingConfig,
     );
   }
 }
@@ -664,3 +670,75 @@ class CustomField {
 
 /// Тип кастомного поля.
 enum CustomFieldType { text, number, dropdown, checkbox }
+
+// ─────────────────────────────────────────────────────────────────
+// PRICING CONFIG
+// ─────────────────────────────────────────────────────────────────
+
+/// Настройки ценообразования мероприятия.
+///
+/// Базовая цена задаётся per-discipline (DisciplineConfig.priceRub),
+/// здесь — общие настройки: early bird, промокоды, валюта.
+class PricingConfig {
+  /// Валюта (ISO 4217 код).
+  final String currency;
+
+  // ── Early Bird ──
+  final bool earlyBirdEnabled;
+  /// Скидка early bird в %. Например, 20 = минус 20%.
+  final int earlyBirdDiscountPercent;
+  /// Дедлайн early bird (дата окончания).
+  final DateTime? earlyBirdDeadline;
+
+  // ── Промокоды ──
+  final List<PromoCode> promoCodes;
+
+  const PricingConfig({
+    this.currency = 'RUB',
+    this.earlyBirdEnabled = false,
+    this.earlyBirdDiscountPercent = 20,
+    this.earlyBirdDeadline,
+    this.promoCodes = const [],
+  });
+
+  PricingConfig copyWith({
+    String? currency,
+    bool? earlyBirdEnabled,
+    int? earlyBirdDiscountPercent,
+    DateTime? earlyBirdDeadline,
+    List<PromoCode>? promoCodes,
+  }) {
+    return PricingConfig(
+      currency: currency ?? this.currency,
+      earlyBirdEnabled: earlyBirdEnabled ?? this.earlyBirdEnabled,
+      earlyBirdDiscountPercent: earlyBirdDiscountPercent ?? this.earlyBirdDiscountPercent,
+      earlyBirdDeadline: earlyBirdDeadline ?? this.earlyBirdDeadline,
+      promoCodes: promoCodes ?? this.promoCodes,
+    );
+  }
+}
+
+/// Промокод.
+class PromoCode {
+  final String id;
+  final String code;
+  /// Скидка в %.
+  final int discountPercent;
+  /// Макс. использований (null = безлимит).
+  final int? maxUses;
+  /// Сколько раз уже использован.
+  final int usedCount;
+  /// Активен ли.
+  final bool isActive;
+
+  const PromoCode({
+    required this.id,
+    required this.code,
+    required this.discountPercent,
+    this.maxUses,
+    this.usedCount = 0,
+    this.isActive = true,
+  });
+
+  bool get isExhausted => maxUses != null && usedCount >= maxUses!;
+}
