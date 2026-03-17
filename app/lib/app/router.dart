@@ -40,6 +40,7 @@ import '../features/events/manage/timing_settings_screen.dart';
 import '../features/events/manage/vet_settings_screen.dart';
 import '../features/events/manage/registration_settings_screen.dart';
 import '../features/events/manage/draw_settings_screen.dart';
+import '../features/events/manage/categories_screen.dart';
 import '../features/events/series_screen.dart';
 
 // Race Preparation
@@ -414,6 +415,11 @@ final GoRouter router = GoRouter(
           path: 'draw-settings',
           name: 'manage-draw-settings',
           builder: (context, state) => const DrawSettingsScreen(),
+        ),
+        GoRoute(
+          path: 'categories',
+          name: 'manage-categories',
+          builder: (context, state) => const CategoriesScreen(),
         ),
       ],
     ),

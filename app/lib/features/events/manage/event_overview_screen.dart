@@ -380,6 +380,16 @@ class EventOverviewScreen extends ConsumerWidget {
         // ─── Участники ───
         AppMenuGroup(title: 'Участники', items: [
           AppMenuItem(
+            icon: Icons.category,
+            label: 'Категории',
+            badge: eventConfig.raceCategories.isEmpty ? 'Не настроено' : '${eventConfig.raceCategories.length} категорий',
+            subtitle: eventConfig.raceCategories.isEmpty
+                ? 'CEC, OPEN, Юниоры…'
+                : eventConfig.raceCategories.map((c) => c.shortName).take(4).join(', '),
+            color: const Color(0xFF00838F),
+            onTap: () => context.push('/manage/$eventId/categories'),
+          ),
+          AppMenuItem(
             icon: Icons.confirmation_number,
             label: 'Стартовые номера (BIB)',
             badge: eventConfig.bibPools.isEmpty ? 'Не настроено' : '${eventConfig.bibPools.length} пулов',

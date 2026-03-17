@@ -43,6 +43,70 @@ enum BibDayPolicy {
   pursuit,
 }
 
+/// Пол для категории.
+enum CategoryGender { any, male, female }
+
+/// Категория соревнований (CEC, OPEN, Юниоры, M35…).
+///
+/// Определяется на уровне мероприятия, затем дисциплины ссылаются
+/// на допущенные категории по id.
+class RaceCategory {
+  final String id;
+  final String name;
+  final String shortName;
+  final CategoryGender gender;
+  final int? ageMin;
+  final int? ageMax;
+  final int dogCount;
+  final int sortOrder;
+
+  const RaceCategory({
+    required this.id,
+    required this.name,
+    required this.shortName,
+    this.gender = CategoryGender.any,
+    this.ageMin,
+    this.ageMax,
+    this.dogCount = 1,
+    this.sortOrder = 0,
+  });
+
+  String get genderLabel => switch (gender) {
+    CategoryGender.any => 'Любой',
+    CategoryGender.male => 'Мужской',
+    CategoryGender.female => 'Женский',
+  };
+
+  String get ageLabel {
+    if (ageMin == null && ageMax == null) return 'Любой';
+    if (ageMin != null && ageMax != null) return '$ageMin–$ageMax лет';
+    if (ageMin != null) return 'от $ageMin лет';
+    return 'до $ageMax лет';
+  }
+
+  RaceCategory copyWith({
+    String? id,
+    String? name,
+    String? shortName,
+    CategoryGender? gender,
+    int? ageMin,
+    int? ageMax,
+    int? dogCount,
+    int? sortOrder,
+  }) {
+    return RaceCategory(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      shortName: shortName ?? this.shortName,
+      gender: gender ?? this.gender,
+      ageMin: ageMin ?? this.ageMin,
+      ageMax: ageMax ?? this.ageMax,
+      dogCount: dogCount ?? this.dogCount,
+      sortOrder: sortOrder ?? this.sortOrder,
+    );
+  }
+}
+
 /// Пул стартовых номеров (BIB).
 class BibPool {
   final String id;
@@ -109,6 +173,9 @@ class EventConfig {
   // ── BIB ──
   final List<BibPool> bibPools;
 
+  // ── Категории ──
+  final List<RaceCategory> raceCategories;
+
   const EventConfig({
     required this.id,
     required this.name,
@@ -128,6 +195,7 @@ class EventConfig {
     this.allowDogSwapBetweenDays = false,
     this.courses = const [],
     this.bibPools = const [],
+    this.raceCategories = const [],
   });
 
   EventConfig copyWith({
@@ -149,6 +217,7 @@ class EventConfig {
     bool? allowDogSwapBetweenDays,
     List<Course>? courses,
     List<BibPool>? bibPools,
+    List<RaceCategory>? raceCategories,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -169,6 +238,7 @@ class EventConfig {
       allowDogSwapBetweenDays: allowDogSwapBetweenDays ?? this.allowDogSwapBetweenDays,
       courses: courses ?? this.courses,
       bibPools: bibPools ?? this.bibPools,
+      raceCategories: raceCategories ?? this.raceCategories,
     );
   }
 }
