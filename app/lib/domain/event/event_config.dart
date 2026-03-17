@@ -197,6 +197,9 @@ class EventConfig {
   final List<RaceCategory> raceCategories;
   final AgeCalculation ageCalculation;
 
+  // ── Регистрация ──
+  final RegistrationConfig registrationConfig;
+
   const EventConfig({
     required this.id,
     required this.name,
@@ -218,6 +221,7 @@ class EventConfig {
     this.bibPools = const [],
     this.raceCategories = const [],
     this.ageCalculation = AgeCalculation.byYear,
+    this.registrationConfig = const RegistrationConfig(),
   });
 
   EventConfig copyWith({
@@ -241,6 +245,7 @@ class EventConfig {
     List<BibPool>? bibPools,
     List<RaceCategory>? raceCategories,
     AgeCalculation? ageCalculation,
+    RegistrationConfig? registrationConfig,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -263,6 +268,7 @@ class EventConfig {
       bibPools: bibPools ?? this.bibPools,
       raceCategories: raceCategories ?? this.raceCategories,
       ageCalculation: ageCalculation ?? this.ageCalculation,
+      registrationConfig: registrationConfig ?? this.registrationConfig,
     );
   }
 }
@@ -519,3 +525,142 @@ class DisplaySettings {
     );
   }
 }
+
+// ─────────────────────────────────────────────────────────────────
+// REGISTRATION CONFIG
+// ─────────────────────────────────────────────────────────────────
+
+/// Видимость поля в форме регистрации.
+enum FieldVisibility {
+  /// Обязательное поле.
+  required,
+  /// Необязательное (показано, но можно оставить пустым).
+  optional,
+  /// Скрытое (не показывается в форме).
+  hidden,
+}
+
+/// Настройки формы регистрации.
+///
+/// Определяет какие поля собирать с участника, лимиты,
+/// waitlist и политику возврата.
+class RegistrationConfig {
+  // ── Общие ──
+  final bool isOpen;
+  final int? maxParticipants;
+  final bool waitlistEnabled;
+  final int? waitlistMax;
+
+  // ── Публичность ──
+  final bool publicStartList;
+  final bool publicResults;
+
+  // ── Оплата ──
+  final bool refundEnabled;
+  final int refundDeadlineHours;
+
+  // ── Поля: участник ──
+  final FieldVisibility fieldName;       // ФИО — всегда required
+  final FieldVisibility fieldBirthDate;  // Дата рождения
+  final FieldVisibility fieldGender;     // Пол
+  final FieldVisibility fieldPhone;      // Телефон
+  final FieldVisibility fieldEmail;      // E-mail
+  final FieldVisibility fieldClub;       // Клуб / команда
+  final FieldVisibility fieldCity;       // Город
+
+  // ── Поля: собака (ездовой спорт) ──
+  final FieldVisibility fieldDogName;    // Кличка собаки
+  final FieldVisibility fieldDogBreed;   // Порода
+  final FieldVisibility fieldVetCert;    // Вет. книжка / справка
+  final FieldVisibility fieldChipNumber; // Чип-номер собаки
+
+  // ── Кастомные поля ──
+  final List<CustomField> customFields;
+
+  const RegistrationConfig({
+    this.isOpen = false,
+    this.maxParticipants,
+    this.waitlistEnabled = false,
+    this.waitlistMax,
+    this.publicStartList = true,
+    this.publicResults = true,
+    this.refundEnabled = true,
+    this.refundDeadlineHours = 48,
+    this.fieldName = FieldVisibility.required,
+    this.fieldBirthDate = FieldVisibility.required,
+    this.fieldGender = FieldVisibility.required,
+    this.fieldPhone = FieldVisibility.optional,
+    this.fieldEmail = FieldVisibility.required,
+    this.fieldClub = FieldVisibility.optional,
+    this.fieldCity = FieldVisibility.optional,
+    this.fieldDogName = FieldVisibility.hidden,
+    this.fieldDogBreed = FieldVisibility.hidden,
+    this.fieldVetCert = FieldVisibility.hidden,
+    this.fieldChipNumber = FieldVisibility.hidden,
+    this.customFields = const [],
+  });
+
+  RegistrationConfig copyWith({
+    bool? isOpen,
+    int? maxParticipants,
+    bool? waitlistEnabled,
+    int? waitlistMax,
+    bool? publicStartList,
+    bool? publicResults,
+    bool? refundEnabled,
+    int? refundDeadlineHours,
+    FieldVisibility? fieldName,
+    FieldVisibility? fieldBirthDate,
+    FieldVisibility? fieldGender,
+    FieldVisibility? fieldPhone,
+    FieldVisibility? fieldEmail,
+    FieldVisibility? fieldClub,
+    FieldVisibility? fieldCity,
+    FieldVisibility? fieldDogName,
+    FieldVisibility? fieldDogBreed,
+    FieldVisibility? fieldVetCert,
+    FieldVisibility? fieldChipNumber,
+    List<CustomField>? customFields,
+  }) {
+    return RegistrationConfig(
+      isOpen: isOpen ?? this.isOpen,
+      maxParticipants: maxParticipants ?? this.maxParticipants,
+      waitlistEnabled: waitlistEnabled ?? this.waitlistEnabled,
+      waitlistMax: waitlistMax ?? this.waitlistMax,
+      publicStartList: publicStartList ?? this.publicStartList,
+      publicResults: publicResults ?? this.publicResults,
+      refundEnabled: refundEnabled ?? this.refundEnabled,
+      refundDeadlineHours: refundDeadlineHours ?? this.refundDeadlineHours,
+      fieldName: fieldName ?? this.fieldName,
+      fieldBirthDate: fieldBirthDate ?? this.fieldBirthDate,
+      fieldGender: fieldGender ?? this.fieldGender,
+      fieldPhone: fieldPhone ?? this.fieldPhone,
+      fieldEmail: fieldEmail ?? this.fieldEmail,
+      fieldClub: fieldClub ?? this.fieldClub,
+      fieldCity: fieldCity ?? this.fieldCity,
+      fieldDogName: fieldDogName ?? this.fieldDogName,
+      fieldDogBreed: fieldDogBreed ?? this.fieldDogBreed,
+      fieldVetCert: fieldVetCert ?? this.fieldVetCert,
+      fieldChipNumber: fieldChipNumber ?? this.fieldChipNumber,
+      customFields: customFields ?? this.customFields,
+    );
+  }
+}
+
+/// Кастомное поле формы регистрации.
+class CustomField {
+  final String id;
+  final String label;
+  final CustomFieldType type;
+  final FieldVisibility visibility;
+
+  const CustomField({
+    required this.id,
+    required this.label,
+    this.type = CustomFieldType.text,
+    this.visibility = FieldVisibility.optional,
+  });
+}
+
+/// Тип кастомного поля.
+enum CustomFieldType { text, number, dropdown, checkbox }
