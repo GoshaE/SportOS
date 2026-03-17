@@ -3,6 +3,8 @@
 // Все модели данных для единого движка хронометража SportOS.
 // Чистый Dart, без зависимостей от Flutter.
 
+import '../event/event_config.dart';
+
 // ─────────────────────────────────────────────────────────────────
 // ENUMS
 // ─────────────────────────────────────────────────────────────────
@@ -65,6 +67,29 @@ class DisciplineConfig {
   /// по наступлению plannedStartTime.
   final bool manualStart;
 
+  // ── Config Engine fields ──
+
+  /// Привязка к трассе мероприятия.
+  final String? courseId;
+
+  /// Привязка к дню (для multi-day мероприятий).
+  final int? dayNumber;
+
+  /// Максимальное кол-во участников (null = без лимита).
+  final int? maxParticipants;
+
+  /// Настройки отображения результатов для этой дисциплины.
+  final DisplaySettings displaySettings;
+
+  /// Активные категории (М, Ж, Юн, M35...).
+  final List<String> categories;
+
+  /// Цена регистрации (₽).
+  final int? priceRub;
+
+  /// Длина круга в метрах (для точного расчёта: lapLengthM × laps / 1000 = distanceKm).
+  final int? lapLengthM;
+
   const DisciplineConfig({
     required this.id,
     required this.name,
@@ -78,7 +103,24 @@ class DisciplineConfig {
     this.tieBreakMode = 'shared',
     this.bufferBetweenWaves = Duration.zero,
     this.manualStart = false,
+    this.courseId,
+    this.dayNumber,
+    this.maxParticipants,
+    this.displaySettings = const DisplaySettings(),
+    this.categories = const [],
+    this.priceRub,
+    this.lapLengthM,
   });
+
+  /// Точная общая дистанция (км) = lapLengthM × laps / 1000.
+  double get totalDistanceKm {
+    if (lapLengthM != null) return lapLengthM! * laps / 1000.0;
+    return distanceKm;
+  }
+
+  /// Отображаемое название: «Скиджоринг 6.000 км».
+  String get displayName =>
+      '$name ${totalDistanceKm.toStringAsFixed(3)} км';
 
   DisciplineConfig copyWith({
     String? id,
@@ -93,6 +135,13 @@ class DisciplineConfig {
     String? tieBreakMode,
     Duration? bufferBetweenWaves,
     bool? manualStart,
+    String? courseId,
+    int? dayNumber,
+    int? maxParticipants,
+    DisplaySettings? displaySettings,
+    List<String>? categories,
+    int? priceRub,
+    int? lapLengthM,
   }) {
     return DisciplineConfig(
       id: id ?? this.id,
@@ -107,6 +156,13 @@ class DisciplineConfig {
       tieBreakMode: tieBreakMode ?? this.tieBreakMode,
       bufferBetweenWaves: bufferBetweenWaves ?? this.bufferBetweenWaves,
       manualStart: manualStart ?? this.manualStart,
+      courseId: courseId ?? this.courseId,
+      dayNumber: dayNumber ?? this.dayNumber,
+      maxParticipants: maxParticipants ?? this.maxParticipants,
+      displaySettings: displaySettings ?? this.displaySettings,
+      categories: categories ?? this.categories,
+      priceRub: priceRub ?? this.priceRub,
+      lapLengthM: lapLengthM ?? this.lapLengthM,
     );
   }
 }

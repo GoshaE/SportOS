@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import '../../../domain/event/config_providers.dart';
+import '../../../domain/event/event_config.dart';
 
 /// Screen ID: E1 — Обзор мероприятия (Организатор Dashboard)
-class EventOverviewScreen extends StatelessWidget {
+class EventOverviewScreen extends ConsumerWidget {
   const EventOverviewScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
@@ -40,7 +43,7 @@ class EventOverviewScreen extends StatelessWidget {
         body: TabBarView(
           children: [
             _buildDashboardTab(context, cs, isDark, eventId, theme),
-            _buildSetupTab(context, cs, isDark, eventId, theme),
+            _buildSetupTab(context, cs, isDark, eventId, theme, ref),
             _buildManagementTab(context, cs, isDark, eventId, theme),
           ],
         ),
@@ -186,38 +189,71 @@ class EventOverviewScreen extends StatelessWidget {
   // ===========================================================================
   // ТАБ 2: Настройки (Setup)
   // ===========================================================================
-  Widget _buildSetupTab(BuildContext context, ColorScheme cs, bool isDark, String eventId, ThemeData theme) {
+  Widget _buildSetupTab(BuildContext context, ColorScheme cs, bool isDark, String eventId, ThemeData theme, WidgetRef ref) {
+    final eventConfig = ref.watch(eventConfigProvider);
+    final disciplines = ref.watch(disciplineConfigsProvider);
+
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       children: [
-        // 1. Быстрые конфигурации (были на старом Overview)
+        // 1. Регламент
         Text('Регламент гонки', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface)),
         const SizedBox(height: 12),
         AppMenuGroup(title: 'Классы и расписание', items: [
-          AppMenuItem(icon: Icons.sports, label: 'Дисциплины и классы', badge: '6', color: cs.primary, onTap: () => context.push('/manage/$eventId/disciplines')),
-          AppMenuItem(icon: Icons.calendar_month, label: 'Многодневная гонка', badge: 'Выкл', color: cs.tertiary, onTap: () => context.push('/manage/$eventId/multiday')),
+          AppMenuItem(icon: Icons.sports, label: 'Дисциплины и классы', badge: '${disciplines.length}', color: cs.primary, onTap: () => context.push('/manage/$eventId/disciplines')),
+          AppMenuItem(icon: Icons.calendar_month, label: 'Многодневная гонка', badge: eventConfig.isMultiDay ? 'Дней: ${eventConfig.days.length}' : 'Выкл', color: cs.tertiary, onTap: () => context.push('/manage/$eventId/multiday')),
         ]),
         const SizedBox(height: 24),
 
-        // 2. Общие (из EventSettingsScreen)
-        _sectionTitle(theme, 'Публичность', Icons.tune),
+        // 2. Многодневность (toggle from Config Engine)
+        _sectionTitle(theme, 'Многодневность', Icons.calendar_month),
         AppCard(
           padding: EdgeInsets.zero,
           children: [
-            Column(
-              children: [
-                AppSettingsTile.toggle(title: 'Регистрация открыта', value: true, onChanged: (_) {}),
+            Column(children: [
+              AppSettingsTile.toggle(
+                title: 'Многодневное мероприятие',
+                value: eventConfig.isMultiDay,
+                onChanged: (v) => ref.read(eventConfigProvider.notifier).toggleMultiDay(v),
+              ),
+              if (eventConfig.isMultiDay) ...[
                 const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Публичный стартовый лист', value: true, onChanged: (_) {}),
+                AppSettingsTile.nav(
+                  title: 'Зачёт',
+                  subtitle: switch (eventConfig.scoringMode) {
+                    ScoringMode.cumulative => 'Суммарный',
+                    ScoringMode.perDay => 'По дням',
+                    ScoringMode.pursuit => 'Преследование',
+                  },
+                ),
                 const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Публичные результаты', value: true, onChanged: (_) {}),
+                AppSettingsTile.nav(
+                  title: 'Кол-во дней',
+                  subtitle: '${eventConfig.days.length}',
+                ),
               ],
-            ),
+            ]),
           ],
         ),
         const SizedBox(height: 16),
 
-        // 3. Категории
+        // 3. Публичность
+        _sectionTitle(theme, 'Публичность', Icons.tune),
+        AppCard(
+          padding: EdgeInsets.zero,
+          children: [
+            Column(children: [
+              AppSettingsTile.toggle(title: 'Регистрация открыта', value: eventConfig.status == EventStatus.registrationOpen, onChanged: (_) {}),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Публичный стартовый лист', value: true, onChanged: (_) {}),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Публичные результаты', value: true, onChanged: (_) {}),
+            ]),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // 4. Категории
         _sectionTitle(theme, 'Категории', Icons.category),
         AppCard(
           padding: EdgeInsets.zero,
@@ -232,64 +268,114 @@ class EventOverviewScreen extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // 4. Лимиты и правила участия
+        // 5. Правила участия
         _sectionTitle(theme, 'Правила участия', Icons.groups),
         AppCard(
           padding: EdgeInsets.zero,
           children: [
-            Column(
-              children: [
-                AppSettingsTile.nav(title: 'Макс. участников', subtitle: '60'),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.nav(title: 'Waitlist', subtitle: 'Включен (макс. 20)'),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Возврат оплаты', subtitle: 'До 48ч до старта', value: true, onChanged: (_) {}),
-              ],
-            ),
+            Column(children: [
+              AppSettingsTile.nav(title: 'Макс. участников', subtitle: '60'),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.nav(title: 'Waitlist', subtitle: 'Включен (макс. 20)'),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Возврат оплаты', subtitle: 'До 48ч до старта', value: true, onChanged: (_) {}),
+            ]),
           ],
         ),
         const SizedBox(height: 16),
 
-        // 5. Ветконтроль
+        // 6. Ветконтроль
         _sectionTitle(theme, 'Ветеринарный контроль', Icons.pets),
         AppCard(
           padding: EdgeInsets.zero,
           children: [
-            Column(
-              children: [
-                AppSettingsTile.toggle(title: 'Обязательный ветконтроль', value: true, onChanged: (_) {}),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.nav(title: 'Grace-period вакцинации', subtitle: '30 дней'),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Замена собаки разрешена', value: true, onChanged: (_) {}),
-              ],
-            ),
+            Column(children: [
+              AppSettingsTile.toggle(title: 'Обязательный ветконтроль', value: true, onChanged: (_) {}),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.nav(title: 'Grace-period вакцинации', subtitle: '30 дней'),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Замена собаки разрешена', value: eventConfig.allowDogSwapBetweenDays, onChanged: (v) {
+                ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(allowDogSwapBetweenDays: v));
+              }),
+            ]),
           ],
         ),
         const SizedBox(height: 16),
 
-        // 6. Хронометраж и Безопасность
+        // 7. Хронометраж
         _sectionTitle(theme, 'Система судейства', Icons.timer),
         AppCard(
           padding: EdgeInsets.zero,
           children: [
-            Column(
-              children: [
-                AppSettingsTile.nav(title: 'Точность отсечки', subtitle: 'Миллисекунды (0.001)'),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.nav(title: 'Формат времени', subtitle: 'HH:mm:ss.S'),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Двойной хронометраж', subtitle: 'Мастер + Контрольный', value: true, onChanged: (_) {}),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'GPS трекинг', value: false, onChanged: (_) {}),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Аудит лог', value: true, onChanged: (_) {}),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.toggle(title: 'Двойное подтверждение DNF', value: true, onChanged: (_) {}),
-              ],
-            ),
+            Column(children: [
+              AppSettingsTile.nav(title: 'Точность отсечки', subtitle: 'Миллисекунды (0.001)'),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.nav(title: 'Формат времени', subtitle: 'HH:mm:ss.S'),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Двойной хронометраж', subtitle: 'Мастер + Контрольный', value: true, onChanged: (_) {}),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'GPS трекинг', value: false, onChanged: (_) {}),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Аудит лог', value: true, onChanged: (_) {}),
+              const Divider(height: 1, indent: 16),
+              AppSettingsTile.toggle(title: 'Двойное подтверждение DNF', value: true, onChanged: (_) {}),
+            ]),
           ],
         ),
+        const SizedBox(height: 16),
+
+        // 8. Настройки отображения (DisplaySettings) — Config Engine
+        _sectionTitle(theme, 'Отображение результатов', Icons.table_chart),
+        ...disciplines.map((d) {
+          final ds = d.displaySettings;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: AppCard(
+              padding: EdgeInsets.zero,
+              children: [
+                Column(children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    child: Row(children: [
+                      Icon(Icons.sports, size: 16, color: cs.primary),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(d.displayName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurface))),
+                    ]),
+                  ),
+                  AppSettingsTile.toggle(title: 'Сплиты по кругам', value: ds.showLapSplits, onChanged: (v) {
+                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
+                      displaySettings: old.displaySettings.copyWith(showLapSplits: v),
+                    ));
+                  }),
+                  const Divider(height: 1, indent: 16),
+                  AppSettingsTile.toggle(title: 'Контрольные точки (КП)', value: ds.showCheckpoints, onChanged: (v) {
+                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
+                      displaySettings: old.displaySettings.copyWith(showCheckpoints: v),
+                    ));
+                  }),
+                  const Divider(height: 1, indent: 16),
+                  AppSettingsTile.toggle(title: 'Скорость (км/ч)', value: ds.showSpeed, onChanged: (v) {
+                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
+                      displaySettings: old.displaySettings.copyWith(showSpeed: v),
+                    ));
+                  }),
+                  const Divider(height: 1, indent: 16),
+                  AppSettingsTile.toggle(title: 'Отставание от лидера', value: ds.showGapToLeader, onChanged: (v) {
+                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
+                      displaySettings: old.displaySettings.copyWith(showGapToLeader: v),
+                    ));
+                  }),
+                  const Divider(height: 1, indent: 16),
+                  AppSettingsTile.toggle(title: 'Клички собак', value: ds.showDogNames, onChanged: (v) {
+                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
+                      displaySettings: old.displaySettings.copyWith(showDogNames: v),
+                    ));
+                  }),
+                ]),
+              ],
+            ),
+          );
+        }),
 
         const SizedBox(height: 48),
       ],

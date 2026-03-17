@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
+import '../../domain/event/config_providers.dart';
+import '../../domain/event/event_config.dart';
 
 /// Screen ID: RS1 — Live результаты (с split-times, multi-day, отсечки)
 ///
@@ -19,9 +21,8 @@ class LiveResultsScreen extends ConsumerStatefulWidget {
 
 class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   int _currentDay = 1;
-  final int _totalDays = 2;
   bool _showSplits = false;
-  String _disc = 'Скиджоринг 5км';
+  String? _selectedDiscId;
 
   final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
 
@@ -107,18 +108,28 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     // Build sorted results list
     final resultRows = _buildResultRows(session);
 
+    // ── Read Config Engine ──
+    final eventConfig = ref.watch(eventConfigProvider);
+    final disciplines = ref.watch(disciplineConfigsProvider);
+    final totalDays = eventConfig.isMultiDay ? eventConfig.days.length : 0;
+
+    // Select first discipline by default
+    _selectedDiscId ??= disciplines.isNotEmpty ? disciplines.first.id : null;
+    final selectedDisc = disciplines.where((d) => d.id == _selectedDiscId).firstOrNull;
+    final ds = selectedDisc?.displaySettings ?? const DisplaySettings();
+
     return Column(children: [
       // ── Шапка: дни + дисциплины + статистика ──
       Container(
         color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          // Multi-day
-          if (_totalDays > 1) ...[
+          // Multi-day (from Config Engine)
+          if (totalDays > 1) ...[
             SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
               Icon(Icons.calendar_month, size: 16, color: cs.primary),
               const SizedBox(width: 8),
-              ...List.generate(_totalDays, (d) => Padding(
+              ...List.generate(totalDays, (d) => Padding(
                 padding: const EdgeInsets.only(right: 6),
                 child: ChoiceChip(
                   label: Text('День ${d + 1}', style: const TextStyle(fontSize: 12)),
@@ -136,9 +147,19 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
             ])),
             const SizedBox(height: 6),
           ],
-          // Дисциплины
+          // Дисциплины (from Config Engine)
           SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
-            _chip('Скиджоринг 5км'), _chip('Скиджоринг 10км'), _chip('Каникросс 3км'), _chip('Нарты 15км'),
+            ...disciplines
+                .where((d) => _currentDay == 0 || d.dayNumber == _currentDay || d.dayNumber == null)
+                .map((d) => Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: ChoiceChip(
+                    label: Text(d.displayName, style: const TextStyle(fontSize: 12)),
+                    selected: _selectedDiscId == d.id,
+                    onSelected: (_) => setState(() => _selectedDiscId = d.id),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                )),
           ])),
           const SizedBox(height: 8),
           // Статистика (динамическая)
@@ -185,11 +206,13 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
               headerRow: AppProtocolRow(
                 isHeader: true,
                 bib: 'BIB',
-                name: 'Спортсмен / Собака',
+                name: ds.showDogNames ? 'Спортсмен / Собака' : 'Спортсмен',
                 cat: 'Кат.',
-                dog: _showSplits ? 'CP1 / CP2' : 'Собака',
+                dog: _showSplits
+                    ? (ds.showCheckpoints ? 'Сплиты / КП' : 'Сплиты')
+                    : (ds.showDogNames ? 'Собака' : (ds.showSpeed ? 'Скор.' : '—')),
                 time: 'Время',
-                delta: 'Отст.',
+                delta: ds.showGapToLeader ? 'Отст.' : (ds.showGapToPrev ? 'Разр.' : ''),
                 penalty: 'Штр.',
               ),
               itemBuilder: (ctx, i, isCard) {
@@ -203,7 +226,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
                   cat: r.category,
                   dog: _showSplits ? r.splitDisplay : r.dogName,
                   time: r.timeDisplay,
-                  delta: r.deltaDisplay,
+                  delta: ds.showGapToLeader ? r.deltaDisplay : (ds.showGapToPrev ? r.deltaDisplay : ''),
                   penalty: r.penaltyDisplay,
                 );
               },
@@ -333,15 +356,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     );
   }
 
-  Widget _chip(String label) {
-    final sel = _disc == label;
-    return Padding(padding: const EdgeInsets.only(right: 6), child: ChoiceChip(
-      label: Text(label, style: const TextStyle(fontSize: 12)),
-      selected: sel,
-      onSelected: (_) => setState(() => _disc = label),
-      visualDensity: VisualDensity.compact,
-    ));
-  }
+  // _chip removed — discipline chips now generated from Config Engine provider
 }
 
 // ═══════════════════════════════════════
