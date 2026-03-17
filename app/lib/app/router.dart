@@ -31,6 +31,12 @@ import '../features/events/manage/team_screen.dart';
 import '../features/events/manage/finances_screen.dart';
 import '../features/events/manage/documents_screen.dart';
 import '../features/events/manage/multi_day_config_screen.dart';
+import '../features/events/manage/courses_screen.dart';
+import '../features/events/manage/display_settings_screen.dart';
+import '../features/events/manage/timing_settings_screen.dart';
+import '../features/events/manage/vet_settings_screen.dart';
+import '../features/events/manage/registration_settings_screen.dart';
+import '../features/events/manage/draw_settings_screen.dart';
 import '../features/events/series_screen.dart';
 
 // Race Preparation
@@ -360,6 +366,36 @@ final GoRouter router = GoRouter(
           path: 'multiday',
           name: 'multiday-config',
           builder: (context, state) => const MultiDayConfigScreen(),
+        ),
+        GoRoute(
+          path: 'courses',
+          name: 'manage-courses',
+          builder: (context, state) => const CoursesScreen(),
+        ),
+        GoRoute(
+          path: 'display',
+          name: 'manage-display',
+          builder: (context, state) => const DisplaySettingsScreen(),
+        ),
+        GoRoute(
+          path: 'timing-settings',
+          name: 'manage-timing-settings',
+          builder: (context, state) => const TimingSettingsScreen(),
+        ),
+        GoRoute(
+          path: 'vet',
+          name: 'manage-vet',
+          builder: (context, state) => const VetSettingsScreen(),
+        ),
+        GoRoute(
+          path: 'registration-settings',
+          name: 'manage-registration-settings',
+          builder: (context, state) => const RegistrationSettingsScreen(),
+        ),
+        GoRoute(
+          path: 'draw-settings',
+          name: 'manage-draw-settings',
+          builder: (context, state) => const DrawSettingsScreen(),
         ),
       ],
     ),

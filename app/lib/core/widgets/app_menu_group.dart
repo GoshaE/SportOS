@@ -59,6 +59,7 @@ class AppMenuGroup extends StatelessWidget {
                 child: Icon(item.icon, color: color, size: 20),
               ),
               title: Text(item.label, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w500)),
+              subtitle: item.subtitle != null ? Text(item.subtitle!, style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)) : null,
               trailing: Row(mainAxisSize: MainAxisSize.min, children: [
                 if (item.badge != null)
                   Container(
@@ -91,6 +92,7 @@ class AppMenuItem {
   final IconData icon;
   final String label;
   final String? badge;
+  final String? subtitle;
   final Color? color;
   final VoidCallback? onTap;
 
@@ -98,6 +100,7 @@ class AppMenuItem {
     required this.icon,
     required this.label,
     this.badge,
+    this.subtitle,
     this.color,
     this.onTap,
   });

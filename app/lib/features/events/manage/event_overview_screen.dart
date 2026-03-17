@@ -6,6 +6,7 @@ import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart';
+import '../../../domain/timing/models.dart';
 
 /// Screen ID: E1 — Обзор мероприятия (Организатор Dashboard)
 class EventOverviewScreen extends ConsumerWidget {
@@ -192,194 +193,124 @@ class EventOverviewScreen extends ConsumerWidget {
   Widget _buildSetupTab(BuildContext context, ColorScheme cs, bool isDark, String eventId, ThemeData theme, WidgetRef ref) {
     final eventConfig = ref.watch(eventConfigProvider);
     final disciplines = ref.watch(disciplineConfigsProvider);
+    final courses = ref.watch(coursesProvider);
+
+    // Summaries computed from providers
+    final discSummary = disciplines.take(3).map((d) => d.name.split(' ').first).join(', ')
+        + (disciplines.length > 3 ? '…' : '');
+
+    final multiDaySummary = eventConfig.isMultiDay
+        ? '${eventConfig.days.length} дн., ${switch (eventConfig.scoringMode) {
+            ScoringMode.cumulative => 'суммарный',
+            ScoringMode.perDay => 'по дням',
+            ScoringMode.pursuit => 'преследование',
+          }}'
+        : 'Однодневное';
+
+    final coursesSummary = courses.take(3).map((c) => c.name).join(', ')
+        + (courses.length > 3 ? '…' : '');
+
+    final cpCount = courses.fold<int>(0, (sum, c) => sum + c.checkpoints.length);
 
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       children: [
-        // 1. Регламент
-        Text('Регламент гонки', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface)),
-        const SizedBox(height: 12),
-        AppMenuGroup(title: 'Классы и расписание', items: [
-          AppMenuItem(icon: Icons.sports, label: 'Дисциплины и классы', badge: '${disciplines.length}', color: cs.primary, onTap: () => context.push('/manage/$eventId/disciplines')),
-          AppMenuItem(icon: Icons.calendar_month, label: 'Многодневная гонка', badge: eventConfig.isMultiDay ? 'Дней: ${eventConfig.days.length}' : 'Выкл', color: cs.tertiary, onTap: () => context.push('/manage/$eventId/multiday')),
+        // ─── Регламент ───
+        AppMenuGroup(title: 'Регламент', items: [
+          AppMenuItem(
+            icon: Icons.sports,
+            label: 'Дисциплины и классы',
+            badge: '${disciplines.length}',
+            subtitle: discSummary,
+            color: cs.primary,
+            onTap: () => context.push('/manage/$eventId/disciplines'),
+          ),
+          AppMenuItem(
+            icon: Icons.calendar_month,
+            label: 'Многодневность',
+            badge: eventConfig.isMultiDay ? '${eventConfig.days.length} дн.' : 'Выкл',
+            subtitle: multiDaySummary,
+            color: cs.tertiary,
+            onTap: () => context.push('/manage/$eventId/multiday'),
+          ),
+          AppMenuItem(
+            icon: Icons.route,
+            label: 'Трассы',
+            badge: '${courses.length}',
+            subtitle: coursesSummary.isNotEmpty ? '$coursesSummary · $cpCount КП' : 'Нет трасс',
+            color: cs.secondary,
+            onTap: () => context.push('/manage/$eventId/courses'),
+          ),
+          AppMenuItem(
+            icon: Icons.category,
+            label: 'Категории',
+            badge: '24',
+            subtitle: 'М, Ж, Юн, M35…',
+            color: cs.primary,
+            onTap: () => _showCategoriesConstructor(context, cs),
+          ),
         ]),
         const SizedBox(height: 24),
 
-        // 2. Многодневность (toggle from Config Engine)
-        _sectionTitle(theme, 'Многодневность', Icons.calendar_month),
-        AppCard(
-          padding: EdgeInsets.zero,
-          children: [
-            Column(children: [
-              AppSettingsTile.toggle(
-                title: 'Многодневное мероприятие',
-                value: eventConfig.isMultiDay,
-                onChanged: (v) => ref.read(eventConfigProvider.notifier).toggleMultiDay(v),
-              ),
-              if (eventConfig.isMultiDay) ...[
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.nav(
-                  title: 'Зачёт',
-                  subtitle: switch (eventConfig.scoringMode) {
-                    ScoringMode.cumulative => 'Суммарный',
-                    ScoringMode.perDay => 'По дням',
-                    ScoringMode.pursuit => 'Преследование',
-                  },
-                ),
-                const Divider(height: 1, indent: 16),
-                AppSettingsTile.nav(
-                  title: 'Кол-во дней',
-                  subtitle: '${eventConfig.days.length}',
-                ),
-              ],
-            ]),
-          ],
-        ),
-        const SizedBox(height: 16),
+        // ─── Система ───
+        AppMenuGroup(title: 'Система', items: [
+          AppMenuItem(
+            icon: Icons.table_chart,
+            label: 'Отображение таблиц',
+            subtitle: _displaySummary(disciplines),
+            color: cs.primary,
+            onTap: () => context.push('/manage/$eventId/display'),
+          ),
+          AppMenuItem(
+            icon: Icons.timer,
+            label: 'Хронометраж',
+            subtitle: '0.001с, двойной хрон.',
+            color: cs.secondary,
+            onTap: () => context.push('/manage/$eventId/timing-settings'),
+          ),
+          AppMenuItem(
+            icon: Icons.pets,
+            label: 'Ветконтроль',
+            subtitle: eventConfig.allowDogSwapBetweenDays ? 'Замена собак разрешена' : 'Обязательный',
+            color: cs.tertiary,
+            onTap: () => context.push('/manage/$eventId/vet'),
+          ),
+        ]),
+        const SizedBox(height: 24),
 
-        // 3. Публичность
-        _sectionTitle(theme, 'Публичность', Icons.tune),
-        AppCard(
-          padding: EdgeInsets.zero,
-          children: [
-            Column(children: [
-              AppSettingsTile.toggle(title: 'Регистрация открыта', value: eventConfig.status == EventStatus.registrationOpen, onChanged: (_) {}),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Публичный стартовый лист', value: true, onChanged: (_) {}),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Публичные результаты', value: true, onChanged: (_) {}),
-            ]),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // 4. Категории
-        _sectionTitle(theme, 'Категории', Icons.category),
-        AppCard(
-          padding: EdgeInsets.zero,
-          children: [
-            AppSettingsTile.nav(
-              title: 'Настройка категорий',
-              subtitle: 'Возраст, вес, пол (24 активных)',
-              trailing: Icons.settings,
-              onTap: () => _showCategoriesConstructor(context, cs),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // 5. Правила участия
-        _sectionTitle(theme, 'Правила участия', Icons.groups),
-        AppCard(
-          padding: EdgeInsets.zero,
-          children: [
-            Column(children: [
-              AppSettingsTile.nav(title: 'Макс. участников', subtitle: '60'),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.nav(title: 'Waitlist', subtitle: 'Включен (макс. 20)'),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Возврат оплаты', subtitle: 'До 48ч до старта', value: true, onChanged: (_) {}),
-            ]),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // 6. Ветконтроль
-        _sectionTitle(theme, 'Ветеринарный контроль', Icons.pets),
-        AppCard(
-          padding: EdgeInsets.zero,
-          children: [
-            Column(children: [
-              AppSettingsTile.toggle(title: 'Обязательный ветконтроль', value: true, onChanged: (_) {}),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.nav(title: 'Grace-period вакцинации', subtitle: '30 дней'),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Замена собаки разрешена', value: eventConfig.allowDogSwapBetweenDays, onChanged: (v) {
-                ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(allowDogSwapBetweenDays: v));
-              }),
-            ]),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // 7. Хронометраж
-        _sectionTitle(theme, 'Система судейства', Icons.timer),
-        AppCard(
-          padding: EdgeInsets.zero,
-          children: [
-            Column(children: [
-              AppSettingsTile.nav(title: 'Точность отсечки', subtitle: 'Миллисекунды (0.001)'),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.nav(title: 'Формат времени', subtitle: 'HH:mm:ss.S'),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Двойной хронометраж', subtitle: 'Мастер + Контрольный', value: true, onChanged: (_) {}),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'GPS трекинг', value: false, onChanged: (_) {}),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Аудит лог', value: true, onChanged: (_) {}),
-              const Divider(height: 1, indent: 16),
-              AppSettingsTile.toggle(title: 'Двойное подтверждение DNF', value: true, onChanged: (_) {}),
-            ]),
-          ],
-        ),
-        const SizedBox(height: 16),
-
-        // 8. Настройки отображения (DisplaySettings) — Config Engine
-        _sectionTitle(theme, 'Отображение результатов', Icons.table_chart),
-        ...disciplines.map((d) {
-          final ds = d.displaySettings;
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 12),
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              children: [
-                Column(children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                    child: Row(children: [
-                      Icon(Icons.sports, size: 16, color: cs.primary),
-                      const SizedBox(width: 8),
-                      Expanded(child: Text(d.displayName, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.onSurface))),
-                    ]),
-                  ),
-                  AppSettingsTile.toggle(title: 'Сплиты по кругам', value: ds.showLapSplits, onChanged: (v) {
-                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
-                      displaySettings: old.displaySettings.copyWith(showLapSplits: v),
-                    ));
-                  }),
-                  const Divider(height: 1, indent: 16),
-                  AppSettingsTile.toggle(title: 'Контрольные точки (КП)', value: ds.showCheckpoints, onChanged: (v) {
-                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
-                      displaySettings: old.displaySettings.copyWith(showCheckpoints: v),
-                    ));
-                  }),
-                  const Divider(height: 1, indent: 16),
-                  AppSettingsTile.toggle(title: 'Скорость (км/ч)', value: ds.showSpeed, onChanged: (v) {
-                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
-                      displaySettings: old.displaySettings.copyWith(showSpeed: v),
-                    ));
-                  }),
-                  const Divider(height: 1, indent: 16),
-                  AppSettingsTile.toggle(title: 'Отставание от лидера', value: ds.showGapToLeader, onChanged: (v) {
-                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
-                      displaySettings: old.displaySettings.copyWith(showGapToLeader: v),
-                    ));
-                  }),
-                  const Divider(height: 1, indent: 16),
-                  AppSettingsTile.toggle(title: 'Клички собак', value: ds.showDogNames, onChanged: (v) {
-                    ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
-                      displaySettings: old.displaySettings.copyWith(showDogNames: v),
-                    ));
-                  }),
-                ]),
-              ],
-            ),
-          );
-        }),
-
+        // ─── Участники ───
+        AppMenuGroup(title: 'Участники', items: [
+          AppMenuItem(
+            icon: Icons.app_registration,
+            label: 'Регистрация',
+            subtitle: 'Открыта, 60 слотов',
+            color: cs.primary,
+            onTap: () => context.push('/manage/$eventId/registration-settings'),
+          ),
+          AppMenuItem(
+            icon: Icons.casino,
+            label: 'Жеребьёвка',
+            subtitle: 'Авто, по категориям',
+            color: cs.secondary,
+            onTap: () => context.push('/manage/$eventId/draw-settings'),
+          ),
+        ]),
         const SizedBox(height: 48),
       ],
     );
+  }
+
+  /// Краткая сводка DisplaySettings: какие колонки включены
+  String _displaySummary(List<DisciplineConfig> disciplines) {
+    if (disciplines.isEmpty) return 'Нет дисциплин';
+    final ds = disciplines.first.displaySettings;
+    final parts = <String>[];
+    if (ds.showLapSplits) parts.add('сплиты');
+    if (ds.showCheckpoints) parts.add('КП');
+    if (ds.showSpeed) parts.add('скорость');
+    if (ds.showDogNames) parts.add('собаки');
+    if (parts.isEmpty) parts.add('базовый');
+    return parts.join(', ');
   }
 
   // ===========================================================================
@@ -557,18 +488,7 @@ class EventOverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _sectionTitle(ThemeData theme, String title, IconData icon) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4, bottom: 8, top: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: theme.colorScheme.primary)),
-        ],
-      ),
-    );
-  }
+
 
   void _showCategoriesConstructor(BuildContext context, ColorScheme cs) {
     final List<Map<String, dynamic>> categories = [
