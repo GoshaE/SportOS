@@ -37,28 +37,28 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
     // Intercept standard leading back actions to use our custom button
     if (activeLeading == null && (forceBackButton || (automaticallyImplyLeading && canPop))) {
       activeLeading = Padding(
-        padding: const EdgeInsets.only(left: 8.0),
-        child: IconButton(
-          icon: Container(
-            width: 36, height: 36,
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: cs.outlineVariant.withValues(alpha: 0.3),
-              ),
+        padding: const EdgeInsets.only(left: 12.0, top: 4.0, bottom: 4.0),
+        child: Container(
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: cs.outlineVariant.withValues(alpha: 0.3),
             ),
-            child: Icon(Icons.arrow_back_ios_new, size: 16, color: cs.onSurface),
           ),
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
-          onPressed: onBackButtonPressed ?? () {
-            if (context.canPop()) {
-              context.pop();
-            } else {
-              context.go('/hub');
-            }
-          },
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+            icon: Icon(Icons.arrow_back_ios_new, size: 18, color: cs.onSurface),
+            onPressed: onBackButtonPressed ?? () {
+              if (context.canPop()) {
+                context.pop();
+              } else {
+                context.go('/hub');
+              }
+            },
+          ),
         ),
       );
     } else if (activeLeading != null) {
