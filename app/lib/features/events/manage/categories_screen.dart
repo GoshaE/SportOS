@@ -6,23 +6,68 @@ import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart' hide TimeOfDay;
 
-/// Preset: типовые категории ездового спорта.
-const _presets = [
-  RaceCategory(id: 'cat-cec', name: 'CEC (экзамен)', shortName: 'CEC', dogCount: 1, sortOrder: 0),
-  RaceCategory(id: 'cat-open-m', name: 'OPEN мужчины', shortName: 'OPEN М', gender: CategoryGender.male, dogCount: 1, sortOrder: 1),
-  RaceCategory(id: 'cat-open-f', name: 'OPEN женщины', shortName: 'OPEN Ж', gender: CategoryGender.female, dogCount: 1, sortOrder: 2),
-  RaceCategory(id: 'cat-vet-m', name: 'Ветераны мужчины', shortName: 'ВЕТ М', gender: CategoryGender.male, ageMin: 50, dogCount: 1, sortOrder: 3),
-  RaceCategory(id: 'cat-vet-f', name: 'Ветераны женщины', shortName: 'ВЕТ Ж', gender: CategoryGender.female, ageMin: 50, dogCount: 1, sortOrder: 4),
-  RaceCategory(id: 'cat-jun', name: 'Юниоры', shortName: 'ЮН', ageMin: 14, ageMax: 17, dogCount: 1, sortOrder: 5),
-  RaceCategory(id: 'cat-kids', name: 'Дети', shortName: 'ДЕТИ', ageMax: 13, dogCount: 1, sortOrder: 6),
-  RaceCategory(id: 'cat-2dog', name: 'Нарты (2 собаки)', shortName: '2D', dogCount: 2, sortOrder: 7),
-  RaceCategory(id: 'cat-4dog', name: 'Нарты (4 собаки)', shortName: '4D', dogCount: 4, sortOrder: 8),
+// ─────────────────────────────────────────────────────────────────
+// PRESET TEMPLATES — выбираются при первой настройке
+// ─────────────────────────────────────────────────────────────────
+
+class _PresetGroup {
+  final String name;
+  final IconData icon;
+  final List<RaceCategory> categories;
+  const _PresetGroup({required this.name, required this.icon, required this.categories});
+}
+
+final _presetGroups = [
+  _PresetGroup(
+    name: 'Стандарт (М/Ж)',
+    icon: Icons.people,
+    categories: [
+      const RaceCategory(id: 'cat-m', name: 'Мужчины', shortName: 'М', gender: CategoryGender.male, sortOrder: 0),
+      const RaceCategory(id: 'cat-f', name: 'Женщины', shortName: 'Ж', gender: CategoryGender.female, sortOrder: 1),
+    ],
+  ),
+  _PresetGroup(
+    name: 'Возрастные группы',
+    icon: Icons.cake,
+    categories: [
+      const RaceCategory(id: 'cat-m', name: 'Мужчины', shortName: 'М', gender: CategoryGender.male, sortOrder: 0),
+      const RaceCategory(id: 'cat-f', name: 'Женщины', shortName: 'Ж', gender: CategoryGender.female, sortOrder: 1),
+      const RaceCategory(id: 'cat-jun', name: 'Юниоры', shortName: 'ЮН', ageMin: 14, ageMax: 17, sortOrder: 2),
+      const RaceCategory(id: 'cat-kids', name: 'Дети', shortName: 'ДЕТИ', ageMax: 13, sortOrder: 3),
+      const RaceCategory(id: 'cat-vet-m', name: 'Ветераны М', shortName: 'ВЕТ М', gender: CategoryGender.male, ageMin: 50, sortOrder: 4),
+      const RaceCategory(id: 'cat-vet-f', name: 'Ветераны Ж', shortName: 'ВЕТ Ж', gender: CategoryGender.female, ageMin: 50, sortOrder: 5),
+    ],
+  ),
+  _PresetGroup(
+    name: 'Мастерс (5-летие)',
+    icon: Icons.military_tech,
+    categories: [
+      const RaceCategory(id: 'cat-m', name: 'Мужчины OPEN', shortName: 'М', gender: CategoryGender.male, sortOrder: 0),
+      const RaceCategory(id: 'cat-f', name: 'Женщины OPEN', shortName: 'Ж', gender: CategoryGender.female, sortOrder: 1),
+      const RaceCategory(id: 'cat-m35', name: 'M35', shortName: 'M35', gender: CategoryGender.male, ageMin: 35, ageMax: 39, sortOrder: 2),
+      const RaceCategory(id: 'cat-m40', name: 'M40', shortName: 'M40', gender: CategoryGender.male, ageMin: 40, ageMax: 44, sortOrder: 3),
+      const RaceCategory(id: 'cat-m45', name: 'M45', shortName: 'M45', gender: CategoryGender.male, ageMin: 45, ageMax: 49, sortOrder: 4),
+      const RaceCategory(id: 'cat-m50', name: 'M50', shortName: 'M50', gender: CategoryGender.male, ageMin: 50, ageMax: 54, sortOrder: 5),
+      const RaceCategory(id: 'cat-f35', name: 'Ж35', shortName: 'Ж35', gender: CategoryGender.female, ageMin: 35, ageMax: 39, sortOrder: 6),
+      const RaceCategory(id: 'cat-f40', name: 'Ж40', shortName: 'Ж40', gender: CategoryGender.female, ageMin: 40, ageMax: 44, sortOrder: 7),
+      const RaceCategory(id: 'cat-f45', name: 'Ж45', shortName: 'Ж45', gender: CategoryGender.female, ageMin: 45, ageMax: 49, sortOrder: 8),
+      const RaceCategory(id: 'cat-f50', name: 'Ж50', shortName: 'Ж50', gender: CategoryGender.female, ageMin: 50, ageMax: 54, sortOrder: 9),
+    ],
+  ),
+  _PresetGroup(
+    name: 'Без категорий (абсолют)',
+    icon: Icons.emoji_events,
+    categories: [
+      const RaceCategory(id: 'cat-abs', name: 'Абсолют', shortName: 'ABS', sortOrder: 0),
+    ],
+  ),
 ];
 
-/// P1 — Конструктор категорий.
-///
-/// Управление категориями на уровне мероприятия.
-/// Категории затем привязываются к дисциплинам.
+// ─────────────────────────────────────────────────────────────────
+// SCREEN
+// ─────────────────────────────────────────────────────────────────
+
+/// P1 — Конструктор категорий (универсальный, мультиспорт).
 class CategoriesScreen extends ConsumerWidget {
   const CategoriesScreen({super.key});
 
@@ -36,50 +81,82 @@ class CategoriesScreen extends ConsumerWidget {
       appBar: AppAppBar(
         title: const Text('Категории'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Добавить',
-            onPressed: () => _editCategory(context, ref, null),
-          ),
+          IconButton(icon: const Icon(Icons.add), tooltip: 'Добавить', onPressed: () => _editCategory(context, ref, null)),
         ],
       ),
       body: cats.isEmpty ? _emptyState(context, ref, cs) : _body(context, ref, cs, cats),
     );
   }
 
-  // ─── Empty state ───
+  // ─── Empty: выбор шаблона ───
   Widget _emptyState(BuildContext context, WidgetRef ref, ColorScheme cs) {
-    return Center(child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Container(
-          width: 80, height: 80,
-          decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3), shape: BoxShape.circle),
-          child: Icon(Icons.category_outlined, size: 40, color: cs.primary),
-        ),
-        const SizedBox(height: 20),
-        Text('Нет категорий', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface)),
+    return ListView(
+      padding: const EdgeInsets.all(24),
+      children: [
+        // Header
+        Center(child: Column(children: [
+          Container(
+            width: 72, height: 72,
+            decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3), shape: BoxShape.circle),
+            child: Icon(Icons.category_outlined, size: 36, color: cs.primary),
+          ),
+          const SizedBox(height: 16),
+          Text('Выберите шаблон', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface)),
+          const SizedBox(height: 6),
+          Text('или создайте категории вручную', style: TextStyle(fontSize: 13, color: cs.outline)),
+        ])),
+        const SizedBox(height: 24),
+
+        // Preset cards
+        ..._presetGroups.map((group) => Padding(
+          padding: const EdgeInsets.only(bottom: 10),
+          child: Card(
+            elevation: 0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14), side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4))),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: () {
+                ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(raceCategories: group.categories));
+                AppSnackBar.success(context, '«${group.name}» — ${group.categories.length} категорий');
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Row(children: [
+                  CircleAvatar(
+                    backgroundColor: cs.primaryContainer,
+                    child: Icon(group.icon, color: cs.primary, size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(group.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(height: 4),
+                    Wrap(spacing: 6, runSpacing: 4, children: group.categories.map((c) => Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: _genderColor(c.gender, cs).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(c.shortName, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _genderColor(c.gender, cs))),
+                    )).toList()),
+                  ])),
+                  Icon(Icons.arrow_forward_ios, size: 14, color: cs.outline),
+                ]),
+              ),
+            ),
+          ),
+        )),
+
         const SizedBox(height: 8),
-        Text(
-          'Категории разделяют участников по полу, возрасту\nи количеству собак для правильной группировки.',
-          style: TextStyle(color: cs.outline, fontSize: 13), textAlign: TextAlign.center,
-        ),
-        const SizedBox(height: 28),
-        FilledButton.icon(
-          onPressed: () => _loadPreset(ref, context),
-          icon: const Icon(Icons.auto_fix_high),
-          label: const Text('Загрузить типовые категории'),
-        ),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
+        Center(child: TextButton.icon(
           onPressed: () => _editCategory(context, ref, null),
-          icon: const Icon(Icons.add),
+          icon: const Icon(Icons.add, size: 18),
           label: const Text('Создать вручную'),
-        ),
-      ]),
-    ));
+        )),
+      ],
+    );
   }
 
+  // ─── Body: список категорий ───
   Widget _body(BuildContext context, WidgetRef ref, ColorScheme cs, List<RaceCategory> cats) {
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -97,21 +174,31 @@ class CategoriesScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('${cats.length} категорий', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
-              Text(_summaryText(cats), style: TextStyle(fontSize: 12, color: cs.outline)),
+              const SizedBox(height: 2),
+              Wrap(spacing: 6, runSpacing: 4, children: cats.map((c) => Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: _genderColor(c.gender, cs).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(c.shortName, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _genderColor(c.gender, cs))),
+              )).toList()),
             ])),
-            IconButton(
-              icon: const Icon(Icons.auto_fix_high, size: 20),
-              tooltip: 'Загрузить типовые',
-              onPressed: () => _loadPreset(ref, context),
+            TextButton(
+              onPressed: () {
+                ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(raceCategories: []));
+              },
+              child: Text('Сбросить', style: TextStyle(fontSize: 11, color: cs.error)),
             ),
           ]),
         ),
         const SizedBox(height: 16),
 
-        // Category cards
+        // ReorderableListView replacement
         ...cats.asMap().entries.map((entry) {
           final i = entry.key;
           final cat = entry.value;
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: _CategoryCard(
@@ -136,22 +223,7 @@ class CategoriesScreen extends ConsumerWidget {
     );
   }
 
-  String _summaryText(List<RaceCategory> cats) {
-    final genders = <String>{};
-    for (final c in cats) {
-      if (c.gender == CategoryGender.male) genders.add('М');
-      if (c.gender == CategoryGender.female) genders.add('Ж');
-      if (c.gender == CategoryGender.any) { genders.add('М'); genders.add('Ж'); }
-    }
-    final dogs = cats.map((c) => c.dogCount).toSet().toList()..sort();
-    return 'Пол: ${genders.join("/")}  ·  Собак: ${dogs.join(", ")}';
-  }
-
-  void _loadPreset(WidgetRef ref, BuildContext context) {
-    ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(raceCategories: _presets));
-    AppSnackBar.success(context, '${_presets.length} типовых категорий загружено');
-  }
-
+  // ─── Edit / Create ───
   void _editCategory(BuildContext context, WidgetRef ref, RaceCategory? existing) {
     final isNew = existing == null;
     final nameCtrl = TextEditingController(text: existing?.name ?? '');
@@ -159,7 +231,6 @@ class CategoriesScreen extends ConsumerWidget {
     final ageMinCtrl = TextEditingController(text: existing?.ageMin?.toString() ?? '');
     final ageMaxCtrl = TextEditingController(text: existing?.ageMax?.toString() ?? '');
     var gender = existing?.gender ?? CategoryGender.any;
-    var dogCount = existing?.dogCount ?? 1;
     final cs = Theme.of(context).colorScheme;
 
     AppBottomSheet.show(context, title: isNew ? 'Новая категория' : existing!.name, child: StatefulBuilder(
@@ -167,7 +238,7 @@ class CategoriesScreen extends ConsumerWidget {
         // Name
         TextField(
           controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'Полное название *', border: OutlineInputBorder(), hintText: 'OPEN мужчины'),
+          decoration: const InputDecoration(labelText: 'Название *', border: OutlineInputBorder(), hintText: 'Мужчины, Юниоры, M35…'),
         ),
         const SizedBox(height: 12),
 
@@ -175,7 +246,7 @@ class CategoriesScreen extends ConsumerWidget {
         Row(children: [
           Expanded(child: TextField(
             controller: shortCtrl,
-            decoration: const InputDecoration(labelText: 'Код (кратко)', border: OutlineInputBorder(), isDense: true, hintText: 'OPEN М'),
+            decoration: const InputDecoration(labelText: 'Код', border: OutlineInputBorder(), isDense: true, hintText: 'М, Ж, ЮН…'),
           )),
           const SizedBox(width: 12),
           Expanded(child: DropdownButtonFormField<CategoryGender>(
@@ -191,11 +262,13 @@ class CategoriesScreen extends ConsumerWidget {
         ]),
         const SizedBox(height: 12),
 
-        // Age
+        // Age range
         Row(children: [
+          Text('Возраст:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface)),
+          const SizedBox(width: 12),
           Expanded(child: TextField(
             controller: ageMinCtrl,
-            decoration: const InputDecoration(labelText: 'Возраст от', border: OutlineInputBorder(), isDense: true),
+            decoration: const InputDecoration(labelText: 'от', border: OutlineInputBorder(), isDense: true),
             keyboardType: TextInputType.number,
           )),
           Padding(
@@ -208,23 +281,8 @@ class CategoriesScreen extends ConsumerWidget {
             keyboardType: TextInputType.number,
           )),
         ]),
-        const SizedBox(height: 12),
-
-        // Dog count
-        Row(children: [
-          Text('Количество собак:', style: TextStyle(fontSize: 13, color: cs.onSurface)),
-          const Spacer(),
-          SegmentedButton<int>(
-            selected: {dogCount},
-            onSelectionChanged: (v) => setModal(() => dogCount = v.first),
-            segments: const [
-              ButtonSegment(value: 1, label: Text('1')),
-              ButtonSegment(value: 2, label: Text('2')),
-              ButtonSegment(value: 4, label: Text('4')),
-              ButtonSegment(value: 6, label: Text('6')),
-            ],
-          ),
-        ]),
+        const SizedBox(height: 8),
+        Text('Оставьте пустым для любого возраста', style: TextStyle(fontSize: 11, color: cs.outline)),
         const SizedBox(height: 16),
 
         // Save
@@ -241,7 +299,6 @@ class CategoriesScreen extends ConsumerWidget {
               gender: gender,
               ageMin: int.tryParse(ageMinCtrl.text),
               ageMax: int.tryParse(ageMaxCtrl.text),
-              dogCount: dogCount,
               sortOrder: existing?.sortOrder ?? 99,
             );
             final config = ref.read(eventConfigProvider);
@@ -254,7 +311,6 @@ class CategoriesScreen extends ConsumerWidget {
             }
             ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(raceCategories: list));
             Navigator.pop(ctx);
-            AppSnackBar.success(context, isNew ? '«${cat.name}» добавлена' : '«${cat.name}» обновлена');
           },
           icon: const Icon(Icons.save),
           label: Text(isNew ? 'Создать' : 'Сохранить'),
@@ -263,6 +319,12 @@ class CategoriesScreen extends ConsumerWidget {
       ]),
     ));
   }
+
+  static Color _genderColor(CategoryGender g, ColorScheme cs) => switch (g) {
+    CategoryGender.male => Colors.blue,
+    CategoryGender.female => Colors.pink,
+    CategoryGender.any => cs.primary,
+  };
 }
 
 // ─── Category Card ───
@@ -277,22 +339,18 @@ class _CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final color = CategoriesScreen._genderColor(cat.gender, cs);
     final genderIcon = switch (cat.gender) {
       CategoryGender.male => Icons.male,
       CategoryGender.female => Icons.female,
       CategoryGender.any => Icons.people,
-    };
-    final genderColor = switch (cat.gender) {
-      CategoryGender.male => Colors.blue,
-      CategoryGender.female => Colors.pink,
-      CategoryGender.any => cs.primary,
     };
 
     return Card(
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(14),
-        side: BorderSide(color: genderColor.withValues(alpha: 0.2)),
+        side: BorderSide(color: color.withValues(alpha: 0.2)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -300,11 +358,11 @@ class _CategoryCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           child: Row(children: [
-            // Gender icon
+            // Color circle
             CircleAvatar(
               radius: 18,
-              backgroundColor: genderColor.withValues(alpha: 0.1),
-              child: Icon(genderIcon, color: genderColor, size: 20),
+              backgroundColor: color.withValues(alpha: 0.1),
+              child: Icon(genderIcon, color: color, size: 20),
             ),
             const SizedBox(width: 12),
             // Info
@@ -314,19 +372,12 @@ class _CategoryCard extends StatelessWidget {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(cat.shortName, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.primary)),
+                  decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                  child: Text(cat.shortName, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
                 ),
               ]),
               const SizedBox(height: 4),
-              Wrap(spacing: 12, children: [
-                _chipLabel(Icons.cake, cat.ageLabel, cs),
-                _chipLabel(Icons.pets, '${cat.dogCount} соб.', cs),
-                _chipLabel(genderIcon, cat.genderLabel, cs),
-              ]),
+              Text(cat.subtitle, style: TextStyle(fontSize: 12, color: cs.outline)),
             ])),
             // Actions
             IconButton(icon: Icon(Icons.edit, size: 18, color: cs.outline), onPressed: onEdit, visualDensity: VisualDensity.compact),
@@ -335,13 +386,5 @@ class _CategoryCard extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  Widget _chipLabel(IconData icon, String text, ColorScheme cs) {
-    return Row(mainAxisSize: MainAxisSize.min, children: [
-      Icon(icon, size: 12, color: cs.outline),
-      const SizedBox(width: 3),
-      Text(text, style: TextStyle(fontSize: 11, color: cs.outline)),
-    ]);
   }
 }

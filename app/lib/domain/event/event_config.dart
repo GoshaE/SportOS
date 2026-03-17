@@ -46,10 +46,13 @@ enum BibDayPolicy {
 /// Пол для категории.
 enum CategoryGender { any, male, female }
 
-/// Категория соревнований (CEC, OPEN, Юниоры, M35…).
+/// Категория соревнований (М, Ж, Юниоры, Ветераны, M35…).
 ///
-/// Определяется на уровне мероприятия, затем дисциплины ссылаются
-/// на допущенные категории по id.
+/// Определяется на уровне мероприятия — чисто классификация
+/// участников по полу и возрасту. Универсальна для любого спорта
+/// (лыжи, бег, велосипед, ездовой спорт и т.д.).
+///
+/// Дисциплины ссылаются на допущенные категории по id.
 class RaceCategory {
   final String id;
   final String name;
@@ -57,7 +60,6 @@ class RaceCategory {
   final CategoryGender gender;
   final int? ageMin;
   final int? ageMax;
-  final int dogCount;
   final int sortOrder;
 
   const RaceCategory({
@@ -67,7 +69,6 @@ class RaceCategory {
     this.gender = CategoryGender.any,
     this.ageMin,
     this.ageMax,
-    this.dogCount = 1,
     this.sortOrder = 0,
   });
 
@@ -78,10 +79,18 @@ class RaceCategory {
   };
 
   String get ageLabel {
-    if (ageMin == null && ageMax == null) return 'Любой';
+    if (ageMin == null && ageMax == null) return 'Любой возраст';
     if (ageMin != null && ageMax != null) return '$ageMin–$ageMax лет';
     if (ageMin != null) return 'от $ageMin лет';
     return 'до $ageMax лет';
+  }
+
+  /// Краткое описание для карточки.
+  String get subtitle {
+    final parts = <String>[];
+    parts.add(genderLabel);
+    if (ageMin != null || ageMax != null) parts.add(ageLabel);
+    return parts.join('  ·  ');
   }
 
   RaceCategory copyWith({
@@ -91,7 +100,6 @@ class RaceCategory {
     CategoryGender? gender,
     int? ageMin,
     int? ageMax,
-    int? dogCount,
     int? sortOrder,
   }) {
     return RaceCategory(
@@ -101,7 +109,6 @@ class RaceCategory {
       gender: gender ?? this.gender,
       ageMin: ageMin ?? this.ageMin,
       ageMax: ageMax ?? this.ageMax,
-      dogCount: dogCount ?? this.dogCount,
       sortOrder: sortOrder ?? this.sortOrder,
     );
   }
