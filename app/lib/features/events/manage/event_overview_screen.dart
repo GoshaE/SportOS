@@ -380,6 +380,16 @@ class EventOverviewScreen extends ConsumerWidget {
         // ─── Участники ───
         AppMenuGroup(title: 'Участники', items: [
           AppMenuItem(
+            icon: Icons.confirmation_number,
+            label: 'Стартовые номера (BIB)',
+            badge: eventConfig.bibPools.isEmpty ? 'Не настроено' : '${eventConfig.bibPools.length} пулов',
+            subtitle: eventConfig.bibPools.isEmpty
+                ? 'Настройте пулы номеров'
+                : eventConfig.bibPools.map((p) => '${p.rangeStart}–${p.rangeEnd}').join(', '),
+            color: const Color(0xFF6A1B9A),
+            onTap: () => context.push('/manage/$eventId/bibs'),
+          ),
+          AppMenuItem(
             icon: Icons.app_registration,
             label: 'Регистрация',
             subtitle: 'Открыта, 60 слотов',

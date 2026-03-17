@@ -32,6 +32,7 @@ import '../features/events/manage/finances_screen.dart';
 import '../features/events/manage/documents_screen.dart';
 import '../features/events/manage/multi_day_config_screen.dart';
 import '../features/events/manage/basic_info_screen.dart';
+import '../features/events/manage/bib_pool_screen.dart';
 import '../features/events/manage/day_schedule_screen.dart';
 import '../features/events/manage/courses_screen.dart';
 import '../features/events/manage/display_settings_screen.dart';
@@ -378,6 +379,11 @@ final GoRouter router = GoRouter(
           path: 'schedule',
           name: 'manage-schedule',
           builder: (context, state) => const DayScheduleScreen(),
+        ),
+        GoRoute(
+          path: 'bibs',
+          name: 'manage-bibs',
+          builder: (context, state) => const BibPoolScreen(),
         ),
         GoRoute(
           path: 'courses',

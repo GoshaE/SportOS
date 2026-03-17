@@ -43,6 +43,42 @@ enum BibDayPolicy {
   pursuit,
 }
 
+/// Пул стартовых номеров (BIB).
+class BibPool {
+  final String id;
+  final String label;
+  final int rangeStart;
+  final int rangeEnd;
+  /// Привязка к дисциплине (null = общий пул).
+  final String? disciplineId;
+
+  const BibPool({
+    required this.id,
+    required this.label,
+    required this.rangeStart,
+    required this.rangeEnd,
+    this.disciplineId,
+  });
+
+  int get capacity => rangeEnd - rangeStart + 1;
+
+  BibPool copyWith({
+    String? id,
+    String? label,
+    int? rangeStart,
+    int? rangeEnd,
+    String? disciplineId,
+  }) {
+    return BibPool(
+      id: id ?? this.id,
+      label: label ?? this.label,
+      rangeStart: rangeStart ?? this.rangeStart,
+      rangeEnd: rangeEnd ?? this.rangeEnd,
+      disciplineId: disciplineId ?? this.disciplineId,
+    );
+  }
+}
+
 /// Конфигурация мероприятия — верхний уровень.
 ///
 /// Содержит общие настройки: название, даты, место, многодневность,
@@ -70,6 +106,9 @@ class EventConfig {
   // ── Трассы ──
   final List<Course> courses;
 
+  // ── BIB ──
+  final List<BibPool> bibPools;
+
   const EventConfig({
     required this.id,
     required this.name,
@@ -88,6 +127,7 @@ class EventConfig {
     this.bibDayPolicy = BibDayPolicy.keep,
     this.allowDogSwapBetweenDays = false,
     this.courses = const [],
+    this.bibPools = const [],
   });
 
   EventConfig copyWith({
@@ -108,6 +148,7 @@ class EventConfig {
     BibDayPolicy? bibDayPolicy,
     bool? allowDogSwapBetweenDays,
     List<Course>? courses,
+    List<BibPool>? bibPools,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -127,6 +168,7 @@ class EventConfig {
       bibDayPolicy: bibDayPolicy ?? this.bibDayPolicy,
       allowDogSwapBetweenDays: allowDogSwapBetweenDays ?? this.allowDogSwapBetweenDays,
       courses: courses ?? this.courses,
+      bibPools: bibPools ?? this.bibPools,
     );
   }
 }
