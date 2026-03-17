@@ -268,6 +268,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
             final color = Color.lerp(widget.cs.onSurfaceVariant, widget.cs.onPrimary, selectedness)!;
 
             return GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onTap: () => widget.controller.animateTo(i),
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),

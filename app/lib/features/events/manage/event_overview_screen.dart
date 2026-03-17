@@ -43,7 +43,7 @@ class EventOverviewScreen extends ConsumerWidget {
         ),
         body: TabBarView(
           children: [
-            _buildDashboardTab(context, cs, isDark, eventId, theme),
+            _buildDashboardTab(context, cs, isDark, eventId, theme, ref),
             _buildSetupTab(context, cs, isDark, eventId, theme, ref),
             _buildManagementTab(context, cs, isDark, eventId, theme),
           ],
@@ -55,10 +55,16 @@ class EventOverviewScreen extends ConsumerWidget {
   // ===========================================================================
   // ТАБ 1: Обзор (Dashboard)
   // ===========================================================================
-  Widget _buildDashboardTab(BuildContext context, ColorScheme cs, bool isDark, String eventId, ThemeData theme) {
+  Widget _buildDashboardTab(BuildContext context, ColorScheme cs, bool isDark, String eventId, ThemeData theme, WidgetRef ref) {
+    final eventConfig = ref.watch(eventConfigProvider);
+    
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       children: [
+        // ─── Status Banner ───
+        _buildStatusBanner(context, cs, eventConfig, ref),
+        const SizedBox(height: 16),
+
         // 1. Bento KPI Grid (Top)
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -184,6 +190,65 @@ class EventOverviewScreen extends ConsumerWidget {
         ),
         const SizedBox(height: 48),
       ],
+    );
+  }
+
+  // ─── Status Banner ───
+  Widget _buildStatusBanner(BuildContext context, ColorScheme cs, EventConfig eventConfig, WidgetRef ref) {
+    final (label, hint, icon, color) = switch (eventConfig.status) {
+      EventStatus.draft => ('Черновик', 'Мероприятие не видно участникам', Icons.edit_note, cs.outline),
+      EventStatus.registrationOpen => ('Регистрация открыта', 'Участники могут подавать заявки', Icons.how_to_reg, const Color(0xFF2E7D32)),
+      EventStatus.registrationClosed => ('Регистрация закрыта', 'Жеребьёвка и финальная подготовка', Icons.lock_outline, const Color(0xFFE65100)),
+      EventStatus.inProgress => ('Гонка идёт', 'Хронометраж активен', Icons.play_circle, cs.primary),
+      EventStatus.completed => ('Завершено', 'Протоколы опубликованы', Icons.check_circle, const Color(0xFF1565C0)),
+      EventStatus.archived => ('Архив', 'Мероприятие в архиве', Icons.archive, cs.outline),
+    };
+
+    final (nextLabel, nextStatus) = switch (eventConfig.status) {
+      EventStatus.draft => ('Открыть регистрацию', EventStatus.registrationOpen),
+      EventStatus.registrationOpen => ('Закрыть регистрацию', EventStatus.registrationClosed),
+      EventStatus.registrationClosed => ('Начать гонку', EventStatus.inProgress),
+      EventStatus.inProgress => ('Завершить', EventStatus.completed),
+      EventStatus.completed => ('Архивировать', EventStatus.archived),
+      EventStatus.archived => (null, null),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
+      ),
+      child: Row(children: [
+        Container(
+          width: 40, height: 40,
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 20, color: color),
+        ),
+        const SizedBox(width: 12),
+        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
+          Text(hint, style: TextStyle(fontSize: 11, color: cs.outline)),
+        ])),
+        if (nextLabel != null)
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              backgroundColor: color.withValues(alpha: 0.15),
+              foregroundColor: color,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () {
+              ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(status: nextStatus));
+            },
+            child: Text(nextLabel, style: const TextStyle(fontSize: 12)),
+          ),
+      ]),
     );
   }
 
