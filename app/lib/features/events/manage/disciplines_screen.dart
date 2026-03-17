@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
-import '../../../domain/event/event_config.dart';
+import '../../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../../domain/timing/models.dart';
 
 /// Screen ID: E2 — Дисциплины и классы
@@ -19,7 +19,6 @@ class DisciplinesScreen extends ConsumerWidget {
     final disciplines = ref.watch(disciplineConfigsProvider);
     final courses = ref.watch(coursesProvider);
     final eventConfig = ref.watch(eventConfigProvider);
-    final cs = Theme.of(context).colorScheme;
 
     // Group by sport type
     final grouped = <String, List<DisciplineConfig>>{};
@@ -86,6 +85,8 @@ class DisciplinesScreen extends ConsumerWidget {
     String startTypeStr = d.startType.name;
     Set<String> cats = Set<String>.from(d.categories);
     String? selectedCourseId = d.courseId;
+    final maxPartCtrl = TextEditingController(text: d.maxParticipants != null ? '${d.maxParticipants}' : '');
+    TimeOfDay selectedStartTime = TimeOfDay(hour: d.firstStartTime.hour, minute: d.firstStartTime.minute);
     final cs = Theme.of(context).colorScheme;
 
     AppBottomSheet.show(context, title: d.name, initialHeight: 0.9, child: StatefulBuilder(
@@ -206,6 +207,45 @@ class DisciplinesScreen extends ConsumerWidget {
               Expanded(child: Text('Между стартами участников', style: TextStyle(fontSize: 12, color: cs.outline))),
             ]),
           ],
+          const SizedBox(height: 12),
+          // First start time
+          InkWell(
+            onTap: () async {
+              final picked = await showTimePicker(context: ctx, initialTime: selectedStartTime);
+              if (picked != null) setModal(() => selectedStartTime = picked);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: cs.outlineVariant),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(children: [
+                Icon(Icons.schedule, size: 18, color: cs.primary),
+                const SizedBox(width: 8),
+                Text('Старт в ', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                Text(
+                  '${selectedStartTime.hour.toString().padLeft(2, '0')}:${selectedStartTime.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.primary),
+                ),
+                const Spacer(),
+                Icon(Icons.edit, size: 14, color: cs.outline),
+              ]),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: TextField(
+              controller: maxPartCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Макс. участников',
+                border: OutlineInputBorder(),
+                isDense: true,
+                prefixIcon: Icon(Icons.people_outline, size: 18),
+              ),
+              keyboardType: TextInputType.number,
+            )),
+          ]),
           const SizedBox(height: 8),
           Row(children: [
             Expanded(child: Row(children: [
@@ -293,6 +333,11 @@ class DisciplinesScreen extends ConsumerWidget {
                 categories: cats.toList(),
                 courseId: selectedCourseId,
                 cutoffTime: Duration(hours: cutoffH, minutes: cutoffM),
+                maxParticipants: int.tryParse(maxPartCtrl.text),
+                firstStartTime: DateTime(
+                  d.firstStartTime.year, d.firstStartTime.month, d.firstStartTime.day,
+                  selectedStartTime.hour, selectedStartTime.minute,
+                ),
               ));
 
               Navigator.pop(ctx);
@@ -337,22 +382,6 @@ class DisciplinesScreen extends ConsumerWidget {
       'cycle'     => const _SportInfo('🚴', 'Велоспорт', Color(0xFF6A1B9A)),
       _           => const _SportInfo('🏁', 'Другое', Color(0xFF616161)),
     };
-  }
-
-  String _startTypeLabel(DisciplineConfig d) {
-    return switch (d.startType) {
-      StartType.individual => 'Разд. ${d.interval.inSeconds}с',
-      StartType.mass       => 'Масс-старт',
-      StartType.wave       => 'Волна',
-      StartType.pursuit    => 'Преследование',
-      StartType.relay      => 'Эстафета',
-    };
-  }
-
-  String _formatDuration(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    return '${h}ч ${m}м';
   }
 }
 

@@ -212,9 +212,35 @@ class EventOverviewScreen extends ConsumerWidget {
 
     final cpCount = courses.fold<int>(0, (sum, c) => sum + c.checkpoints.length);
 
+    final statusLabel = switch (eventConfig.status) {
+      EventStatus.draft => 'Черновик',
+      EventStatus.registrationOpen => 'Регистрация открыта',
+      EventStatus.registrationClosed => 'Регистрация закрыта',
+      EventStatus.inProgress => 'В процессе',
+      EventStatus.completed => 'Завершено',
+      EventStatus.archived => 'Архив',
+    };
+    
+    const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+    final dateSummary = '${eventConfig.startDate.day} ${months[eventConfig.startDate.month - 1]}'
+        '${eventConfig.endDate != null ? ' — ${eventConfig.endDate!.day} ${months[eventConfig.endDate!.month - 1]}' : ''}';
+
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
       children: [
+        // ─── Основное ───
+        AppMenuGroup(title: 'Основное', items: [
+          AppMenuItem(
+            icon: Icons.info_outline,
+            label: eventConfig.name,
+            subtitle: '$dateSummary · ${eventConfig.location ?? 'Не указано'}',
+            badge: statusLabel,
+            color: cs.primary,
+            onTap: () => context.push('/manage/$eventId/basic-info'),
+          ),
+        ]),
+        const SizedBox(height: 24),
+
         // ─── Регламент ───
         AppMenuGroup(title: 'Регламент', items: [
           AppMenuItem(

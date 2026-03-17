@@ -153,6 +153,8 @@ EventConfig _demoEvent() {
     startDate: DateTime(2026, 3, 15),
     endDate: DateTime(2026, 3, 16),
     location: 'Екатеринбург, Шарташ',
+    description: 'Официальный чемпионат Уральского Федерального Округа по ездовому спорту. Зимние дисциплины: скиджоринг, нарты, каникросс, трейл.',
+    contactInfo: '+7 (912) 345-67-89, org@sportos.live',
     status: EventStatus.draft,
     isMultiDay: true,
     scoringMode: ScoringMode.cumulative,

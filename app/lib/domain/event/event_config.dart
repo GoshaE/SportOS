@@ -53,6 +53,9 @@ class EventConfig {
   final DateTime startDate;
   final DateTime? endDate;
   final String? location;
+  final String? description;
+  final String? contactInfo;
+  final String? logoUrl;
   final EventStatus status;
 
   // ── Многодневность ──
@@ -73,6 +76,9 @@ class EventConfig {
     required this.startDate,
     this.endDate,
     this.location,
+    this.description,
+    this.contactInfo,
+    this.logoUrl,
     this.status = EventStatus.draft,
     this.isMultiDay = false,
     this.days = const [],
@@ -90,6 +96,9 @@ class EventConfig {
     DateTime? startDate,
     DateTime? endDate,
     String? location,
+    String? description,
+    String? contactInfo,
+    String? logoUrl,
     EventStatus? status,
     bool? isMultiDay,
     List<RaceDay>? days,
@@ -106,6 +115,9 @@ class EventConfig {
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       location: location ?? this.location,
+      description: description ?? this.description,
+      contactInfo: contactInfo ?? this.contactInfo,
+      logoUrl: logoUrl ?? this.logoUrl,
       status: status ?? this.status,
       isMultiDay: isMultiDay ?? this.isMultiDay,
       days: days ?? this.days,
