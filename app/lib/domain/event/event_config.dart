@@ -209,6 +209,9 @@ class EventConfig {
   // ── Библиотека штрафов ──
   final List<PenaltyTemplate> penaltyTemplates;
 
+  // ── Предстартовый чек-лист ──
+  final List<ChecklistItemConfig> checklistItems;
+
   const EventConfig({
     required this.id,
     required this.name,
@@ -234,6 +237,7 @@ class EventConfig {
     this.pricingConfig = const PricingConfig(),
     this.timingConfig = const TimingConfig(),
     this.penaltyTemplates = defaultPenaltyTemplates,
+    this.checklistItems = defaultChecklistItems,
   });
 
   EventConfig copyWith({
@@ -261,6 +265,7 @@ class EventConfig {
     PricingConfig? pricingConfig,
     TimingConfig? timingConfig,
     List<PenaltyTemplate>? penaltyTemplates,
+    List<ChecklistItemConfig>? checklistItems,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -287,6 +292,7 @@ class EventConfig {
       pricingConfig: pricingConfig ?? this.pricingConfig,
       timingConfig: timingConfig ?? this.timingConfig,
       penaltyTemplates: penaltyTemplates ?? this.penaltyTemplates,
+      checklistItems: checklistItems ?? this.checklistItems,
     );
   }
 }
@@ -847,4 +853,48 @@ const List<PenaltyTemplate> defaultPenaltyTemplates = [
   PenaltyTemplate(id: 'pt-06', code: 'P6', description: 'Посторонняя помощь', timePenalty: Duration(seconds: 30), sortOrder: 6),
   PenaltyTemplate(id: 'pt-07', code: 'P7', description: 'Неспортивное поведение', sortOrder: 7), // DSQ
   PenaltyTemplate(id: 'pt-08', code: 'P8', description: 'Нарушение экипировки', timePenalty: Duration(seconds: 15), sortOrder: 8),
+];
+
+// ─────────────────────────────────────────────────────────────────
+// CHECKLIST (предстартовый чек-лист)
+// ─────────────────────────────────────────────────────────────────
+
+/// Элемент предстартового чек-листа.
+///
+/// Организатор настраивает список обязательных пунктов
+/// которые должны быть выполнены перед стартом.
+class ChecklistItemConfig {
+  final String id;
+  /// Заголовок (напр. «Ветконтроль»).
+  final String title;
+  /// Описание / подсказка.
+  final String? description;
+  /// Обязательный пункт (блокирует старт если не выполнен).
+  final bool required;
+  /// Ответственная роль (напр. vet, marshal, referee).
+  final String? assignedRole;
+  /// Порядок сортировки.
+  final int sortOrder;
+
+  const ChecklistItemConfig({
+    required this.id,
+    required this.title,
+    this.description,
+    this.required = true,
+    this.assignedRole,
+    this.sortOrder = 0,
+  });
+}
+
+/// Стандартный предстартовый чек-лист.
+const List<ChecklistItemConfig> defaultChecklistItems = [
+  ChecklistItemConfig(id: 'cl-01', title: 'Регистрация участников', description: 'Все заявки обработаны', assignedRole: 'secretary', sortOrder: 1),
+  ChecklistItemConfig(id: 'cl-02', title: 'Жеребьёвка', description: 'Стартовый порядок утверждён', assignedRole: 'referee', sortOrder: 2),
+  ChecklistItemConfig(id: 'cl-03', title: 'Стартовый лист', description: 'Опубликован для участников', assignedRole: 'secretary', sortOrder: 3),
+  ChecklistItemConfig(id: 'cl-04', title: 'BIB номера', description: 'Все номера выданы', assignedRole: 'secretary', sortOrder: 4),
+  ChecklistItemConfig(id: 'cl-05', title: 'Ветконтроль', description: 'Все собаки осмотрены', assignedRole: 'vet', sortOrder: 5),
+  ChecklistItemConfig(id: 'cl-06', title: 'Мандатная комиссия', description: 'Документы проверены', assignedRole: 'referee', sortOrder: 6),
+  ChecklistItemConfig(id: 'cl-07', title: 'Трасса готова', description: 'Разметка, ворота, безопасность', assignedRole: 'marshal', sortOrder: 7),
+  ChecklistItemConfig(id: 'cl-08', title: 'Хронометраж', description: 'Система протестирована', assignedRole: 'timing', sortOrder: 8),
+  ChecklistItemConfig(id: 'cl-09', title: 'Брифинг', description: 'Проведён для участников', required: false, assignedRole: 'referee', sortOrder: 9),
 ];

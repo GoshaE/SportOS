@@ -374,6 +374,13 @@ class EventOverviewScreen extends ConsumerWidget {
             color: cs.tertiary,
             onTap: () => context.push('/manage/$eventId/vet'),
           ),
+          AppMenuItem(
+            icon: Icons.checklist,
+            label: 'Предстартовый чек-лист',
+            badge: '${eventConfig.checklistItems.length} пунктов',
+            color: cs.secondary,
+            onTap: () => context.push('/manage/$eventId/checklist'),
+          ),
         ]),
         const SizedBox(height: 24),
 
