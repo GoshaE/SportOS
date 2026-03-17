@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,7 +8,16 @@ import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../../domain/timing/models.dart';
 
-/// Настройка пулов стартовых номеров (BIB).
+// Sport colors for pools
+const _poolColors = [
+  Color(0xFF1565C0), Color(0xFF2E7D32), Color(0xFFE65100),
+  Color(0xFF6A1B9A), Color(0xFFC62828), Color(0xFF00838F), Color(0xFF4E342E),
+];
+
+/// Настройка пулов стартовых номеров (BIB) — redesigned.
+///
+/// Визуальная шкала номеров, умная автонастройка, inline-редактирование,
+/// цветовое кодирование, проверка пересечений.
 class BibPoolScreen extends ConsumerWidget {
   const BibPoolScreen({super.key});
 
@@ -17,17 +27,23 @@ class BibPoolScreen extends ConsumerWidget {
     final disciplines = ref.watch(disciplineConfigsProvider);
     final cs = Theme.of(context).colorScheme;
     final pools = config.bibPools;
-
-    // Total capacity
     final totalCapacity = pools.fold<int>(0, (sum, p) => sum + p.capacity);
+    final overlaps = _findOverlaps(pools);
 
     return Scaffold(
       appBar: AppAppBar(
         title: const Text('Стартовые номера (BIB)'),
         actions: [
+          if (pools.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.auto_fix_high),
+              tooltip: 'Авто по дисциплинам',
+              onPressed: () => _smartAutoSetup(ref, disciplines, context),
+            ),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => _addPool(context, ref, disciplines, pools.length),
+            tooltip: 'Добавить пул',
+            onPressed: () => _addPool(context, ref, disciplines, pools),
           ),
         ],
       ),
@@ -36,38 +52,63 @@ class BibPoolScreen extends ConsumerWidget {
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                // Summary banner
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: cs.primaryContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
-                  ),
-                  child: Row(children: [
-                    Icon(Icons.confirmation_number, color: cs.primary),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text('${pools.length} пулов · $totalCapacity номеров',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
-                      Text(_rangeOverview(pools), style: TextStyle(fontSize: 12, color: cs.outline)),
-                    ])),
-                  ]),
-                ),
+                // ─── Visual Range Bar ───
+                _BibRangeBar(pools: pools, cs: cs, overlaps: overlaps),
                 const SizedBox(height: 16),
 
-                // Pool cards
+                // ─── Overlap warning ───
+                if (overlaps.isNotEmpty) ...[
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: cs.errorContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                    ),
+                    child: Row(children: [
+                      Icon(Icons.warning_amber, color: cs.error, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(child: Text(
+                        'Пересечение номеров: ${overlaps.map((o) => '${o.$1} ∩ ${o.$2}').join(', ')}',
+                        style: TextStyle(fontSize: 12, color: cs.error, fontWeight: FontWeight.w600),
+                      )),
+                    ]),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+
+                // ─── Summary ───
+                Row(children: [
+                  _summaryChip(cs, Icons.confirmation_number, '${pools.length} пулов'),
+                  const SizedBox(width: 8),
+                  _summaryChip(cs, Icons.tag, '$totalCapacity номеров'),
+                  const SizedBox(width: 8),
+                  if (overlaps.isEmpty)
+                    _summaryChip(cs, Icons.check_circle, 'Нет пересечений', isGood: true),
+                ]),
+                const SizedBox(height: 16),
+
+                // ─── Pool cards ───
                 ...pools.asMap().entries.map((entry) {
                   final i = entry.key;
                   final pool = entry.value;
                   final disc = disciplines.where((d) => d.id == pool.disciplineId).firstOrNull;
+                  final color = _poolColors[i % _poolColors.length];
+                  final hasOverlap = overlaps.any((o) => o.$1 == pool.label || o.$2 == pool.label);
 
                   return Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.only(bottom: 10),
                     child: _PoolCard(
                       pool: pool,
                       discipline: disc,
+                      color: color,
                       cs: cs,
+                      hasOverlap: hasOverlap,
+                      onRangeChanged: (start, end) {
+                        final updated = List<BibPool>.from(pools);
+                        updated[i] = pool.copyWith(rangeStart: start, rangeEnd: end);
+                        ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(bibPools: updated));
+                      },
                       onEdit: () => _editPool(context, ref, pool, disciplines),
                       onDelete: () {
                         final updated = List<BibPool>.from(pools)..removeAt(i);
@@ -77,23 +118,14 @@ class BibPoolScreen extends ConsumerWidget {
                   );
                 }),
 
-                const SizedBox(height: 16),
+                const SizedBox(height: 12),
 
-                // Add button
+                // ─── Add button ───
                 OutlinedButton.icon(
-                  onPressed: () => _addPool(context, ref, disciplines, pools.length),
+                  onPressed: () => _addPool(context, ref, disciplines, pools),
                   icon: const Icon(Icons.add),
                   label: const Text('Добавить пул'),
                 ),
-
-                const SizedBox(height: 16),
-
-                // Quick setup
-                if (pools.isEmpty || pools.length < disciplines.length)
-                  FilledButton.tonal(
-                    onPressed: () => _autoSetup(ref, disciplines),
-                    child: const Text('⚡ Автонастройка по дисциплинам'),
-                  ),
               ],
             ),
     );
@@ -103,52 +135,86 @@ class BibPoolScreen extends ConsumerWidget {
     return Center(child: Padding(
       padding: const EdgeInsets.all(32),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.confirmation_number_outlined, size: 64, color: cs.outline),
-        const SizedBox(height: 16),
-        Text('Стартовые номера не настроены', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.onSurface)),
+        Container(
+          width: 80, height: 80,
+          decoration: BoxDecoration(
+            color: cs.primaryContainer.withValues(alpha: 0.3),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(Icons.confirmation_number_outlined, size: 40, color: cs.primary),
+        ),
+        const SizedBox(height: 20),
+        Text('Стартовые номера', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.onSurface)),
         const SizedBox(height: 8),
-        Text('Создайте пулы номеров для каждой дисциплины или один общий пул.',
-          style: TextStyle(color: cs.outline), textAlign: TextAlign.center),
-        const SizedBox(height: 24),
+        Text(
+          'Создайте пулы номеров для каждой дисциплины.\n'
+          'Автонастройка подберёт диапазоны по кол-ву участников.',
+          style: TextStyle(color: cs.outline, fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 28),
         FilledButton.icon(
-          onPressed: () => _autoSetup(ref, disciplines),
+          onPressed: () => _smartAutoSetup(ref, disciplines, context),
           icon: const Icon(Icons.auto_fix_high),
-          label: const Text('Автонастройка'),
+          label: Text('Авто для ${disciplines.length} дисциплин'),
         ),
         const SizedBox(height: 12),
         OutlinedButton.icon(
-          onPressed: () => _addPool(context, ref, disciplines, 0),
+          onPressed: () => _addPool(context, ref, disciplines, []),
           icon: const Icon(Icons.add),
-          label: const Text('Добавить вручную'),
+          label: const Text('Вручную'),
         ),
       ]),
     ));
   }
 
-  void _autoSetup(WidgetRef ref, List<DisciplineConfig> disciplines) {
+  Widget _summaryChip(ColorScheme cs, IconData icon, String text, {bool isGood = false}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isGood ? const Color(0xFF2E7D32).withValues(alpha: 0.08) : cs.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Icon(icon, size: 14, color: isGood ? const Color(0xFF2E7D32) : cs.outline),
+        const SizedBox(width: 4),
+        Text(text, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600,
+            color: isGood ? const Color(0xFF2E7D32) : cs.onSurface)),
+      ]),
+    );
+  }
+
+  // ─── Smart auto-setup ───
+  void _smartAutoSetup(WidgetRef ref, List<DisciplineConfig> disciplines, BuildContext context) {
     final pools = <BibPool>[];
-    for (var i = 0; i < disciplines.length; i++) {
-      final d = disciplines[i];
-      final start = i * 100 + 1;
-      final end = (i + 1) * 100;
+    var nextStart = 1;
+    for (final d in disciplines) {
+      // Base on maxParticipants or 30 default, +20% buffer, round to nearest 10
+      final base = d.maxParticipants ?? 30;
+      final withBuffer = (base * 1.2).ceil();
+      final rounded = ((withBuffer + 9) ~/ 10) * 10; // round up to 10
+      final end = nextStart + rounded - 1;
+
       pools.add(BibPool(
         id: 'bib-${d.id}',
         label: d.name,
-        rangeStart: start,
+        rangeStart: nextStart,
         rangeEnd: end,
         disciplineId: d.id,
       ));
+      nextStart = end + 1;
     }
     ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(bibPools: pools));
+    AppSnackBar.success(context, '${pools.length} пулов создано (${pools.fold<int>(0, (s, p) => s + p.capacity)} номеров)');
   }
 
-  void _addPool(BuildContext context, WidgetRef ref, List<DisciplineConfig> disciplines, int index) {
-    final nextStart = index * 100 + 1;
+  void _addPool(BuildContext context, WidgetRef ref, List<DisciplineConfig> disciplines, List<BibPool> existing) {
+    final nextStart = existing.isEmpty ? 1 : existing.map((p) => p.rangeEnd).reduce(max) + 1;
     final pool = BibPool(
       id: 'bib-new-${DateTime.now().millisecondsSinceEpoch}',
-      label: 'Пул ${index + 1}',
+      label: 'Пул ${existing.length + 1}',
       rangeStart: nextStart,
-      rangeEnd: nextStart + 99,
+      rangeEnd: nextStart + 29,
     );
     _editPool(context, ref, pool, disciplines, isNew: true);
   }
@@ -167,18 +233,11 @@ class BibPoolScreen extends ConsumerWidget {
         final capacity = (end - start + 1).clamp(0, 9999);
 
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          // Label
           TextField(
             controller: labelCtrl,
-            decoration: const InputDecoration(
-              labelText: 'Название',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.label),
-            ),
+            decoration: const InputDecoration(labelText: 'Название', border: OutlineInputBorder(), prefixIcon: Icon(Icons.label)),
           ),
           const SizedBox(height: 12),
-
-          // Range
           Row(children: [
             Expanded(child: TextField(
               controller: startCtrl,
@@ -199,23 +258,14 @@ class BibPoolScreen extends ConsumerWidget {
             const SizedBox(width: 12),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer,
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text('$capacity шт', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
+              decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(8)),
+              child: Text('$capacity', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onPrimaryContainer)),
             ),
           ]),
           const SizedBox(height: 12),
-
-          // Discipline link
           DropdownButtonFormField<String?>(
             value: selectedDisciplineId,
-            decoration: const InputDecoration(
-              labelText: 'Привязка к дисциплине',
-              border: OutlineInputBorder(),
-              prefixIcon: Icon(Icons.sports),
-            ),
+            decoration: const InputDecoration(labelText: 'Дисциплина', border: OutlineInputBorder(), prefixIcon: Icon(Icons.sports)),
             items: [
               const DropdownMenuItem(value: null, child: Text('Общий пул')),
               ...disciplines.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))),
@@ -223,8 +273,6 @@ class BibPoolScreen extends ConsumerWidget {
             onChanged: (v) => setModal(() => selectedDisciplineId = v),
           ),
           const SizedBox(height: 16),
-
-          // Save
           SizedBox(width: double.infinity, child: FilledButton.icon(
             onPressed: () {
               final updated = BibPool(
@@ -254,9 +302,96 @@ class BibPoolScreen extends ConsumerWidget {
     ));
   }
 
-  String _rangeOverview(List<BibPool> pools) {
-    if (pools.isEmpty) return '';
-    return pools.map((p) => '${p.rangeStart}–${p.rangeEnd}').join(', ');
+  List<(String, String)> _findOverlaps(List<BibPool> pools) {
+    final overlaps = <(String, String)>[];
+    for (var i = 0; i < pools.length; i++) {
+      for (var j = i + 1; j < pools.length; j++) {
+        final a = pools[i], b = pools[j];
+        if (a.rangeStart <= b.rangeEnd && b.rangeStart <= a.rangeEnd) {
+          overlaps.add((a.label, b.label));
+        }
+      }
+    }
+    return overlaps;
+  }
+}
+
+// ─── Visual Range Bar ───
+
+class _BibRangeBar extends StatelessWidget {
+  final List<BibPool> pools;
+  final ColorScheme cs;
+  final List<(String, String)> overlaps;
+
+  const _BibRangeBar({required this.pools, required this.cs, required this.overlaps});
+
+  @override
+  Widget build(BuildContext context) {
+    if (pools.isEmpty) return const SizedBox();
+
+    final globalMin = pools.map((p) => p.rangeStart).reduce(min);
+    final globalMax = pools.map((p) => p.rangeEnd).reduce(max);
+    final totalRange = (globalMax - globalMin + 1).clamp(1, 99999);
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      // Title
+      Row(children: [
+        Icon(Icons.linear_scale, size: 14, color: cs.primary),
+        const SizedBox(width: 6),
+        Text('Шкала номеров', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
+        const Spacer(),
+        Text('$globalMin – $globalMax', style: TextStyle(fontSize: 11, color: cs.outline)),
+      ]),
+      const SizedBox(height: 8),
+
+      // Bar
+      Container(
+        height: 40,
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: LayoutBuilder(builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          return Stack(children: [
+            ...pools.asMap().entries.map((entry) {
+              final i = entry.key;
+              final pool = entry.value;
+              final color = _poolColors[i % _poolColors.length];
+              final left = ((pool.rangeStart - globalMin) / totalRange) * width;
+              final barWidth = ((pool.capacity) / totalRange * width).clamp(2.0, width);
+
+              return Positioned(
+                left: left,
+                top: 4,
+                bottom: 4,
+                width: barWidth,
+                child: Tooltip(
+                  message: '${pool.label}: ${pool.rangeStart}–${pool.rangeEnd} (${pool.capacity} шт)',
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(6),
+                      border: overlaps.any((o) => o.$1 == pool.label || o.$2 == pool.label)
+                          ? Border.all(color: cs.error, width: 2)
+                          : null,
+                    ),
+                    alignment: Alignment.center,
+                    child: barWidth > 30
+                        ? Text(
+                            '${pool.rangeStart}–${pool.rangeEnd}',
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold),
+                            maxLines: 1, overflow: TextOverflow.ellipsis,
+                          )
+                        : null,
+                  ),
+                ),
+              );
+            }),
+          ]);
+        }),
+      ),
+    ]);
   }
 }
 
@@ -265,61 +400,184 @@ class BibPoolScreen extends ConsumerWidget {
 class _PoolCard extends StatelessWidget {
   final BibPool pool;
   final DisciplineConfig? discipline;
+  final Color color;
   final ColorScheme cs;
+  final bool hasOverlap;
+  final void Function(int start, int end) onRangeChanged;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _PoolCard({
     required this.pool,
     this.discipline,
+    required this.color,
     required this.cs,
+    required this.hasOverlap,
+    required this.onRangeChanged,
     required this.onEdit,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(padding: EdgeInsets.zero, children: [
-      ListTile(
-        leading: Container(
-          width: 44, height: 44,
-          decoration: BoxDecoration(
-            color: cs.primaryContainer,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Center(child: Text(
-            '${pool.rangeStart}',
-            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: cs.onPrimaryContainer),
-          )),
+    return Container(
+      decoration: BoxDecoration(
+        color: cs.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasOverlap ? cs.error.withValues(alpha: 0.5) : color.withValues(alpha: 0.3),
+          width: hasOverlap ? 2 : 1,
         ),
-        title: Text(pool.label, style: const TextStyle(fontWeight: FontWeight.bold)),
-        subtitle: Row(children: [
-          Text('${pool.rangeStart} – ${pool.rangeEnd}', style: TextStyle(fontSize: 12, color: cs.outline)),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              color: cs.tertiaryContainer,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text('${pool.capacity} шт',
-              style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.onTertiaryContainer)),
-          ),
-          if (discipline != null) ...[
-            const SizedBox(width: 8),
-            Icon(Icons.sports, size: 12, color: cs.outline),
-            const SizedBox(width: 2),
-            Flexible(child: Text(discipline!.name,
-              style: TextStyle(fontSize: 10, color: cs.outline),
-              maxLines: 1, overflow: TextOverflow.ellipsis)),
-          ],
-        ]),
-        trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-          IconButton(icon: Icon(Icons.edit, size: 18, color: cs.outline), onPressed: onEdit),
-          IconButton(icon: Icon(Icons.delete_outline, size: 18, color: cs.error), onPressed: onDelete),
-        ]),
-        onTap: onEdit,
+        boxShadow: [
+          BoxShadow(color: color.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+        ],
       ),
+      child: Column(children: [
+        // Header with color accent
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.08),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+          ),
+          child: Row(children: [
+            // Color dot
+            Container(
+              width: 10, height: 10,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+            const SizedBox(width: 10),
+            // Label
+            Expanded(child: Text(pool.label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: cs.onSurface))),
+            // Discipline badge
+            if (discipline != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.sports, size: 11, color: color),
+                  const SizedBox(width: 3),
+                  Text(discipline!.name, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w600),
+                    maxLines: 1, overflow: TextOverflow.ellipsis),
+                ]),
+              ),
+            if (hasOverlap) ...[
+              const SizedBox(width: 6),
+              Icon(Icons.warning_amber, size: 16, color: cs.error),
+            ],
+          ]),
+        ),
+
+        // Range with inline steppers
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          child: Row(children: [
+            // Start range
+            _RangeStepper(
+              label: 'От',
+              value: pool.rangeStart,
+              color: color,
+              cs: cs,
+              onChanged: (v) => onRangeChanged(v, pool.rangeEnd),
+            ),
+            // Arrow
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Icon(Icons.arrow_forward, size: 16, color: cs.outline),
+            ),
+            // End range
+            _RangeStepper(
+              label: 'До',
+              value: pool.rangeEnd,
+              color: color,
+              cs: cs,
+              onChanged: (v) => onRangeChanged(pool.rangeStart, v),
+            ),
+            const Spacer(),
+            // Capacity badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${pool.capacity} шт',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: color),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Actions
+            IconButton(
+              icon: Icon(Icons.edit, size: 18, color: cs.outline),
+              onPressed: onEdit,
+              visualDensity: VisualDensity.compact,
+            ),
+            IconButton(
+              icon: Icon(Icons.delete_outline, size: 18, color: cs.error),
+              onPressed: onDelete,
+              visualDensity: VisualDensity.compact,
+            ),
+          ]),
+        ),
+      ]),
+    );
+  }
+}
+
+// ─── Range Stepper ───
+
+class _RangeStepper extends StatelessWidget {
+  final String label;
+  final int value;
+  final Color color;
+  final ColorScheme cs;
+  final ValueChanged<int> onChanged;
+
+  const _RangeStepper({
+    required this.label,
+    required this.value,
+    required this.color,
+    required this.cs,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(label, style: TextStyle(fontSize: 9, color: cs.outline)),
+      const SizedBox(height: 2),
+      Row(mainAxisSize: MainAxisSize.min, children: [
+        _stepBtn(Icons.remove, () => onChanged((value - 1).clamp(1, 9999))),
+        Container(
+          constraints: const BoxConstraints(minWidth: 44),
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+          decoration: BoxDecoration(
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            '$value',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: cs.onSurface),
+            textAlign: TextAlign.center,
+          ),
+        ),
+        _stepBtn(Icons.add, () => onChanged((value + 1).clamp(1, 9999))),
+      ]),
     ]);
+  }
+
+  Widget _stepBtn(IconData icon, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(4),
+      child: Padding(
+        padding: const EdgeInsets.all(4),
+        child: Icon(icon, size: 16, color: color),
+      ),
+    );
   }
 }
