@@ -7,7 +7,9 @@ import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../../domain/timing/models.dart';
 
-/// Расписание дня — визуальная timeline дисциплин.
+/// Расписание дня — интерактивная timeline дисциплин.
+///
+/// Tap на бар → выбор времени старта.
 class DayScheduleScreen extends ConsumerWidget {
   const DayScheduleScreen({super.key});
 
@@ -23,7 +25,6 @@ class DayScheduleScreen extends ConsumerWidget {
       final day = d.dayNumber ?? 1;
       dayMap.putIfAbsent(day, () => []).add(d);
     }
-    // Sort each day by firstStartTime
     for (final list in dayMap.values) {
       list.sort((a, b) => a.firstStartTime.compareTo(b.firstStartTime));
     }
@@ -36,9 +37,7 @@ class DayScheduleScreen extends ConsumerWidget {
         appBar: AppAppBar(
           title: const Text('Расписание'),
           bottom: dayNumbers.length > 1
-              ? AppPillTabBar(
-                  tabs: dayNumbers.map((d) => 'День $d').toList(),
-                )
+              ? AppPillTabBar(tabs: dayNumbers.map((d) => 'День $d').toList())
               : null,
         ),
         body: dayNumbers.length > 1
@@ -46,13 +45,14 @@ class DayScheduleScreen extends ConsumerWidget {
                 children: dayNumbers.map((dayNum) {
                   final dayDiscs = dayMap[dayNum]!;
                   final raceDay = config.days.where((d) => d.dayNumber == dayNum).firstOrNull;
-                  return _DayTimeline(disciplines: dayDiscs, raceDay: raceDay, cs: cs);
+                  return _DayTimeline(disciplines: dayDiscs, raceDay: raceDay, cs: cs, ref: ref);
                 }).toList(),
               )
             : _DayTimeline(
                 disciplines: dayMap[dayNumbers.firstOrNull ?? 1] ?? [],
                 raceDay: config.days.firstOrNull,
                 cs: cs,
+                ref: ref,
               ),
       ),
     );
@@ -65,8 +65,9 @@ class _DayTimeline extends StatelessWidget {
   final List<DisciplineConfig> disciplines;
   final RaceDay? raceDay;
   final ColorScheme cs;
+  final WidgetRef ref;
 
-  const _DayTimeline({required this.disciplines, this.raceDay, required this.cs});
+  const _DayTimeline({required this.disciplines, this.raceDay, required this.cs, required this.ref});
 
   @override
   Widget build(BuildContext context) {
@@ -89,15 +90,9 @@ class _DayTimeline extends StatelessWidget {
     final startHour = earliest.hour;
     final totalHours = (timeRangeHours + 1).ceil().clamp(2, 24);
 
-    // Sport colors
     const sportColors = [
-      Color(0xFF1565C0), // blue
-      Color(0xFF2E7D32), // green
-      Color(0xFFE65100), // orange
-      Color(0xFF6A1B9A), // purple
-      Color(0xFFC62828), // red
-      Color(0xFF00838F), // teal
-      Color(0xFF4E342E), // brown
+      Color(0xFF1565C0), Color(0xFF2E7D32), Color(0xFFE65100),
+      Color(0xFF6A1B9A), Color(0xFFC62828), Color(0xFF00838F), Color(0xFF4E342E),
     ];
 
     return ListView(
@@ -117,20 +112,19 @@ class _DayTimeline extends StatelessWidget {
               Icon(Icons.schedule, size: 14, color: cs.outline),
               const SizedBox(width: 4),
               Text(
-                'Старт с ${raceDay!.startTime!.hour.toString().padLeft(2, '0')}:${raceDay!.startTime!.minute.toString().padLeft(2, '0')}',
+                'Старт дня с ${raceDay!.startTime!.hour.toString().padLeft(2, '0')}:${raceDay!.startTime!.minute.toString().padLeft(2, '0')}',
                 style: TextStyle(fontSize: 12, color: cs.outline),
               ),
             ],
           ]),
-          const SizedBox(height: 16),
+          const SizedBox(height: 4),
+          Text('Нажмите на дисциплину чтобы изменить время старта',
+            style: TextStyle(fontSize: 11, color: cs.outline, fontStyle: FontStyle.italic)),
+          const SizedBox(height: 12),
         ],
 
-        // ─── Time ruler + bars ───
-        _TimeRuler(
-          startHour: startHour,
-          totalHours: totalHours,
-          cs: cs,
-        ),
+        // ─── Time ruler ───
+        _TimeRuler(startHour: startHour, totalHours: totalHours, cs: cs),
         const SizedBox(height: 4),
 
         // ─── Discipline bars ───
@@ -150,6 +144,7 @@ class _DayTimeline extends StatelessWidget {
               startFraction: startMin / totalMin,
               widthFraction: (durationMin / totalMin).clamp(0.02, 1.0),
               cs: cs,
+              onTap: () => _editStartTime(context, d),
             ),
           );
         }),
@@ -160,6 +155,104 @@ class _DayTimeline extends StatelessWidget {
         _SummarySection(disciplines: disciplines, cs: cs),
       ],
     );
+  }
+
+  void _editStartTime(BuildContext context, DisciplineConfig d) {
+    final currentTime = TimeOfDay(hour: d.firstStartTime.hour, minute: d.firstStartTime.minute);
+
+    AppBottomSheet.show(context, title: d.name, child: StatefulBuilder(
+      builder: (ctx, setModal) {
+        var selectedTime = currentTime;
+        final cutoffH = (d.cutoffTime?.inHours ?? 2);
+        final cutoffM = (d.cutoffTime?.inMinutes.remainder(60) ?? 0);
+        final endTime = TimeOfDay(
+          hour: (selectedTime.hour + cutoffH + (selectedTime.minute + cutoffM) ~/ 60) % 24,
+          minute: (selectedTime.minute + cutoffM) % 60,
+        );
+
+        return Column(mainAxisSize: MainAxisSize.min, children: [
+          // Current time display
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Column(children: [
+              Text('Старт', style: TextStyle(fontSize: 11, color: cs.outline)),
+              const SizedBox(height: 4),
+              InkWell(
+                onTap: () async {
+                  final picked = await showTimePicker(context: ctx, initialTime: selectedTime);
+                  if (picked != null) setModal(() => selectedTime = picked);
+                },
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: cs.primaryContainer,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: cs.onPrimaryContainer),
+                  ),
+                ),
+              ),
+            ]),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Icon(Icons.arrow_forward, color: cs.outline),
+            ),
+            Column(children: [
+              Text('Финиш (cutoff)', style: TextStyle(fontSize: 11, color: cs.outline)),
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: cs.onSurfaceVariant),
+                ),
+              ),
+            ]),
+          ]),
+          const SizedBox(height: 12),
+
+          // Info chips
+          Wrap(spacing: 8, children: [
+            Chip(
+              avatar: const Icon(Icons.straighten, size: 14),
+              label: Text('${d.totalDistanceKm.toStringAsFixed(1)} км'),
+            ),
+            Chip(
+              avatar: const Icon(Icons.timer, size: 14),
+              label: Text('Cutoff ${cutoffH}ч ${cutoffM.toString().padLeft(2, '0')}м'),
+            ),
+            Chip(
+              avatar: const Icon(Icons.groups, size: 14),
+              label: Text(d.maxParticipants != null ? 'Макс. ${d.maxParticipants}' :  'Без лимита'),
+            ),
+          ]),
+          const SizedBox(height: 16),
+
+          // Save
+          SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: () {
+              ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
+                firstStartTime: DateTime(
+                  d.firstStartTime.year, d.firstStartTime.month, d.firstStartTime.day,
+                  selectedTime.hour, selectedTime.minute,
+                ),
+              ));
+              Navigator.pop(ctx);
+              AppSnackBar.success(context, 'Время старта обновлено: ${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}');
+            },
+            icon: const Icon(Icons.save),
+            label: const Text('Сохранить'),
+          )),
+          const SizedBox(height: 8),
+        ]);
+      },
+    ));
   }
 
   String _formatDate(DateTime? date) {
@@ -187,12 +280,10 @@ class _TimeRuler extends StatelessWidget {
         final width = constraints.maxWidth;
         return Stack(
           children: [
-            // Horizontal line
             Positioned(
               left: 0, right: 0, bottom: 0,
               child: Container(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
             ),
-            // Hour marks
             ...List.generate(totalHours + 1, (i) {
               final x = (i / totalHours) * width;
               final hour = (startHour + i) % 24;
@@ -223,6 +314,7 @@ class _DisciplineBar extends StatelessWidget {
   final double startFraction;
   final double widthFraction;
   final ColorScheme cs;
+  final VoidCallback onTap;
 
   const _DisciplineBar({
     required this.discipline,
@@ -230,6 +322,7 @@ class _DisciplineBar extends StatelessWidget {
     required this.startFraction,
     required this.widthFraction,
     required this.cs,
+    required this.onTap,
   });
 
   @override
@@ -246,7 +339,6 @@ class _DisciplineBar extends StatelessWidget {
       return SizedBox(
         height: 48,
         child: Stack(children: [
-          // Dashed background line
           Positioned(
             left: 0, right: 0, top: 23, bottom: 23,
             child: Container(
@@ -255,43 +347,52 @@ class _DisciplineBar extends StatelessWidget {
               ),
             ),
           ),
-          // Bar
           Positioned(
             left: barLeft,
             top: 2,
             bottom: 2,
             width: barWidth,
-            child: Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [color, color.withValues(alpha: 0.7)],
-                ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: onTap,
                 borderRadius: BorderRadius.circular(8),
-                boxShadow: [
-                  BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2)),
-                ],
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(children: [
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        discipline.name,
-                        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                      ),
-                      Text(
-                        '$startTime – $endStr · ${discipline.totalDistanceKm.toStringAsFixed(1)} км',
-                        style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 9),
-                        maxLines: 1, overflow: TextOverflow.ellipsis,
-                      ),
+                child: Ink(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [color, color.withValues(alpha: 0.7)],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2)),
                     ],
                   ),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    child: Row(children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              discipline.name,
+                              style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                              maxLines: 1, overflow: TextOverflow.ellipsis,
+                            ),
+                            Text(
+                              '$startTime – $endStr · ${discipline.totalDistanceKm.toStringAsFixed(1)} км',
+                              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 9),
+                              maxLines: 1, overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.edit, size: 12, color: Colors.white.withValues(alpha: 0.6)),
+                    ]),
+                  ),
                 ),
-              ]),
+              ),
             ),
           ),
         ]),
