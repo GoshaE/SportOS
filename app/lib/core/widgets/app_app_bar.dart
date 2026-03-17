@@ -39,7 +39,6 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       activeLeading = Padding(
         padding: const EdgeInsets.only(left: 12.0, top: 4.0, bottom: 4.0),
         child: Container(
-          alignment: Alignment.center,
           decoration: BoxDecoration(
             color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
             shape: BoxShape.circle,
@@ -48,13 +47,13 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
             ),
           ),
           child: IconButton(
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
+            padding: const EdgeInsets.only(right: 2), // visually center the iOS arrow
             icon: Icon(Icons.arrow_back_ios_new, size: 18, color: cs.onSurface),
             onPressed: onBackButtonPressed ?? () {
               if (context.canPop()) {
                 context.pop();
               } else {
+                // Fallback: navigate to hub if stack is empty
                 context.go('/hub');
               }
             },
