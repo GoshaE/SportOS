@@ -120,32 +120,99 @@ class EventConfig {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// START ORDER
+// ─────────────────────────────────────────────────────────────────
+
+/// Стартовый порядок дня.
+enum StartOrder {
+  /// Жеребьёвка (новый случайный порядок).
+  draw,
+  /// Такой же порядок, как предыдущий день.
+  same,
+  /// Обратный порядок (лидер стартует последним).
+  reverse,
+  /// Гундерсен — стартовый интервал = отставание предыдущего дня.
+  pursuit,
+}
+
+// ─────────────────────────────────────────────────────────────────
 // RACE DAY
 // ─────────────────────────────────────────────────────────────────
 
 /// День соревнований (для многодневных мероприятий).
+///
+/// Каждый день может иметь свой набор дисциплин, стартовый порядок,
+/// время старта и настройку ветконтроля.
 class RaceDay {
   final int dayNumber;
   final DateTime date;
+
+  /// Какие дисциплины проводятся в этот день (из общего пула).
   final List<String> disciplineIds;
+
+  /// Стартовый порядок этого дня.
+  final StartOrder startOrder;
+
+  /// Время первого старта.
+  final TimeOfDay startTime;
+
+  /// Проводить ли ветконтроль в этот день.
+  final bool vetCheck;
 
   const RaceDay({
     required this.dayNumber,
     required this.date,
     this.disciplineIds = const [],
+    this.startOrder = StartOrder.draw,
+    this.startTime = const TimeOfDay(hour: 10, minute: 0),
+    this.vetCheck = true,
   });
+
+  /// Создать новый день, скопировав настройки из другого дня (шаблон).
+  factory RaceDay.copyFromDay(RaceDay template, {required int dayNumber, required DateTime date}) {
+    return RaceDay(
+      dayNumber: dayNumber,
+      date: date,
+      disciplineIds: List.of(template.disciplineIds),
+      startOrder: dayNumber > 1 ? StartOrder.reverse : StartOrder.draw,
+      startTime: template.startTime,
+      vetCheck: template.vetCheck,
+    );
+  }
 
   RaceDay copyWith({
     int? dayNumber,
     DateTime? date,
     List<String>? disciplineIds,
+    StartOrder? startOrder,
+    TimeOfDay? startTime,
+    bool? vetCheck,
   }) {
     return RaceDay(
       dayNumber: dayNumber ?? this.dayNumber,
       date: date ?? this.date,
       disciplineIds: disciplineIds ?? this.disciplineIds,
+      startOrder: startOrder ?? this.startOrder,
+      startTime: startTime ?? this.startTime,
+      vetCheck: vetCheck ?? this.vetCheck,
     );
   }
+}
+
+/// Lightweight TimeOfDay (no Flutter dependency).
+class TimeOfDay {
+  final int hour;
+  final int minute;
+  const TimeOfDay({required this.hour, required this.minute});
+
+  String format() => '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+
+  @override
+  bool operator ==(Object other) =>
+      other is TimeOfDay && other.hour == hour && other.minute == minute;
+
+  @override
+  int get hashCode => hour * 60 + minute;
 }
 
 // ─────────────────────────────────────────────────────────────────

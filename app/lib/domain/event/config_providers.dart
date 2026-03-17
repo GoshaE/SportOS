@@ -30,22 +30,58 @@ class EventConfigNotifier extends Notifier<EventConfig> {
     state = state.copyWith();
   }
 
-  /// Добавить многодневный день.
-  void addDay(RaceDay day) {
+  /// Добавить день из шаблона (копия предыдущего дня).
+  void addDayFromTemplate({int? copyFromDayNumber}) {
+    final template = copyFromDayNumber != null
+        ? state.days.firstWhere((d) => d.dayNumber == copyFromDayNumber, orElse: () => state.days.last)
+        : state.days.isNotEmpty ? state.days.last : null;
+
+    final newDayNumber = (state.days.map((d) => d.dayNumber).fold<int>(0, (a, b) => a > b ? a : b)) + 1;
+    final newDate = state.startDate.add(Duration(days: newDayNumber - 1));
+
+    final newDay = template != null
+        ? RaceDay.copyFromDay(template, dayNumber: newDayNumber, date: newDate)
+        : RaceDay(dayNumber: newDayNumber, date: newDate, disciplineIds: disciplines.map((d) => d.id).toList());
+
     state = state.copyWith(
       isMultiDay: true,
-      days: [...state.days, day],
+      days: [...state.days, newDay],
+      endDate: newDate,
+    );
+  }
+
+  /// Обновить конкретный день.
+  void updateDay(int dayNumber, RaceDay Function(RaceDay) updater) {
+    state = state.copyWith(
+      days: state.days.map((d) => d.dayNumber == dayNumber ? updater(d) : d).toList(),
+    );
+  }
+
+  /// Удалить день.
+  void removeDay(int dayNumber) {
+    final updated = state.days.where((d) => d.dayNumber != dayNumber).toList();
+    state = state.copyWith(
+      days: updated,
+      isMultiDay: updated.length > 1,
     );
   }
 
   /// Переключить многодневность.
   void toggleMultiDay(bool value) {
-    state = state.copyWith(
-      isMultiDay: value,
-      days: value && state.days.isEmpty
-          ? [RaceDay(dayNumber: 1, date: state.startDate)]
-          : state.days,
-    );
+    if (value && state.days.isEmpty) {
+      // Включили: создаём 2 дня с умными дефолтами
+      final allDiscIds = disciplines.map((d) => d.id).toList();
+      state = state.copyWith(
+        isMultiDay: true,
+        days: [
+          RaceDay(dayNumber: 1, date: state.startDate, disciplineIds: allDiscIds, startOrder: StartOrder.draw),
+          RaceDay(dayNumber: 2, date: state.startDate.add(const Duration(days: 1)), disciplineIds: allDiscIds, startOrder: StartOrder.reverse),
+        ],
+        endDate: state.startDate.add(const Duration(days: 1)),
+      );
+    } else if (!value) {
+      state = state.copyWith(isMultiDay: false);
+    }
   }
 
   // ── Internal disciplines storage ──
@@ -128,11 +164,15 @@ EventConfig _demoEvent() {
         dayNumber: 1,
         date: DateTime(2026, 3, 15),
         disciplineIds: ['d-skijor-6', 'd-skijor-20', 'd-sled2-15', 'd-canicross-3'],
+        startOrder: StartOrder.draw,
+        startTime: const TimeOfDay(hour: 10, minute: 0),
       ),
       RaceDay(
         dayNumber: 2,
         date: DateTime(2026, 3, 16),
         disciplineIds: ['d-skijor2-40', 'd-sled4-20', 'd-trail-10'],
+        startOrder: StartOrder.reverse,
+        startTime: const TimeOfDay(hour: 10, minute: 0),
       ),
     ],
     courses: [
