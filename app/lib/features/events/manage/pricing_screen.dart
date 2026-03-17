@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -19,7 +18,6 @@ class PricingScreen extends ConsumerWidget {
     final pricing = config.pricingConfig;
     final disciplines = ref.watch(disciplineConfigsProvider);
     final cs = Theme.of(context).colorScheme;
-    final dateFmt = DateFormat('dd.MM.yyyy');
 
     void updatePricing(PricingConfig Function(PricingConfig p) fn) {
       ref.read(eventConfigProvider.notifier).update(
@@ -95,7 +93,7 @@ class PricingScreen extends ConsumerWidget {
             AppSettingsTile.toggle(
               title: 'Early Bird',
               subtitle: pricing.earlyBirdEnabled
-                  ? 'Скидка ${pricing.earlyBirdDiscountPercent}%${pricing.earlyBirdDeadline != null ? ' до ${dateFmt.format(pricing.earlyBirdDeadline!)}' : ''}'
+                  ? 'Скидка ${pricing.earlyBirdDiscountPercent}%${pricing.earlyBirdDeadline != null ? ' до ${_fmtDate(pricing.earlyBirdDeadline!)}' : ''}'
                   : 'Выключено',
               value: pricing.earlyBirdEnabled,
               onChanged: (v) => updatePricing((p) => p.copyWith(earlyBirdEnabled: v)),
@@ -113,7 +111,7 @@ class PricingScreen extends ConsumerWidget {
               AppSettingsTile.nav(
                 title: 'Действует до',
                 subtitle: pricing.earlyBirdDeadline != null
-                    ? dateFmt.format(pricing.earlyBirdDeadline!)
+                    ? _fmtDate(pricing.earlyBirdDeadline!)
                     : 'Не задано',
                 onTap: () async {
                   final date = await showDatePicker(
@@ -221,6 +219,9 @@ class PricingScreen extends ConsumerWidget {
     _ => code,
   };
 
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+
   void _editDisciplinePrice(BuildContext context, WidgetRef ref, dynamic disc, String currency) {
     final ctrl = TextEditingController(text: '${disc.priceRub ?? 0}');
     AppBottomSheet.show(context, title: disc.name, child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -238,13 +239,10 @@ class PricingScreen extends ConsumerWidget {
       SizedBox(width: double.infinity, child: FilledButton(
         onPressed: () {
           final price = int.tryParse(ctrl.text) ?? 0;
-          final disciplines = ref.read(disciplineConfigsProvider);
-          final idx = disciplines.indexWhere((d) => d.id == disc.id);
-          if (idx >= 0) {
-            final updated = List.from(disciplines);
-            updated[idx] = disc.copyWith(priceRub: price > 0 ? price : null);
-            ref.read(disciplineConfigsProvider.notifier).state = List.from(updated);
-          }
+          ref.read(eventConfigProvider.notifier).updateDiscipline(
+            disc.id,
+            (d) => d.copyWith(priceRub: price > 0 ? price : null),
+          );
           Navigator.pop(context);
         },
         child: const Text('Сохранить'),
