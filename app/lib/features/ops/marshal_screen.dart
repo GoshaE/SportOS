@@ -66,14 +66,14 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
       HapticFeedback.mediumImpact();
       final mark = notifier.addMark(type: MarkType.checkpoint);
       if (mark != null) {
-        notifier.assignBib(mark.id, bib, entryId: bib);
+        notifier.assignBib(mark.id, bib, entryId: session.startList.findByBib(bib)?.entryId);
       }
 
       final athlete = session.startList.findByBib(bib);
       final bibMarks = session.marking.marksForBib(bib);
       if (athlete != null && bibMarks.isNotEmpty) {
         final elapsed = _elapsedCalc.netTime(athlete, bibMarks.last.correctedTime);
-        AppSnackBar.success(context, 'BIB $bib — отсечка: ${_fmtDur(elapsed)}');
+        AppSnackBar.success(context, 'BIB $bib — отсечка: ${TimeFormatter.hms(elapsed)}');
       }
     }
   }
@@ -82,12 +82,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
   // Helpers
   // ═══════════════════════════════════════
 
-  String _fmtDur(Duration d) {
-    final h = d.inHours.toString().padLeft(2, '0');
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$h:$m:$s';
-  }
+
 
   // ═══════════════════════════════════════
   // R3.1 — Нарушение
@@ -322,7 +317,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
               if (passed) {
                 final bibMarks = session.marking.marksForBib(a.bib);
                 if (bibMarks.isNotEmpty) {
-                  timeStr = _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
+                  timeStr = TimeFormatter.hms(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
                 }
               }
 

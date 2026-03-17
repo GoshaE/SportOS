@@ -68,7 +68,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
 
   /// Назначить BIB конкретной отсечке
   void _assignBib(String markId, String bib) {
-    ref.read(raceSessionProvider.notifier).assignBib(markId, bib, entryId: bib);
+    ref.read(raceSessionProvider.notifier).assignBib(markId, bib, entryId: ref.read(raceSessionProvider)?.startList.findByBib(bib)?.entryId);
   }
 
   /// Отсечка из сетки BIB (тап по плитке)
@@ -83,12 +83,12 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
     final mark = notifier.addMark();
     if (mark == null) return;
 
-    notifier.assignBib(mark.id, bib, entryId: bib);
+    notifier.assignBib(mark.id, bib, entryId: athlete.entryId);
 
     final lap = session.marking.resolveCurrentLap(bib);
     final elapsed = _elapsedCalc.netTime(athlete, mark.correctedTime);
 
-    AppSnackBar.success(context, 'BIB $bib · Круг ${lap - 1} · ${_fmtDur(elapsed)} от старта');
+    AppSnackBar.success(context, 'BIB $bib · Круг ${lap - 1} · ${TimeFormatter.compact(elapsed)} от старта');
   }
 
   /// Удалить отсечку
@@ -120,7 +120,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             name: a.name,
             lapInfo: alreadyMarked
                 ? 'Круг ${bibMarks.length}'
-                : 'Старт: ${_fmtTime(a.effectiveStartTime)}',
+                : 'Старт: ${TimeFormatter.clockTime(a.effectiveStartTime)}',
             state: alreadyMarked ? BibState.assigned : BibState.available,
             onTap: () {
               _assignBib(markId, a.bib);
@@ -138,33 +138,6 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   // Helpers
   // ═══════════════════════════════════════
 
-  String _fmtTime(DateTime dt) {
-    final h = dt.hour.toString().padLeft(2, '0');
-    final m = dt.minute.toString().padLeft(2, '0');
-    final s = dt.second.toString().padLeft(2, '0');
-    return '$h:$m:$s';
-  }
-
-  String _fmtDur(Duration d) {
-    if (d.isNegative) return '-${_fmtDur(-d)}';
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
-
-  String _fmtDurMs(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final ms = (d.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
-    return '$m:$s.$ms';
-  }
-
-  String _fmtElapsed(Duration d) {
-    final h = d.inHours;
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$h:$m:$s';
-  }
 
   /// Построить таблицу разрывов через GapCalculator
   List<GapRow> _buildGapRows(int lap) {
@@ -242,7 +215,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 6, height: 6, decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle)),
               const SizedBox(width: 6),
-              Text(_fmtElapsed(_elapsed), style: TextStyle(fontSize: 14, fontFamily: 'monospace', fontWeight: FontWeight.w900, color: cs.error)),
+              Text(TimeFormatter.hms(_elapsed), style: TextStyle(fontSize: 14, fontFamily: 'monospace', fontWeight: FontWeight.w900, color: cs.error)),
             ]),
           ),
           IconButton(
@@ -300,6 +273,10 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   // Таб 1: Гонка (Read-only live)
   // ═══════════════════════════════════════
   Widget _buildRaceTab(ThemeData theme, ColorScheme cs) {
+    final session = ref.watch(raceSessionProvider);
+    if (session == null) return const Center(child: Text('Нет сессии'));
+    final started = session.startedAthletes;
+
     return Column(children: [
       // Заголовок
       Padding(
@@ -312,7 +289,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Text('${ref.watch(raceSessionProvider)?.config.name ?? 'Sprint'} · ${ref.watch(raceSessionProvider)?.config.laps ?? 0} кр.', style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
+                  Text('${session.config.name} · ${session.config.laps} кр.', style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
@@ -329,73 +306,55 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
         ]),
       ),
 
-      // Заголовок таблицы
-      Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(children: [
-          SizedBox(width: 32, child: Text('#', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold))),
-          SizedBox(width: 40, child: Text('BIB', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold))),
-          Expanded(child: Text('Имя', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold))),
-          SizedBox(width: 55, child: Text('КП1', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-          SizedBox(width: 60, child: Text('Финиш', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-          SizedBox(width: 55, child: Text('Δ', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold), textAlign: TextAlign.center)),
-        ]),
-      ),
-      const Divider(height: 1),
-
+      // AppProtocolTable
       Expanded(
-        child: Builder(builder: (ctx) {
-          final session = ref.watch(raceSessionProvider);
-          if (session == null) return const Center(child: Text('Нет сессии'));
-          final started = session.startedAthletes;
-          if (started.isEmpty) {
-            return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
-              const SizedBox(height: 8),
-              Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
-            ]));
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: started.length,
-            itemBuilder: (context, i) {
-              final a = started[i];
-              final allBibMarks = session.marking.marksForBib(a.bib);
-              final finishMarks = allBibMarks.where((m) => m.type == MarkType.finish).toList();
-              final hasFinish = finishMarks.length >= session.config.laps;
-              final statusColor = hasFinish ? cs.primary : cs.tertiary;
-              final statusIcon = hasFinish ? Icons.check_circle : Icons.directions_run;
-              final splitText = allBibMarks.isNotEmpty
-                  ? _fmtDur(_elapsedCalc.netTime(a, allBibMarks.first.correctedTime))
-                  : '—';
-              final finishText = hasFinish
-                  ? _fmtDur(_elapsedCalc.netTime(a, finishMarks.last.correctedTime))
-                  : '...';
+        child: started.isEmpty
+            ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                const SizedBox(height: 8),
+                Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
+              ]))
+            : AppProtocolTable(
+                itemCount: started.length,
+                forceTableView: false, // Auto: table on wide, cards on narrow
+                headerRow: AppProtocolRow(
+                  isHeader: true,
+                  bib: 'BIB',
+                  name: 'Спортсмен',
+                  cat: 'КАТ.',
+                  dog: 'КП1',
+                  time: 'Финиш',
+                  delta: 'Δ',
+                  penalty: '—',
+                ),
+                itemBuilder: (ctx, i, isCard) {
+                  final a = started[i];
+                  final allBibMarks = session.marking.marksForBib(a.bib);
+                  final finishMarks = allBibMarks.where((m) => m.type == MarkType.finish).toList();
+                  final checkpointMarks = allBibMarks.where((m) => m.type == MarkType.checkpoint).toList();
+                  final hasFinish = finishMarks.length >= session.config.laps;
 
-              return Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1)))),
-                child: Row(children: [
-                  SizedBox(width: 32, child: Row(children: [
-                    Icon(statusIcon, size: 14, color: statusColor),
-                    const SizedBox(width: 4),
-                    Text('${i + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.onSurface)),
-                  ])),
-                  SizedBox(width: 40, child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(4)),
-                    child: Text(a.bib, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.onSurfaceVariant), textAlign: TextAlign.center),
-                  )),
-                  const SizedBox(width: 4),
-                  Expanded(child: Text(a.name, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
-                  SizedBox(width: 55, child: Text(splitText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: allBibMarks.isNotEmpty ? cs.onSurface : cs.outline), textAlign: TextAlign.center)),
-                  SizedBox(width: 60, child: Text(finishText, style: TextStyle(fontSize: 12, fontFamily: 'monospace', fontWeight: hasFinish ? FontWeight.bold : FontWeight.normal, color: hasFinish ? cs.primary : cs.outline), textAlign: TextAlign.center)),
-                  SizedBox(width: 55, child: Text(i == 0 ? '—' : '', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary), textAlign: TextAlign.center)),
-                ]),
-              );
-            },
-          );
-        }),
+                  final splitText = checkpointMarks.isNotEmpty
+                      ? TimeFormatter.compact(_elapsedCalc.netTime(a, checkpointMarks.first.correctedTime))
+                      : '—';
+                  final finishText = hasFinish
+                      ? TimeFormatter.compact(_elapsedCalc.netTime(a, finishMarks.last.correctedTime))
+                      : '...';
+
+                  return AppProtocolRow(
+                    isCardView: isCard,
+                    place: hasFinish ? i + 1 : null,
+                    placeText: hasFinish ? null : 'LIVE',
+                    bib: a.bib,
+                    name: a.name,
+                    cat: a.categoryName ?? '—',
+                    dog: splitText,
+                    time: finishText,
+                    delta: i == 0 ? '—' : '',
+                    penalty: '—',
+                  );
+                },
+              ),
       ),
     ]);
   }
@@ -500,12 +459,12 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
         String? splitInfo;
         if (hasMarks) {
           final elapsed = _elapsedCalc.netTime(a, bibMarks.last.correctedTime);
-          splitInfo = _fmtDur(elapsed);
+          splitInfo = TimeFormatter.compact(elapsed);
         }
 
         final lapInfo = hasMarks
             ? 'Круг $lapCount/$totalLaps${splitInfo != null ? '\n⏱$splitInfo' : ''}'
-            : 'Старт: ${_fmtTime(a.effectiveStartTime)}';
+            : 'Старт: ${TimeFormatter.clockTime(a.effectiveStartTime)}';
 
         return AppBibTile(
           bib: a.bib,
@@ -565,8 +524,8 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                             ),
                             const SizedBox(width: 12),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(_fmtDurMs(raceTime), style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
-                              Text('🕐 ${_fmtTime(mark.correctedTime)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                              Text(TimeFormatter.full(raceTime), style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
+                              Text('🕐 ${TimeFormatter.clockTime(mark.correctedTime)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                             ])),
                             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                               Text('Назначить BIB', style: TextStyle(color: cs.tertiary, fontWeight: FontWeight.bold, fontSize: 12)),
@@ -713,15 +672,15 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   // Имя
                   Expanded(child: Text(r.name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
                   // Elapsed от старта
-                  SizedBox(width: 50, child: Text(_fmtDur(r.elapsed), style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600, color: cs.onSurface), textAlign: TextAlign.center)),
+                  SizedBox(width: 50, child: Text(TimeFormatter.compact(r.elapsed), style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600, color: cs.onSurface), textAlign: TextAlign.center)),
                   // Сплит круга
-                  SizedBox(width: 45, child: Text(r.gapToPrev != null ? _fmtDur(r.gapToPrev!) : '—', style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
+                  SizedBox(width: 45, child: Text(r.gapToPrev != null ? TimeFormatter.compact(r.gapToPrev!) : '—', style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
                   // Разрыв от лидера + тренд
                   SizedBox(width: 60, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     if (trendIcon.isNotEmpty) Text(trendIcon, style: TextStyle(fontSize: 10, color: trendColor)),
                     const SizedBox(width: 2),
                     Text(
-                      isLeader ? '—' : '+${_fmtDur(r.gapToLeader ?? Duration.zero)}',
+                      isLeader ? '—' : '+${TimeFormatter.compact(r.gapToLeader ?? Duration.zero)}',
                       style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isLeader ? cs.primary : cs.error),
                     ),
                   ])),
@@ -845,7 +804,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                 final myElapsed = _elapsedCalc.netTime(athlete, bibMarks.last.correctedTime);
                 final leaderElapsed = _elapsedCalc.netTime(leaderAthlete, leaderBibMarks.last.correctedTime);
                 final gap = myElapsed - leaderElapsed;
-                gapText = '+${_fmtDur(gap)}';
+                gapText = '+${TimeFormatter.compact(gap)}';
               }
             }
 
@@ -857,7 +816,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                 for (int lap = 1; lap <= session.config.laps; lap++)
                   SizedBox(width: 55, child: () {
                     if (lap <= splits.length) {
-                      return Text(_fmtDur(splits[lap - 1]), style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurface), textAlign: TextAlign.center);
+                      return Text(TimeFormatter.compact(splits[lap - 1]), style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurface), textAlign: TextAlign.center);
                     }
                     return Text('—', style: TextStyle(fontSize: 11, color: cs.outline), textAlign: TextAlign.center);
                   }()),

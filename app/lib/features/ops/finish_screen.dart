@@ -86,11 +86,11 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                 bib: a.bib,
                 name: a.name,
                 lapInfo: isFinished
-                    ? _fmtDur(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
+                    ? TimeFormatter.compact(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
                     : 'На трассе',
                 state: isFinished ? BibState.finished : BibState.available,
                 onTap: isFinished ? null : () {
-                  ref.read(raceSessionProvider.notifier).assignBib(markId, a.bib, entryId: a.bib);
+                  ref.read(raceSessionProvider.notifier).assignBib(markId, a.bib, entryId: a.entryId);
                   Navigator.of(context, rootNavigator: true).pop();
                   AppSnackBar.success(context, 'BIB ${a.bib} назначен');
                 },
@@ -164,7 +164,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             const SizedBox(height: 8),
             TextField(
               decoration: _glassInputDecoration('Точное время (HH:mm:ss.SSS)', cs),
-              controller: TextEditingController(text: _fmtDurMs(mark.correctedTime.difference(ref.read(raceSessionProvider)!.clock.zeroTime!))),
+              controller: TextEditingController(text: TimeFormatter.full(mark.correctedTime.difference(ref.read(raceSessionProvider)!.clock.zeroTime!))),
             ),
             const SizedBox(height: 16),
             Text('Обоснование', style: Theme.of(ctx).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -249,19 +249,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
   // Helpers
   // ═══════════════════════════════════════
 
-  String _fmtDur(Duration d) {
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    return '$m:$s';
-  }
 
-  String _fmtDurMs(Duration d) {
-    final h = d.inHours.toString().padLeft(2, '0');
-    final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    final s = d.inSeconds.remainder(60).toString().padLeft(2, '0');
-    final ms = (d.inMilliseconds.remainder(1000)).toString().padLeft(3, '0');
-    return '$h:$m:$s.$ms';
-  }
 
   InputDecoration _glassInputDecoration(String label, ColorScheme cs, {String? hint}) {
     return InputDecoration(
@@ -352,12 +340,12 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
               if (assigned) {
                 final athlete = session.startList.findByBib(mark.bib!);
                 if (athlete != null) {
-                  timeStr = _fmtDurMs(_elapsedCalc.netTime(athlete, mark.correctedTime));
+                  timeStr = TimeFormatter.full(_elapsedCalc.netTime(athlete, mark.correctedTime));
                 } else {
-                  timeStr = _fmtDurMs(raceTime);
+                  timeStr = TimeFormatter.full(raceTime);
                 }
               } else {
-                timeStr = _fmtDurMs(raceTime);
+                timeStr = TimeFormatter.full(raceTime);
               }
 
               return Dismissible(

@@ -44,16 +44,30 @@ class RaceSession {
   final GapCalculator gap;
   final ResultCalculator results;
 
+  final List<Penalty> _penalties;
+
   RaceSession({
     required this.config,
     required this.clock,
     required this.startList,
     required this.marking,
+    List<Penalty>? penalties,
     this.elapsed = const ElapsedCalculator(),
     GapCalculator? gap,
     ResultCalculator? results,
-  })  : gap = gap ?? const GapCalculator(),
+  })  : _penalties = penalties ?? [],
+        gap = gap ?? const GapCalculator(),
         results = results ?? const ResultCalculator();
+
+  /// Текущие штрафы.
+  List<Penalty> get penalties => List.unmodifiable(_penalties);
+
+  /// Добавить штраф.
+  void addPenalty(Penalty penalty) => _penalties.add(penalty);
+
+  /// Удалить штраф по ID.
+  void removePenalty(String penaltyId) =>
+      _penalties.removeWhere((p) => p.id == penaltyId);
 
   /// Рассчитать текущие результаты.
   List<RaceResult> calculateResults() {
@@ -61,7 +75,7 @@ class RaceSession {
       config: config,
       startList: startList.all,
       marks: marking.marks,
-      penalties: [], // TODO: wire penalties
+      penalties: penalties,
     );
   }
 
@@ -98,6 +112,7 @@ class RaceSessionState {
   ResultCalculator get results => session.results;
   List<StartEntry> get startedAthletes => session.startedAthletes;
   bool get hasAthletes => session.hasAthletes;
+  List<Penalty> get penalties => session.penalties;
   List<RaceResult> calculateResults() => session.calculateResults();
 
   @override
@@ -260,6 +275,18 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
 
   void deleteMark(String markId) {
     _session?.marking.deleteMark(markId);
+    _notify();
+  }
+
+  // ─── Penalty Actions ───────────────────────────────────────────
+
+  void addPenalty(Penalty penalty) {
+    _session?.addPenalty(penalty);
+    _notify();
+  }
+
+  void removePenalty(String penaltyId) {
+    _session?.removePenalty(penaltyId);
     _notify();
   }
 

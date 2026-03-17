@@ -1,5 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+// ═══════════════════════════════════════════════════════════════════
+// GRANULAR PROVIDERS (legacy / fine-grained reactivity)
+// ═══════════════════════════════════════════════════════════════════
+//
+// These providers expose individual services (clock, start list, marking)
+// separately. For most use cases, prefer the unified [raceSessionProvider]
+// from race_session.dart, which manages the full race lifecycle.
+//
+// Keep these if you need fine-grained reactivity for a single service
+// (e.g. a widget that only needs clock ticks, not the full session).
+// ═══════════════════════════════════════════════════════════════════
+
 import 'models.dart';
 import 'race_clock.dart';
 import 'start_list_service.dart';
