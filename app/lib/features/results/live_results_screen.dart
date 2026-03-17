@@ -88,6 +88,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     int onTrackCount = 0;
     int dnfCount = 0;
     int dnsCount = 0;
+    int waitingCount = 0;
 
     for (final a in session.startList.all) {
       final bibMarks = session.marking.officialMarksForBib(a.bib);
@@ -100,8 +101,11 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
         dnfCount++;
       } else if (hasFinish) {
         finishedCount++;
-      } else if (a.status == AthleteStatus.started || a.status == AthleteStatus.current) {
+      } else if (a.status == AthleteStatus.started) {
         onTrackCount++;
+      } else {
+        // waiting, current — ещё не стартовали
+        waitingCount++;
       }
     }
 
@@ -168,6 +172,10 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
             const SizedBox(width: 6),
             _statPill(cs, theme, '$onTrackCount', 'На трассе', cs.tertiary),
             const SizedBox(width: 6),
+            if (waitingCount > 0) ...[
+              _statPill(cs, theme, '$waitingCount', 'Ожидает', cs.outline),
+              const SizedBox(width: 6),
+            ],
             _statPill(cs, theme, '$dnfCount', 'DNF', cs.error),
             const SizedBox(width: 6),
             _statPill(cs, theme, '$dnsCount', 'DNS', cs.onSurfaceVariant),
@@ -263,6 +271,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     // Separate: finished athletes (sorted by net time) + on track + DNF/DNS
     final finished = <_ResultRow>[];
     final onTrack = <_ResultRow>[];
+    final waitingRows = <_ResultRow>[]; // ожидают старта
     final statusRows = <_ResultRow>[]; // DNF, DNS
 
     for (final a in athletes) {
@@ -307,11 +316,19 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
           timeDisplay: TimeFormatter.full(netTime), deltaDisplay: '',
           penaltyDisplay: '—', netTime: netTime,
         ));
-      } else {
+      } else if (a.status == AthleteStatus.started) {
+        // Реально стартовал — на трассе
         onTrack.add(_ResultRow(
           place: 0, placeText: 'LIVE', bib: a.bib, name: a.name,
           category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
           timeDisplay: 'на трассе', deltaDisplay: '', penaltyDisplay: '—',
+        ));
+      } else {
+        // waiting / current — ещё НЕ стартовал
+        waitingRows.add(_ResultRow(
+          place: -1, placeText: '—', bib: a.bib, name: a.name,
+          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: '—',
+          timeDisplay: 'ожидает', deltaDisplay: '', penaltyDisplay: '—',
         ));
       }
     }
@@ -331,6 +348,8 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
 
     // Add on-track athletes
     rows.addAll(onTrack);
+    // Add waiting athletes
+    rows.addAll(waitingRows);
     // Add DNF/DNS
     rows.addAll(statusRows);
 
