@@ -1,306 +1,495 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import '../../../domain/event/config_providers.dart';
+import '../../../domain/event/event_config.dart' hide TimeOfDay;
+import '../../../domain/timing/models.dart';
 
-/// Screen ID: P1 — Жеребьёвка
-class DrawScreen extends StatefulWidget {
+// ─────────────────────────────────────────────────────────────────
+// DRAW STATE
+// ─────────────────────────────────────────────────────────────────
+
+/// One participant entry in the draw.
+class DrawEntry {
+  final int position;
+  final int bib;
+  final String name;
+  final String gender;
+  final String dog;
+  final String startTime;
+  final int? rating;
+
+  const DrawEntry({
+    required this.position,
+    required this.bib,
+    required this.name,
+    required this.gender,
+    required this.dog,
+    required this.startTime,
+    this.rating,
+  });
+
+  DrawEntry copyWith({int? position, int? bib, String? startTime}) =>
+      DrawEntry(
+        position: position ?? this.position,
+        bib: bib ?? this.bib,
+        name: name,
+        gender: gender,
+        dog: dog,
+        startTime: startTime ?? this.startTime,
+        rating: rating,
+      );
+}
+
+/// Draw result for one discipline.
+class DrawResult {
+  final String disciplineId;
+  final String status; // 'pending', 'draft', 'approved'
+  final List<DrawEntry> entries;
+
+  const DrawResult({
+    required this.disciplineId,
+    this.status = 'pending',
+    this.entries = const [],
+  });
+
+  DrawResult copyWith({String? status, List<DrawEntry>? entries}) =>
+      DrawResult(
+        disciplineId: disciplineId,
+        status: status ?? this.status,
+        entries: entries ?? this.entries,
+      );
+}
+
+// ─── Demo participants ───
+final _rng = Random(42);
+const _demoNames = [
+  ('Петров А.А.', 'М', 'Rex'), ('Иванов В.В.', 'М', 'Storm'),
+  ('Волкова Е.Е.', 'Ж', 'Alaska'), ('Сидоров Б.Б.', 'М', 'Luna'),
+  ('Козлов Г.Г.', 'М', 'Wolf'), ('Новикова З.З.', 'Ж', 'Rocky'),
+  ('Белов Д.Д.', 'М', 'Husky'), ('Орлова М.М.', 'Ж', 'Sky'),
+  ('Фролов К.К.', 'М', 'Flash'), ('Морозова С.С.', 'Ж', 'Nina'),
+  ('Тихонов Л.Л.', 'М', 'King'), ('Зайцева Ю.Ю.', 'Ж', 'Maya'),
+];
+
+List<DrawEntry> _generateEntries(DisciplineConfig disc, BibPool? pool, int count) {
+  final start = pool?.rangeStart ?? 1;
+  final bibs = List.generate(count, (i) => start + i)..shuffle(_rng);
+  final hour = disc.firstStartTime.hour;
+  final minute = disc.firstStartTime.minute;
+  final intervalSec = disc.interval.inSeconds;
+
+  return List.generate(count, (i) {
+    final name = _demoNames[i % _demoNames.length];
+    final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
+    final h = totalSec ~/ 3600;
+    final m = (totalSec % 3600) ~/ 60;
+    final s = totalSec % 60;
+    return DrawEntry(
+      position: i + 1,
+      bib: bibs[i],
+      name: name.$1,
+      gender: name.$2,
+      dog: name.$3,
+      startTime: '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}',
+      rating: 1000 + _rng.nextInt(500),
+    );
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────
+// SCREEN
+// ─────────────────────────────────────────────────────────────────
+
+/// Screen P1: Жеребьёвка — connected to Config Engine.
+class DrawScreen extends ConsumerStatefulWidget {
   const DrawScreen({super.key});
 
   @override
-  State<DrawScreen> createState() => _DrawScreenState();
+  ConsumerState<DrawScreen> createState() => _DrawScreenState();
 }
 
-class _DrawScreenState extends State<DrawScreen> {
-  final List<Map<String, dynamic>> _groups = [
-    {'id': 'g1', 'title': 'Скиджоринг 5км', 'count': 8, 'status': 'pending'},
-    {'id': 'g2', 'title': 'Каникросс 3км', 'count': 12, 'status': 'approved'},
-    {'id': 'g3', 'title': 'Нарты 2 собаки', 'count': 5, 'status': 'pending'},
-  ];
+class _DrawScreenState extends ConsumerState<DrawScreen> {
+  final Map<String, DrawResult> _results = {};
+  String? _selectedDiscId;
 
-  String? _selectedGroupId;
   String _mode = 'auto';
   String _grouping = 'together';
   String _seeding = 'random';
-  String _startInterval = '30с';
-  String _firstStart = '10:00:00';
-  int _currentDay = 1;
-  final int _totalDays = 2;
-  String _day2Order = 'same';
-  List<Map<String, dynamic>> _athletes = [];
 
-  void _openGroup(String id) {
-    setState(() {
-      _selectedGroupId = id;
-      _athletes = [
-        {'pos': 1, 'bib': '07', 'name': 'Петров А.А.', 'gender': 'М', 'dog': 'Rex', 'time': '10:00:00', 'rating': 1250},
-        {'pos': 2, 'bib': '24', 'name': 'Иванов В.В.', 'gender': 'М', 'dog': 'Storm', 'time': '10:00:30', 'rating': 1180},
-        {'pos': 3, 'bib': '55', 'name': 'Волкова Е.Е.', 'gender': 'Ж', 'dog': 'Alaska', 'time': '10:01:00', 'rating': 1320},
-        {'pos': 4, 'bib': '12', 'name': 'Сидоров Б.Б.', 'gender': 'М', 'dog': 'Luna', 'time': '10:01:30', 'rating': 1100},
-        {'pos': 5, 'bib': '31', 'name': 'Козлов Г.Г.', 'gender': 'М', 'dog': 'Wolf', 'time': '10:02:00', 'rating': 1050},
-        {'pos': 6, 'bib': '77', 'name': 'Новикова З.З.', 'gender': 'Ж', 'dog': 'Rocky', 'time': '10:02:30', 'rating': 1010},
-      ];
-      if (_groups.firstWhere((g) => g['id'] == id)['status'] == 'approved') {
-        _athletes.shuffle();
-      } else {
-        for (var i = 0; i < _athletes.length; i++) { _athletes[i]['time'] = '--:--:--'; _athletes[i]['pos'] = 0; }
-      }
-    });
+  @override
+  void initState() {
+    super.initState();
+    // Initialize draw results for each discipline
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initResults());
   }
 
-  void _closeGroup() => setState(() => _selectedGroupId = null);
-
-  void _reshuffle() {
-    setState(() {
-      _athletes.shuffle();
-      for (var i = 0; i < _athletes.length; i++) {
-        _athletes[i]['pos'] = i + 1;
-        final sec = 10 * 60 + i * 30;
-        _athletes[i]['time'] = '${sec ~/ 60}:${(sec % 60).toString().padLeft(2, '0')}:00';
+  void _initResults() {
+    final disciplines = ref.read(disciplineConfigsProvider);
+    final config = ref.read(eventConfigProvider);
+    for (final d in disciplines) {
+      if (!_results.containsKey(d.id)) {
+        final pool = config.bibPools.where((p) => p.disciplineId == d.id).firstOrNull
+            ?? config.bibPools.firstOrNull;
+        final count = d.maxParticipants?.clamp(4, 12) ?? (6 + _rng.nextInt(6));
+        _results[d.id] = DrawResult(
+          disciplineId: d.id,
+          entries: _generateEntries(d, pool, count),
+        );
       }
-      _groups.firstWhere((g) => g['id'] == _selectedGroupId)['status'] = 'draft';
-    });
+    }
+    if (mounted) setState(() {});
+  }
+
+  void _openDiscipline(String id) => setState(() => _selectedDiscId = id);
+  void _closeDiscipline() => setState(() => _selectedDiscId = null);
+
+  void _reshuffle(DisciplineConfig disc) {
+    final result = _results[disc.id];
+    if (result == null) return;
+    final entries = List<DrawEntry>.from(result.entries)..shuffle();
+    final hour = disc.firstStartTime.hour;
+    final minute = disc.firstStartTime.minute;
+    final intervalSec = disc.interval.inSeconds;
+
+    for (var i = 0; i < entries.length; i++) {
+      final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
+      final h = totalSec ~/ 3600;
+      final m = (totalSec % 3600) ~/ 60;
+      final s = totalSec % 60;
+      entries[i] = entries[i].copyWith(
+        position: i + 1,
+        startTime: '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}',
+      );
+    }
+    setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
     AppSnackBar.success(context, 'Жеребьёвка пересчитана');
   }
 
-  void _approve() {
-    setState(() => _groups.firstWhere((g) => g['id'] == _selectedGroupId)['status'] = 'approved');
-    AppSnackBar.success(context, 'Жеребьёвка группы утверждена!');
-    Future.delayed(const Duration(seconds: 1), _closeGroup);
+  void _approve(DisciplineConfig disc) {
+    setState(() => _results[disc.id] = _results[disc.id]!.copyWith(status: 'approved'));
+    AppSnackBar.success(context, '${disc.name} — жеребьёвка утверждена!');
+    Future.delayed(const Duration(milliseconds: 600), _closeDiscipline);
   }
 
-  void _editPosition(int index) {
-    final isApproved = _groups.firstWhere((g) => g['id'] == _selectedGroupId)['status'] == 'approved';
-    final posCtrl = TextEditingController(text: '${_athletes[index]['pos']}');
-    final timeCtrl = TextEditingController(text: _athletes[index]['time']);
+  void _editPosition(DisciplineConfig disc, int index) {
+    final result = _results[disc.id]!;
+    final entry = result.entries[index];
+    final posCtrl = TextEditingController(text: '${entry.position}');
+    final timeCtrl = TextEditingController(text: entry.startTime);
     final cs = Theme.of(context).colorScheme;
 
-    AppBottomSheet.show(
-      context,
-      title: 'BIB ${_athletes[index]['bib']} — ${_athletes[index]['name']}',
-      initialHeight: 0.6,
-      actions: [
-        AppButton.primary(
-          text: 'Сохранить',
-          onPressed: () {
-            Navigator.of(context, rootNavigator: true).pop();
-            setState(() {
-              _athletes[index]['pos'] = int.tryParse(posCtrl.text) ?? _athletes[index]['pos'];
-              _athletes[index]['time'] = timeCtrl.text;
-              _athletes.sort((a, b) => (a['pos'] as int).compareTo(b['pos'] as int));
-            });
-            AppSnackBar.success(context, 'Позиция BIB ${_athletes[index]['bib']} изменена');
-          },
+    AppBottomSheet.show(context,
+      title: 'BIB ${entry.bib} — ${entry.name}',
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        TextField(
+          controller: posCtrl,
+          decoration: const InputDecoration(labelText: 'Позиция', border: OutlineInputBorder()),
+          keyboardType: TextInputType.number,
         ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppCard(
-            padding: const EdgeInsets.all(12),
-            children: [
-              TextField(controller: posCtrl, decoration: const InputDecoration(labelText: 'Позиция (1-N)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Время старта', border: OutlineInputBorder())),
-              const SizedBox(height: 12),
-              const TextField(decoration: InputDecoration(labelText: 'Причина корректировки', border: OutlineInputBorder(), hintText: 'Ошибка при жеребьёвке, перестановка...'), maxLines: 2),
-            ]
-          ),
-          if (isApproved) ...[
-            const SizedBox(height: 12),
-            Text('Внимание: жеребьёвка уже утверждена! Изменение будет записано в Audit Log.', style: TextStyle(color: cs.tertiary, fontSize: 12)),
-          ],
-        ],
-      ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: timeCtrl,
+          decoration: const InputDecoration(labelText: 'Время старта', border: OutlineInputBorder()),
+        ),
+        const SizedBox(height: 16),
+        SizedBox(width: double.infinity, child: FilledButton.icon(
+          onPressed: () {
+            Navigator.pop(context);
+            final entries = List<DrawEntry>.from(result.entries);
+            entries[index] = entries[index].copyWith(
+              position: int.tryParse(posCtrl.text) ?? entry.position,
+              startTime: timeCtrl.text,
+            );
+            entries.sort((a, b) => a.position.compareTo(b.position));
+            setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
+          },
+          icon: const Icon(Icons.save),
+          label: const Text('Сохранить'),
+        )),
+        const SizedBox(height: 8),
+      ]),
     );
   }
 
-  void _removeFromDraw(int index) async {
-    final removed = _athletes[index]['name'];
+  void _removeFromDraw(DisciplineConfig disc, int index) async {
+    final result = _results[disc.id]!;
+    final entry = result.entries[index];
     final confirm = await AppDialog.confirm(
       context,
-      title: 'Убрать BIB ${_athletes[index]['bib']}?',
-      message: '$removed будет исключён из жеребьёвки.\nОн может быть добавлен обратно позже.',
+      title: 'Убрать BIB ${entry.bib}?',
+      message: '${entry.name} будет исключён из жеребьёвки.',
       confirmText: 'Убрать',
       isDanger: true,
     );
-    
     if (confirm == true && mounted) {
-      setState(() {
-        _athletes.removeAt(index);
-        for (var i = 0; i < _athletes.length; i++) {
-          _athletes[i]['pos'] = i + 1;
-        }
-        _groups.firstWhere((g) => g['id'] == _selectedGroupId)['count'] = _athletes.length;
-      });
-      AppSnackBar.error(context, '$removed убран из жеребьёвки');
+      final entries = List<DrawEntry>.from(result.entries)..removeAt(index);
+      for (var i = 0; i < entries.length; i++) {
+        entries[i] = entries[i].copyWith(position: i + 1);
+      }
+      setState(() => _results[disc.id] = result.copyWith(entries: entries));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final disciplines = ref.watch(disciplineConfigsProvider);
+    final config = ref.watch(eventConfigProvider);
     final cs = Theme.of(context).colorScheme;
     final eventId = GoRouterState.of(context).pathParameters['eventId'] ?? 'evt-1';
 
+    final disc = _selectedDiscId != null
+        ? disciplines.where((d) => d.id == _selectedDiscId).firstOrNull
+        : null;
+
     return Scaffold(
       appBar: AppAppBar(
-        leading: _selectedGroupId == null
-          ? IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => context.go('/manage/$eventId'))
-          : IconButton(icon: const Icon(Icons.close), onPressed: _closeGroup),
-        title: Text(_selectedGroupId == null ? 'Жеребьёвка (Группы)' : _groups.firstWhere((g) => g['id'] == _selectedGroupId)['title']),
-        actions: _selectedGroupId != null ? [
-          if (_groups.firstWhere((g) => g['id'] == _selectedGroupId)['status'] == 'approved')
-            Padding(padding: const EdgeInsets.only(right: 8), child: Chip(avatar: Icon(Icons.check_circle, color: cs.primary, size: 18), label: Text('Утверждена', style: TextStyle(color: cs.primary, fontSize: 12)))),
-        ] : null,
+        leading: _selectedDiscId == null
+            ? null
+            : IconButton(icon: const Icon(Icons.close), onPressed: _closeDiscipline),
+        title: Text(_selectedDiscId == null
+            ? 'Жеребьёвка'
+            : disc?.name ?? ''),
+        actions: disc != null && _results[disc.id]?.status == 'approved'
+            ? [Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Chip(
+                  avatar: Icon(Icons.check_circle, color: cs.primary, size: 18),
+                  label: Text('Утверждена', style: TextStyle(color: cs.primary, fontSize: 12)),
+                ),
+              )]
+            : null,
       ),
-      body: _selectedGroupId == null ? _buildGroupList(cs, eventId) : _buildEditor(cs),
+      body: _selectedDiscId == null
+          ? _buildGroupList(cs, disciplines, config)
+          : disc != null
+              ? _buildEditor(cs, disc)
+              : const SizedBox(),
     );
   }
 
-  Widget _buildGroupList(ColorScheme cs, String eventId) {
+  Widget _buildGroupList(ColorScheme cs, List<DisciplineConfig> disciplines, EventConfig config) {
+    final approvedCount = _results.values.where((r) => r.status == 'approved').length;
+    final totalCount = disciplines.length;
+
     return Column(children: [
-      AppInfoBanner.info(title: 'Выберите группу участников для проведения жеребьёвки. После утверждения всех групп можно переходить к стартовым листам.'),
+      // Progress
+      Container(
+        padding: const EdgeInsets.all(14),
+        margin: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: approvedCount == totalCount
+              ? const Color(0xFF2E7D32).withValues(alpha: 0.08)
+              : cs.primaryContainer.withValues(alpha: 0.3),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: approvedCount == totalCount
+              ? const Color(0xFF2E7D32).withValues(alpha: 0.2)
+              : cs.primary.withValues(alpha: 0.2)),
+        ),
+        child: Row(children: [
+          Icon(approvedCount == totalCount ? Icons.check_circle : Icons.casino, color: approvedCount == totalCount ? const Color(0xFF2E7D32) : cs.primary),
+          const SizedBox(width: 12),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(approvedCount == totalCount ? 'Все жеребьёвки утверждены!' : '$approvedCount из $totalCount утверждено',
+              style: TextStyle(fontWeight: FontWeight.bold, color: approvedCount == totalCount ? const Color(0xFF2E7D32) : cs.primary)),
+            Text('Выберите дисциплину для проведения жеребьёвки', style: TextStyle(fontSize: 12, color: cs.outline)),
+          ])),
+        ]),
+      ),
+
       Expanded(child: ListView.separated(
-        padding: const EdgeInsets.all(8), itemCount: _groups.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        itemCount: disciplines.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
-          final g = _groups[i];
-          final isApproved = g['status'] == 'approved';
-          final isDraft = g['status'] == 'draft';
-          Color statusColor = cs.onSurfaceVariant;
-          IconData statusIcon = Icons.hourglass_empty;
-          String statusText = 'Ожидает';
-          if (isApproved) { statusColor = cs.primary; statusIcon = Icons.check_circle; statusText = 'Утверждена'; }
-          else if (isDraft) { statusColor = cs.tertiary; statusIcon = Icons.edit_note; statusText = 'Черновик (не утв.)'; }
+          final d = disciplines[i];
+          final result = _results[d.id];
+          final status = result?.status ?? 'pending';
+          final count = result?.entries.length ?? 0;
+          final isApproved = status == 'approved';
+          final isDraft = status == 'draft';
+
+          final (statusColor, statusIcon, statusText) = switch (status) {
+            'approved' => (const Color(0xFF2E7D32), Icons.check_circle, 'Утверждена'),
+            'draft' => (cs.tertiary, Icons.edit_note, 'Черновик'),
+            _ => (cs.outline, Icons.hourglass_empty, 'Ожидает'),
+          };
 
           return Card(
             elevation: isApproved ? 0 : 2,
-            color: isApproved ? cs.primary.withValues(alpha: 0.05) : null,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: isApproved ? BorderSide(color: cs.primary.withValues(alpha: 0.3)) : BorderSide.none),
-            child: InkWell(borderRadius: BorderRadius.circular(12), onTap: () => _openGroup(g['id']), child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
-              CircleAvatar(backgroundColor: statusColor.withValues(alpha: 0.1), child: Icon(statusIcon, color: statusColor)),
-              const SizedBox(width: 16),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(g['title'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const SizedBox(height: 4),
-                Text('${g['count']} участников  ·  $statusText', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
+            color: isApproved ? const Color(0xFF2E7D32).withValues(alpha: 0.05) : null,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: isApproved ? BorderSide(color: const Color(0xFF2E7D32).withValues(alpha: 0.3)) : BorderSide.none,
+            ),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _openDiscipline(d.id),
+              child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
+                CircleAvatar(
+                  backgroundColor: statusColor.withValues(alpha: 0.1),
+                  child: Icon(statusIcon, color: statusColor),
+                ),
+                const SizedBox(width: 16),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(d.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  const SizedBox(height: 4),
+                  Wrap(spacing: 8, children: [
+                    Text('$count участников', style: TextStyle(color: cs.outline, fontSize: 12)),
+                    Text('·', style: TextStyle(color: cs.outline)),
+                    Text(statusText, style: TextStyle(color: statusColor, fontWeight: FontWeight.w600, fontSize: 12)),
+                    if (d.dayNumber != null) ...[
+                      Text('·', style: TextStyle(color: cs.outline)),
+                      Text('День ${d.dayNumber}', style: TextStyle(color: cs.outline, fontSize: 12)),
+                    ],
+                  ]),
+                ])),
+                Icon(Icons.chevron_right, color: cs.outline),
               ])),
-              Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-            ]))),
+            ),
           );
         },
       )),
     ]);
   }
 
-  Widget _buildEditor(ColorScheme cs) {
-    final group = _groups.firstWhere((g) => g['id'] == _selectedGroupId);
-    final isApproved = group['status'] == 'approved';
+  Widget _buildEditor(ColorScheme cs, DisciplineConfig disc) {
+    final result = _results[disc.id]!;
+    final isApproved = result.status == 'approved';
+    final entries = result.entries;
 
     return Column(children: [
-      if (_totalDays > 1) Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        color: cs.secondaryContainer.withValues(alpha: 0.15),
-        child: Row(children: [
-          Icon(Icons.calendar_month, size: 18, color: cs.secondary),
-          const SizedBox(width: 8),
-          ...List.generate(_totalDays, (d) => Padding(padding: const EdgeInsets.only(right: 6), child: ChoiceChip(
-            label: Text('День ${d + 1}', style: TextStyle(fontSize: 12, color: _currentDay == d + 1 ? cs.onPrimary : null)),
-            selected: _currentDay == d + 1, onSelected: (_) => setState(() => _currentDay = d + 1),
-          ))),
-          const Spacer(),
-          if (_currentDay > 1) Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(color: cs.tertiary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
-            child: Text('Порядок: $_day2OrderLabel', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: cs.tertiary)),
-          ),
-        ]),
+      // Settings card
+      Card(
+        margin: const EdgeInsets.all(8),
+        child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
+          Row(children: [
+            Expanded(child: DropdownButtonFormField(
+              decoration: const InputDecoration(labelText: 'Режим', border: OutlineInputBorder(), isDense: true),
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(value: 'auto', child: Text('Авто')),
+                DropdownMenuItem(value: 'manual', child: Text('Ручная')),
+                DropdownMenuItem(value: 'seed', child: Text('По рейтингу')),
+              ],
+              initialValue: _mode,
+              onChanged: (v) => setState(() => _mode = v!),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: DropdownButtonFormField(
+              decoration: const InputDecoration(labelText: 'Группировка', border: OutlineInputBorder(), isDense: true),
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(value: 'together', child: Text('Вместе')),
+                DropdownMenuItem(value: 'separate', child: Text('М / Ж раздельно')),
+              ],
+              value: _grouping,
+              onChanged: (v) => setState(() => _grouping = v!),
+            )),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
+            Expanded(child: DropdownButtonFormField(
+              decoration: const InputDecoration(labelText: 'Посев', border: OutlineInputBorder(), isDense: true),
+              isExpanded: true,
+              items: const [
+                DropdownMenuItem(value: 'random', child: Text('Случайный')),
+                DropdownMenuItem(value: 'rating', child: Text('По рейтингу')),
+                DropdownMenuItem(value: 'bib', child: Text('По номеру BIB')),
+              ],
+              initialValue: _seeding,
+              onChanged: (v) => setState(() => _seeding = v!),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                border: Border.all(color: cs.outlineVariant),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Row(children: [
+                Icon(Icons.schedule, size: 16, color: cs.outline),
+                const SizedBox(width: 6),
+                Text(
+                  'Инт. ${disc.interval.inSeconds}с',
+                  style: TextStyle(fontSize: 13, color: cs.onSurface),
+                ),
+              ]),
+            )),
+          ]),
+        ])),
       ),
-      Card(margin: const EdgeInsets.all(8), child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-        Row(children: [Expanded(child: DropdownButtonFormField(decoration: const InputDecoration(labelText: 'Режим', border: OutlineInputBorder(), isDense: true), isExpanded: true, items: const [
-          DropdownMenuItem(value: 'auto', child: Text('Автоматическая')), DropdownMenuItem(value: 'manual', child: Text('Ручная')), DropdownMenuItem(value: 'seed', child: Text('По рейтингу')),
-        ], initialValue: _mode, onChanged: (v) => setState(() => _mode = v!)))]),
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: DropdownButtonFormField(decoration: const InputDecoration(labelText: 'Группировка М/Ж', border: OutlineInputBorder(), isDense: true), isExpanded: true, items: const [
-            DropdownMenuItem(value: 'together', child: Text('Вместе')), DropdownMenuItem(value: 'separate', child: Text('Раздельно')),
-            DropdownMenuItem(value: 'men_first', child: Text('Сначала М')), DropdownMenuItem(value: 'women_first', child: Text('Сначала Ж')),
-          ], initialValue: _grouping, onChanged: (v) => setState(() => _grouping = v!))),
-          const SizedBox(width: 8),
-          Expanded(child: DropdownButtonFormField(decoration: const InputDecoration(labelText: 'Посев', border: OutlineInputBorder(), isDense: true), isExpanded: true, items: const [
-            DropdownMenuItem(value: 'random', child: Text('Случайный')), DropdownMenuItem(value: 'rating', child: Text('По рейтингу')),
-            DropdownMenuItem(value: 'bib', child: Text('По номеру BIB')), DropdownMenuItem(value: 'alpha', child: Text('По алфавиту')),
-          ], initialValue: _seeding, onChanged: (v) => setState(() => _seeding = v!))),
-        ]),
-        if (_currentDay > 1) ...[const SizedBox(height: 8), DropdownButtonFormField(decoration: const InputDecoration(labelText: 'Порядок старта дня 2', border: OutlineInputBorder(), isDense: true), isExpanded: true, items: const [
-          DropdownMenuItem(value: 'same', child: Text('Такой же как день 1')), DropdownMenuItem(value: 'reverse', child: Text('Обратный (лидер последний)')),
-          DropdownMenuItem(value: 'gundersen', child: Text('Гундерсен (по отставанию)')), DropdownMenuItem(value: 'new_draw', child: Text('Новая жеребьёвка')),
-        ], initialValue: _day2Order, onChanged: (v) => setState(() => _day2Order = v!))],
-        const SizedBox(height: 8),
-        Row(children: [
-          Expanded(child: DropdownButtonFormField(decoration: const InputDecoration(labelText: 'Интервал старта', border: OutlineInputBorder(), isDense: true), isExpanded: true, items: const [
-            DropdownMenuItem(value: '15с', child: Text('15 сек')), DropdownMenuItem(value: '30с', child: Text('30 сек')),
-            DropdownMenuItem(value: '1м', child: Text('1 мин')), DropdownMenuItem(value: '2м', child: Text('2 мин')), DropdownMenuItem(value: '3м', child: Text('3 мин')),
-          ], initialValue: _startInterval, onChanged: (v) => setState(() => _startInterval = v!))),
-          const SizedBox(width: 8),
-          Expanded(child: TextFormField(initialValue: _firstStart, decoration: const InputDecoration(labelText: 'Первый старт', border: OutlineInputBorder(), isDense: true, prefixIcon: Icon(Icons.schedule, size: 18)), onChanged: (v) => _firstStart = v)),
-        ]),
-      ]))),
 
-      if (_currentDay > 1 && _day2Order == 'gundersen') Container(
-        padding: const EdgeInsets.all(8), margin: const EdgeInsets.symmetric(horizontal: 8),
-        decoration: BoxDecoration(color: cs.secondaryContainer.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(8), border: Border.all(color: cs.secondary.withValues(alpha: 0.3))),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text('Гундерсен (Pursuit Start)', style: TextStyle(fontWeight: FontWeight.bold, color: cs.secondary, fontSize: 12)),
-          const SizedBox(height: 4),
-          const Text('Лидер дня 1 стартует первым. Остальные стартуют с отставанием по времени от дня 1.\nПример: лидер → 00:00, 2-й (+1:33) → через 1:33, 3-й (+2:50) → через 2:50.', style: TextStyle(fontSize: 11)),
-        ]),
-      ),
-
+      // Athlete list
       Expanded(child: ReorderableListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 8), itemCount: _athletes.length,
-        onReorder: (oldIndex, newIndex) { setState(() {
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        itemCount: entries.length,
+        onReorder: (oldIndex, newIndex) {
           if (newIndex > oldIndex) newIndex--;
-          final item = _athletes.removeAt(oldIndex); _athletes.insert(newIndex, item);
-          for (var i = 0; i < _athletes.length; i++) {
-            _athletes[i]['pos'] = i + 1;
-          }
-          group['status'] = 'draft';
-        }); },
+          setState(() {
+            final list = List<DrawEntry>.from(entries);
+            final item = list.removeAt(oldIndex);
+            list.insert(newIndex, item);
+            // Re-number positions and times
+            final hour = disc.firstStartTime.hour;
+            final minute = disc.firstStartTime.minute;
+            final intervalSec = disc.interval.inSeconds;
+            for (var i = 0; i < list.length; i++) {
+              final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
+              list[i] = list[i].copyWith(
+                position: i + 1,
+                startTime: '${(totalSec ~/ 3600).toString().padLeft(2, '0')}:${((totalSec % 3600) ~/ 60).toString().padLeft(2, '0')}:${(totalSec % 60).toString().padLeft(2, '0')}',
+              );
+            }
+            _results[disc.id] = result.copyWith(status: 'draft', entries: list);
+          });
+        },
         itemBuilder: (context, i) {
-          final a = _athletes[i];
-          final isFemale = a['gender'] == 'Ж';
+          final entry = entries[i];
+          final isFemale = entry.gender == 'Ж';
+          final color = isFemale ? cs.tertiary : cs.primary;
+
           return ListTile(
-            key: ValueKey('draw-${a['bib']}'),
+            key: ValueKey('draw-${entry.bib}'),
             leading: CircleAvatar(
-              backgroundColor: (isFemale ? cs.tertiary : cs.primary).withValues(alpha: 0.15),
-              child: Text('${a['pos'] > 0 ? a['pos'] : '-'}', style: TextStyle(fontWeight: FontWeight.bold, color: isFemale ? cs.tertiary : cs.primary)),
+              backgroundColor: color.withValues(alpha: 0.12),
+              child: Text('${entry.position}',
+                style: TextStyle(fontWeight: FontWeight.bold, color: color)),
             ),
-            title: Text('${a['name']}  (${a['gender']})', style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('BIB ${a['bib']}  ·  ${a['dog']}  ·  Старт: ${a['time']}'),
+            title: Text('${entry.name}  (${entry.gender})',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text('BIB ${entry.bib}  ·  ${entry.dog}  ·  ${entry.startTime}',
+              style: const TextStyle(fontSize: 12)),
             trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-              IconButton(icon: const Icon(Icons.edit, size: 20), tooltip: 'Редактировать позицию', onPressed: () => _editPosition(i)),
-              IconButton(icon: Icon(Icons.close, size: 20, color: cs.error), tooltip: 'Убрать из жеребьёвки', onPressed: () => _removeFromDraw(i)),
+              IconButton(icon: const Icon(Icons.edit, size: 18), onPressed: () => _editPosition(disc, i)),
+              IconButton(icon: Icon(Icons.close, size: 18, color: cs.error), onPressed: () => _removeFromDraw(disc, i)),
               const Icon(Icons.drag_handle),
             ]),
           );
         },
       )),
 
-      SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-        Expanded(child: OutlinedButton.icon(onPressed: _currentDay > 1 && _day2Order == 'same' ? null : _reshuffle, icon: const Icon(Icons.refresh), label: const Text('Провести'))),
-        const SizedBox(width: 8),
-        Expanded(child: FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: isApproved ? cs.onSurfaceVariant : cs.primary),
-          onPressed: isApproved ? null : _approve,
-          icon: const Icon(Icons.check), label: Text(isApproved ? 'Утверждено' : 'Утвердить'),
-        )),
-      ]))),
+      // Bottom actions
+      SafeArea(child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(children: [
+          Expanded(child: OutlinedButton.icon(
+            onPressed: () => _reshuffle(disc),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Провести'),
+          )),
+          const SizedBox(width: 8),
+          Expanded(child: FilledButton.icon(
+            onPressed: isApproved ? null : () => _approve(disc),
+            icon: Icon(isApproved ? Icons.check : Icons.gavel),
+            label: Text(isApproved ? 'Утверждено' : 'Утвердить'),
+          )),
+        ]),
+      )),
     ]);
   }
-
-  String get _day2OrderLabel => switch (_day2Order) {
-    'same' => 'Как день 1', 'reverse' => 'Обратный', 'gundersen' => 'Гундерсен', 'new_draw' => 'Новая жребия', _ => _day2Order,
-  };
 }
