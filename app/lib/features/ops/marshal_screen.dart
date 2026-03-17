@@ -24,7 +24,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
 
   bool _isMarked(String bib) {
     final session = ref.read(raceSessionProvider);
-    return session?.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint).isNotEmpty ?? false;
+    return session?.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal).isNotEmpty ?? false;
   }
 
   void _tryTogglePassed(String bib) {
@@ -56,7 +56,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
     if (_isMarked(bib)) {
       AppDialog.confirm(context, title: 'Отменить отметку BIB $bib?', message: 'Атлет будет снова показан как "не прошёл", а время отсечки будет удалено.').then((ok) {
         if (ok == true) {
-          final bibMarks = session.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint).toList();
+          final bibMarks = session.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal).toList();
           for (final m in bibMarks) {
             notifier.deleteMark(m.id);
           }
@@ -64,7 +64,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
       });
     } else {
       HapticFeedback.mediumImpact();
-      final mark = notifier.addMark(type: MarkType.checkpoint);
+      final mark = notifier.addMark(type: MarkType.checkpoint, owner: MarkOwner.marshal);
       if (mark != null) {
         notifier.assignBib(mark.id, bib, entryId: session.startList.findByBib(bib)?.entryId);
       }

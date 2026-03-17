@@ -19,8 +19,23 @@ enum StartType { individual, mass, wave, pursuit, relay }
 /// Тип отсечки.
 enum MarkType { start, checkpoint, finish, relayHandoff }
 
-/// Источник отсечки.
+/// Источник отсечки (как была получена).
 enum MarkSource { tap, scanner, manual, camera }
+
+/// Владелец отсечки (кто её создал).
+///
+/// Определяет видимость и официальный статус метки.
+/// Только [starter] и [finishJudge] влияют на результаты.
+enum MarkOwner {
+  /// Стартёр — официальный старт.
+  starter,
+  /// Судья финиша — официальный финиш / круговой проход.
+  finishJudge,
+  /// Маршал — промежуточная отсечка на трассе (КП). Информационно.
+  marshal,
+  /// Тренер — личная отсечка, не влияет на результаты.
+  coach,
+}
 
 /// Статус атлета на гонке.
 enum AthleteStatus { waiting, current, started, onCourse, finished, dns, dnf, dsq }
@@ -193,7 +208,9 @@ class TimeMark {
   DateTime correctedTime;
   final MarkType type;
   final MarkSource source;
+  final MarkOwner owner;
   final String deviceId;
+  final String? stationName;
   String? entryId;
   String? bib;
   int? lapNumber;
@@ -206,7 +223,9 @@ class TimeMark {
     DateTime? correctedTime,
     required this.type,
     this.source = MarkSource.tap,
+    this.owner = MarkOwner.finishJudge,
     this.deviceId = 'local',
+    this.stationName,
     this.entryId,
     this.bib,
     this.lapNumber,
@@ -217,13 +236,18 @@ class TimeMark {
   /// Является ли отсечка назначенной (имеет BIB).
   bool get isAssigned => bib != null;
 
+  /// Является ли отсечка официальной (влияет на результаты).
+  bool get isOfficial => owner == MarkOwner.starter || owner == MarkOwner.finishJudge;
+
   TimeMark copyWith({
     String? id,
     DateTime? rawTime,
     DateTime? correctedTime,
     MarkType? type,
     MarkSource? source,
+    MarkOwner? owner,
     String? deviceId,
+    String? stationName,
     String? entryId,
     String? bib,
     int? lapNumber,
@@ -236,7 +260,9 @@ class TimeMark {
       correctedTime: correctedTime ?? this.correctedTime,
       type: type ?? this.type,
       source: source ?? this.source,
+      owner: owner ?? this.owner,
       deviceId: deviceId ?? this.deviceId,
+      stationName: stationName ?? this.stationName,
       entryId: entryId ?? this.entryId,
       bib: bib ?? this.bib,
       lapNumber: lapNumber ?? this.lapNumber,

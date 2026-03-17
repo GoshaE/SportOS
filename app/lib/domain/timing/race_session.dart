@@ -245,8 +245,8 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
 
   // ─── Marking Actions ─────────────────────────────────────────
 
-  TimeMark? addMark({MarkType type = MarkType.finish}) {
-    final mark = _session?.marking.addMark(type: type);
+  TimeMark? addMark({MarkType type = MarkType.finish, MarkOwner owner = MarkOwner.finishJudge}) {
+    final mark = _session?.marking.addMark(type: type, owner: owner);
     _notify();
     return mark;
   }

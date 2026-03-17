@@ -23,7 +23,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
 
   void _addMark() {
     HapticFeedback.heavyImpact();
-    ref.read(raceSessionProvider.notifier).addMark();
+    ref.read(raceSessionProvider.notifier).addMark(owner: MarkOwner.finishJudge);
     AppSnackBar.success(context, 'Отсечка зафиксирована!');
   }
 
@@ -80,7 +80,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
             children: session.startedAthletes.map((a) {
-              final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.type == MarkType.finish).toList();
+              final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.type == MarkType.finish && m.owner == MarkOwner.finishJudge).toList();
               final isFinished = bibMarks.isNotEmpty;
               return AppBibTile(
                 bib: a.bib,
@@ -275,7 +275,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
         body: const Center(child: Text('Нет активной сессии.')),
       );
     }
-    final marks = session.marking.marks;
+    final marks = session.marking.marksBy(MarkOwner.finishJudge);
     final finishCount = session.marking.finishedCount;
     final startedAthletes = session.startedAthletes;
     final totalAthletes = startedAthletes.length;

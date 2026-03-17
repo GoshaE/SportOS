@@ -33,6 +33,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   // ── UI state ──
   Duration _elapsed = Duration.zero;
   int _selectedLapFilter = 0; // 0 = все
+  bool? _forceTableView; // null = авто, true = таблица, false = карточки
   Timer? _uiTimer;
 
   @override
@@ -80,7 +81,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
     if (athlete == null) return;
 
     final notifier = ref.read(raceSessionProvider.notifier);
-    final mark = notifier.addMark();
+    final mark = notifier.addMark(owner: MarkOwner.coach);
     if (mark == null) return;
 
     notifier.assignBib(mark.id, bib, entryId: athlete.entryId);
@@ -113,7 +114,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
         mainAxisSpacing: 10,
         crossAxisSpacing: 10,
         children: session.startList.all.map((a) {
-          final bibMarks = session.marking.marksForBib(a.bib);
+          final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.owner == MarkOwner.coach).toList();
           final alreadyMarked = bibMarks.isNotEmpty;
           return AppBibTile(
             bib: a.bib,
@@ -306,6 +307,27 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
         ]),
       ),
 
+      // Toggle table/card view
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(children: [
+          const Spacer(),
+          SegmentedButton<bool?>(
+            segments: const [
+              ButtonSegment(value: null, icon: Icon(Icons.auto_awesome, size: 16), label: Text('Авто')),
+              ButtonSegment(value: true, icon: Icon(Icons.table_rows, size: 16), label: Text('Таблица')),
+              ButtonSegment(value: false, icon: Icon(Icons.view_agenda, size: 16), label: Text('Карточки')),
+            ],
+            selected: {_forceTableView},
+            onSelectionChanged: (v) => setState(() => _forceTableView = v.first),
+            style: ButtonStyle(
+              visualDensity: VisualDensity.compact,
+              textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 11)),
+            ),
+          ),
+        ]),
+      ),
+
       // AppProtocolTable
       Expanded(
         child: started.isEmpty
@@ -316,7 +338,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
               ]))
             : AppProtocolTable(
                 itemCount: started.length,
-                forceTableView: false, // Auto: table on wide, cards on narrow
+                forceTableView: _forceTableView,
                 headerRow: AppProtocolRow(
                   isHeader: true,
                   bib: 'BIB',
@@ -329,7 +351,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                 ),
                 itemBuilder: (ctx, i, isCard) {
                   final a = started[i];
-                  final allBibMarks = session.marking.marksForBib(a.bib);
+                  final allBibMarks = session.marking.officialMarksForBib(a.bib);
                   final finishMarks = allBibMarks.where((m) => m.type == MarkType.finish).toList();
                   final checkpointMarks = allBibMarks.where((m) => m.type == MarkType.checkpoint).toList();
                   final hasFinish = finishMarks.length >= session.config.laps;
@@ -451,7 +473,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
       children: session.startList.all.map((a) {
-        final bibMarks = session.marking.marksForBib(a.bib);
+        final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.owner == MarkOwner.coach).toList();
         final lapCount = bibMarks.length;
         final hasMarks = lapCount > 0;
 

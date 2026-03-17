@@ -27,7 +27,7 @@ class MarkingService {
   ///
   /// Фиксирует текущее скорректированное время.
   /// BIB назначается отдельно через [assignBib].
-  TimeMark addMark({MarkType type = MarkType.finish}) {
+  TimeMark addMark({MarkType type = MarkType.finish, MarkOwner owner = MarkOwner.finishJudge}) {
     final raw = DateTime.now();
     final corrected = raw.add(_clockOffset);
 
@@ -36,6 +36,7 @@ class MarkingService {
       rawTime: raw,
       correctedTime: corrected,
       type: type,
+      owner: owner,
     );
 
     _marks.add(mark);
@@ -96,13 +97,14 @@ class MarkingService {
   }
 
   /// Вставить метку с ручным временем (по видео и т.д.).
-  TimeMark insertMark(DateTime time, {String? bib, String? entryId, String reason = ''}) {
+  TimeMark insertMark(DateTime time, {String? bib, String? entryId, String reason = '', MarkOwner owner = MarkOwner.finishJudge}) {
     final mark = TimeMark(
       id: 'mark-${_nextId++}',
       rawTime: time,
       correctedTime: time,
       type: MarkType.finish,
       source: MarkSource.manual,
+      owner: owner,
       bib: bib,
       entryId: entryId,
       correctionReason: reason.isNotEmpty ? reason : null,
@@ -132,18 +134,14 @@ class MarkingService {
 
   /// Определить текущий круг для BIB.
   ///
-  /// Считает количество уже назначенных отсечек для этого BIB.
-  /// Возвращает current_lap = completed + 1.
+  /// Считает только **официальные** отсечки (судейские) для этого BIB.
   int resolveCurrentLap(String bib) {
     final completed = _marks
-        .where((m) => m.bib == bib && (m.type == MarkType.checkpoint || m.type == MarkType.finish))
+        .where((m) => m.bib == bib && m.isOfficial && (m.type == MarkType.checkpoint || m.type == MarkType.finish))
         .length;
 
     final currentLap = completed + 1;
-
-    // Не превышать totalLaps (защита)
     if (currentLap > _totalLaps) return _totalLaps;
-
     return currentLap;
   }
 
@@ -161,23 +159,45 @@ class MarkingService {
     return sorted;
   }
 
+  /// Отсечки конкретного владельца.
+  List<TimeMark> marksBy(MarkOwner owner) {
+    return _marks.where((m) => m.owner == owner).toList()
+      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+  }
+
+  /// Только официальные отсечки (starter + finishJudge).
+  List<TimeMark> get officialMarks {
+    return _marks.where((m) => m.isOfficial).toList()
+      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+  }
+
+  /// Официальные отсечки для BIB.
+  List<TimeMark> officialMarksForBib(String bib) {
+    return _marks.where((m) => m.bib == bib && m.isOfficial).toList()
+      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+  }
+
   /// Неназначенные отсечки.
   List<TimeMark> get unassigned => _marks.where((m) => !m.isAssigned).toList();
+
+  /// Неназначенные отсечки конкретного владельца.
+  List<TimeMark> unassignedBy(MarkOwner owner) =>
+      _marks.where((m) => !m.isAssigned && m.owner == owner).toList();
 
   /// Назначенные отсечки.
   List<TimeMark> get assigned => _marks.where((m) => m.isAssigned).toList();
 
-  /// Все отсечки для BIB.
+  /// Все отсечки для BIB (всех владельцев).
   List<TimeMark> marksForBib(String bib) {
     return _marks.where((m) => m.bib == bib).toList()
       ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
   }
 
-  /// Количество финишировавших (последний круг назначен).
+  /// Количество финишировавших (только официальные метки).
   int get finishedCount {
     final finished = <String>{};
     for (final m in _marks) {
-      if (m.bib != null && m.lapNumber == _totalLaps) {
+      if (m.bib != null && m.isOfficial && m.lapNumber == _totalLaps) {
         finished.add(m.bib!);
       }
     }

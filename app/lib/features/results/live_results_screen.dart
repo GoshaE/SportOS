@@ -89,7 +89,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     int dnsCount = 0;
 
     for (final a in session.startList.all) {
-      final bibMarks = session.marking.marksForBib(a.bib);
+      final bibMarks = session.marking.officialMarksForBib(a.bib);
       final finishMarks = bibMarks.where((m) => m.type == MarkType.finish).toList();
       final hasFinish = finishMarks.length >= session.config.laps;
 
@@ -243,7 +243,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     final statusRows = <_ResultRow>[]; // DNF, DNS
 
     for (final a in athletes) {
-      final bibMarks = session.marking.marksForBib(a.bib);
+      final bibMarks = session.marking.officialMarksForBib(a.bib);
       final finishMarks = bibMarks.where((m) => m.type == MarkType.finish).toList();
       final checkpointMarks = bibMarks.where((m) => m.type == MarkType.checkpoint).toList();
       final hasFinish = finishMarks.length >= session.config.laps;
