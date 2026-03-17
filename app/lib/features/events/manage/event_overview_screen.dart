@@ -317,6 +317,14 @@ class EventOverviewScreen extends ConsumerWidget {
             onTap: () => context.push('/manage/$eventId/disciplines'),
           ),
           AppMenuItem(
+            icon: Icons.view_timeline,
+            label: 'Расписание',
+            badge: '${disciplines.length} стартов',
+            subtitle: _scheduleSummary(disciplines),
+            color: const Color(0xFF00838F),
+            onTap: () => context.push('/manage/$eventId/schedule'),
+          ),
+          AppMenuItem(
             icon: Icons.calendar_month,
             label: 'Многодневность',
             badge: eventConfig.isMultiDay ? '${eventConfig.days.length} дн.' : 'Выкл',
@@ -392,6 +400,18 @@ class EventOverviewScreen extends ConsumerWidget {
   }
 
   /// Краткая сводка DisplaySettings: какие колонки включены
+  String _scheduleSummary(List<DisciplineConfig> disciplines) {
+    if (disciplines.isEmpty) return 'Нет стартов';
+    final sorted = List.of(disciplines)..sort((a, b) => a.firstStartTime.compareTo(b.firstStartTime));
+    final first = sorted.first.firstStartTime;
+    final last = sorted.fold<DateTime>(first, (max, d) {
+      final end = d.firstStartTime.add(d.cutoffTime ?? const Duration(hours: 2));
+      return end.isAfter(max) ? end : max;
+    });
+    return '${first.hour.toString().padLeft(2, '0')}:${first.minute.toString().padLeft(2, '0')} – '
+        '${last.hour.toString().padLeft(2, '0')}:${last.minute.toString().padLeft(2, '0')}';
+  }
+
   String _displaySummary(List<DisciplineConfig> disciplines) {
     if (disciplines.isEmpty) return 'Нет дисциплин';
     final ds = disciplines.first.displaySettings;
