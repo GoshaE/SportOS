@@ -1,132 +1,177 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import '../../../domain/event/config_providers.dart';
+import '../../../domain/event/event_config.dart' hide TimeOfDay;
+import '../../../domain/timing/models.dart';
 
-/// Screen ID: P2 — Стартовый лист
-class StartListScreen extends StatefulWidget {
+/// P2 — Стартовый лист, подключён к Config Engine.
+///
+/// Берёт дисциплины из провайдера, формирует стартовый лист
+/// по BIB-пулам и интервалам, позволяет добавлять/редактировать,
+/// показывает таблицу (card/table) с фильтрацией по дисциплине.
+class StartListScreen extends ConsumerStatefulWidget {
   const StartListScreen({super.key});
 
   @override
-  State<StartListScreen> createState() => _StartListScreenState();
+  ConsumerState<StartListScreen> createState() => _StartListScreenState();
 }
 
-class _StartListScreenState extends State<StartListScreen> {
-  String _disc = 'Скидж. 5км';
-  String _interval = '30с';
-  String _firstStart = '10:00:00';
+class _StartListScreenState extends ConsumerState<StartListScreen> {
+  final Map<String, List<Map<String, dynamic>>> _lists = {};
+  String? _selectedDiscId;
   bool _isTableView = false;
   bool _initialized = false;
+  bool _published = false;
 
-  final List<Map<String, dynamic>> _startList = [
-    {'pos': 1, 'bib': '07', 'name': 'Петров А.А.', 'dog': 'Rex', 'time': '10:00:00', 'status': 'confirmed'},
-    {'pos': 2, 'bib': '24', 'name': 'Иванов В.В.', 'dog': 'Storm', 'time': '10:00:30', 'status': 'confirmed'},
-    {'pos': 3, 'bib': '55', 'name': 'Волкова Е.Е.', 'dog': 'Alaska', 'time': '10:01:00', 'status': 'confirmed'},
-    {'pos': 4, 'bib': '12', 'name': 'Сидоров Б.Б.', 'dog': 'Luna', 'time': '10:01:30', 'status': 'confirmed'},
-    {'pos': 5, 'bib': '31', 'name': 'Козлов Г.Г.', 'dog': 'Wolf', 'time': '10:02:00', 'status': 'confirmed'},
-    {'pos': 6, 'bib': '77', 'name': 'Новикова З.З.', 'dog': 'Rocky', 'time': '10:02:30', 'status': 'confirmed'},
-    {'pos': 7, 'bib': '42', 'name': 'Морозов Д.Д.', 'dog': 'Buddy', 'time': '10:03:00', 'status': 'confirmed'},
-    {'pos': 8, 'bib': '63', 'name': 'Лебедев Ж.Ж.', 'dog': 'Max', 'time': '10:03:30', 'status': 'confirmed'},
+  // Demo names for generation
+  static const _demoAthletes = [
+    ('Петров А.А.', 'М', 'Rex'),    ('Иванов В.В.', 'М', 'Storm'),
+    ('Волкова Е.Е.', 'Ж', 'Alaska'),('Сидоров Б.Б.', 'М', 'Luna'),
+    ('Козлов Г.Г.', 'М', 'Wolf'),   ('Новикова З.З.', 'Ж', 'Rocky'),
+    ('Белов Д.Д.', 'М', 'Husky'),   ('Орлова М.М.', 'Ж', 'Sky'),
+    ('Фролов К.К.', 'М', 'Flash'),  ('Морозова С.С.', 'Ж', 'Nina'),
+    ('Тихонов Л.Л.', 'М', 'King'),  ('Зайцева Ю.Ю.', 'Ж', 'Maya'),
   ];
 
-  final List<String> _usedBibs = ['07', '12', '24', '31', '42', '55', '63', '77'];
-  final List<String> _freeBibs = ['01', '02', '03', '04', '05', '06', '08', '09', '10', '11', '13', '14'];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _generate());
+  }
+
+  void _generate() {
+    final disciplines = ref.read(disciplineConfigsProvider);
+    final config = ref.read(eventConfigProvider);
+
+    for (final d in disciplines) {
+      if (_lists.containsKey(d.id)) continue;
+
+      final pool = config.bibPools.where((p) => p.disciplineId == d.id).firstOrNull
+          ?? config.bibPools.firstOrNull;
+      final count = d.maxParticipants?.clamp(4, 12) ?? 8;
+      final bibStart = pool?.rangeStart ?? 1;
+      final intervalSec = d.interval.inSeconds;
+      final hour = d.firstStartTime.hour;
+      final minute = d.firstStartTime.minute;
+
+      final list = <Map<String, dynamic>>[];
+      for (var i = 0; i < count; i++) {
+        final name = _demoAthletes[i % _demoAthletes.length];
+        final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
+        list.add({
+          'pos': i + 1,
+          'bib': '${bibStart + i}',
+          'name': name.$1,
+          'gender': name.$2,
+          'dog': name.$3,
+          'time': '${(totalSec ~/ 3600).toString().padLeft(2, '0')}:${((totalSec % 3600) ~/ 60).toString().padLeft(2, '0')}:${(totalSec % 60).toString().padLeft(2, '0')}',
+          'status': 'confirmed',
+        });
+      }
+      _lists[d.id] = list;
+    }
+    if (disciplines.isNotEmpty) {
+      _selectedDiscId ??= disciplines.first.id;
+    }
+    if (mounted) setState(() {});
+  }
+
+  List<Map<String, dynamic>> get _currentList => _lists[_selectedDiscId] ?? [];
+  DisciplineConfig? get _currentDisc {
+    final disciplines = ref.read(disciplineConfigsProvider);
+    return disciplines.where((d) => d.id == _selectedDiscId).firstOrNull;
+  }
 
   void _showAddLateAthlete() {
     final nameCtrl = TextEditingController();
     final dogCtrl = TextEditingController();
-    String? selectedBib;
     final cs = Theme.of(context).colorScheme;
+    final list = _currentList;
+    final disc = _currentDisc;
+    if (disc == null) return;
 
-    AppBottomSheet.show(context, title: 'Добавить спортсмена в день старта', child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('Спортсмен будет добавлен в конец стартового списка', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+    AppBottomSheet.show(context, title: 'Добавить спортсмена', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Text('Будет добавлен в конец стартового листа', style: TextStyle(color: cs.outline, fontSize: 12)),
       const SizedBox(height: 12),
       TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
       TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Кличка собаки *', border: OutlineInputBorder())),
-      const SizedBox(height: 12),
-      const Align(alignment: Alignment.centerLeft, child: Text('Свободные номера:', style: TextStyle(fontWeight: FontWeight.bold))),
-      const SizedBox(height: 4),
-      SizedBox(height: 48, child: ListView(scrollDirection: Axis.horizontal, children: _freeBibs.map((bib) => Padding(
-        padding: const EdgeInsets.only(right: 6),
-        child: ChoiceChip(label: Text(bib, style: TextStyle(fontWeight: FontWeight.bold, color: selectedBib == bib ? cs.onPrimary : cs.primary)),
-          selected: selectedBib == bib, onSelected: (s) => setModal(() => selectedBib = s ? bib : null)),
-      )).toList())),
-      const SizedBox(height: 4),
-      Text('Занято: ${_usedBibs.join(", ")}', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-      const SizedBox(height: 12),
-      AppInfoBanner.info(title: 'Позиция: ${_startList.length + 1} (в конец списка). Время старта: рассчитается от последнего + интервал'),
-      const SizedBox(height: 12),
+      const SizedBox(height: 16),
       SizedBox(width: double.infinity, child: FilledButton.icon(
         onPressed: () {
-          if (nameCtrl.text.isEmpty || selectedBib == null) { AppSnackBar.error(context, 'Заполните ФИО и выберите BIB'); return; }
-          final lastTime = _startList.last['time'] as String;
-          final parts = lastTime.split(':');
-          final newSec = int.parse(parts[2]) + 30;
-          final newMin = int.parse(parts[1]) + newSec ~/ 60;
-          final newTime = '${parts[0]}:${(newMin % 60).toString().padLeft(2, '0')}:${(newSec % 60).toString().padLeft(2, '0')}';
+          if (nameCtrl.text.isEmpty) { AppSnackBar.error(context, 'Заполните ФИО'); return; }
+          final lastPos = list.isEmpty ? 0 : list.last['pos'] as int;
+          final intervalSec = disc.interval.inSeconds;
+          final h = disc.firstStartTime.hour;
+          final m = disc.firstStartTime.minute;
+          final totalSec = h * 3600 + m * 60 + lastPos * intervalSec;
+          final nextBib = list.isEmpty ? 1 : (int.tryParse(list.last['bib'] ?? '0') ?? 0) + 1;
+
           setState(() {
-            _startList.add({'pos': _startList.length + 1, 'bib': selectedBib, 'name': nameCtrl.text, 'dog': dogCtrl.text, 'time': newTime, 'status': 'late_add'});
-            _usedBibs.add(selectedBib!); _freeBibs.remove(selectedBib);
+            list.add({
+              'pos': lastPos + 1,
+              'bib': '$nextBib',
+              'name': nameCtrl.text,
+              'gender': '?',
+              'dog': dogCtrl.text,
+              'time': '${(totalSec ~/ 3600).toString().padLeft(2, '0')}:${((totalSec % 3600) ~/ 60).toString().padLeft(2, '0')}:${(totalSec % 60).toString().padLeft(2, '0')}',
+              'status': 'late_add',
+            });
           });
-          Navigator.pop(ctx);
-          AppSnackBar.success(context, '${nameCtrl.text} (BIB $selectedBib) добавлен');
+          Navigator.pop(context);
+          AppSnackBar.success(context, '${nameCtrl.text} (BIB $nextBib) добавлен');
         },
-        icon: const Icon(Icons.add), label: const Text('Добавить в конец списка'),
+        icon: const Icon(Icons.add),
+        label: const Text('Добавить'),
       )),
-    ])));
+      const SizedBox(height: 8),
+    ]));
   }
 
   void _showEditRow(int index) {
-    final a = _startList[index];
+    final list = _currentList;
+    final a = list[index];
     final posCtrl = TextEditingController(text: '${a['pos']}');
     final timeCtrl = TextEditingController(text: a['time']);
     final bibCtrl = TextEditingController(text: a['bib']);
-    final cs = Theme.of(context).colorScheme;
 
-    AppBottomSheet.show(
-      context,
-      title: '${a['name']} (BIB ${a['bib']})',
-      initialHeight: 0.6,
-      actions: [
-        AppButton.primary(
-          text: 'Сохранить',
-          onPressed: () {
-            setState(() { 
-              a['pos'] = int.tryParse(posCtrl.text) ?? a['pos']; 
-              a['bib'] = bibCtrl.text; 
-              a['time'] = timeCtrl.text; 
-              _startList.sort((ca, cb) => (ca['pos'] as int).compareTo(cb['pos'] as int)); 
-            });
-            Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.success(context, 'Стартовый лист скорректирован');
-          },
-        ),
-      ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppCard(
-            padding: const EdgeInsets.all(12),
-            children: [
-              TextField(controller: posCtrl, decoration: const InputDecoration(labelText: 'Позиция', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-              const SizedBox(height: 12),
-              TextField(controller: bibCtrl, decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder())),
-              const SizedBox(height: 12),
-              TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Время старта', border: OutlineInputBorder())),
-              const SizedBox(height: 12),
-              const TextField(decoration: InputDecoration(labelText: 'Причина коррекции', border: OutlineInputBorder(), hintText: 'Ошибка при жеребьёвке...'), maxLines: 2),
-            ]
-          ),
-          const SizedBox(height: 12),
-          Text('Изменение будет записано в Audit Log', style: TextStyle(color: cs.tertiary, fontSize: 12)),
-        ],
-      ),
-    );
+    AppBottomSheet.show(context, title: '${a['name']} (BIB ${a['bib']})', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(controller: posCtrl, decoration: const InputDecoration(labelText: 'Позиция', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+      const SizedBox(height: 12),
+      TextField(controller: bibCtrl, decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder())),
+      const SizedBox(height: 12),
+      TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Время старта', border: OutlineInputBorder())),
+      const SizedBox(height: 16),
+      SizedBox(width: double.infinity, child: FilledButton.icon(
+        onPressed: () {
+          setState(() {
+            a['pos'] = int.tryParse(posCtrl.text) ?? a['pos'];
+            a['bib'] = bibCtrl.text;
+            a['time'] = timeCtrl.text;
+            list.sort((ca, cb) => (ca['pos'] as int).compareTo(cb['pos'] as int));
+          });
+          Navigator.pop(context);
+          AppSnackBar.success(context, 'Стартовый лист скорректирован');
+        },
+        icon: const Icon(Icons.save),
+        label: const Text('Сохранить'),
+      )),
+      const SizedBox(height: 8),
+    ]));
+  }
+
+  void _publish() {
+    setState(() => _published = true);
+    AppSnackBar.success(context, 'Стартовый лист опубликован! 🎉');
   }
 
   @override
   Widget build(BuildContext context) {
+    final disciplines = ref.watch(disciplineConfigsProvider);
     final cs = Theme.of(context).colorScheme;
     final w = MediaQuery.of(context).size.width;
 
@@ -134,93 +179,154 @@ class _StartListScreenState extends State<StartListScreen> {
       _isTableView = w > 600;
       _initialized = true;
     }
-
+    final list = _currentList;
+    final disc = _currentDisc;
 
     return Scaffold(
-      appBar: AppAppBar(title: const Text('Стартовый лист'), actions: [
-        IconButton(icon: Icon(_isTableView ? Icons.grid_view : Icons.table_rows), tooltip: 'Вид таблицы', onPressed: () => setState(() => _isTableView = !_isTableView)),
-        IconButton(icon: const Icon(Icons.picture_as_pdf), tooltip: 'Экспорт PDF', onPressed: () => AppSnackBar.info(context, 'PDF → Печать')),
-        IconButton(icon: const Icon(Icons.share), tooltip: 'Поделиться', onPressed: () {}),
-      ]),
-      floatingActionButton: FloatingActionButton.extended(onPressed: _showAddLateAthlete, icon: const Icon(Icons.person_add), label: const Text('Добавить')),
+      appBar: AppAppBar(
+        title: const Text('Стартовый лист'),
+        actions: [
+          IconButton(
+            icon: Icon(_isTableView ? Icons.grid_view : Icons.table_rows),
+            tooltip: 'Вид',
+            onPressed: () => setState(() => _isTableView = !_isTableView),
+          ),
+          IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            tooltip: 'Экспорт PDF',
+            onPressed: () => AppSnackBar.info(context, 'PDF → Печать'),
+          ),
+          if (!_published)
+            IconButton(
+              icon: const Icon(Icons.publish),
+              tooltip: 'Опубликовать',
+              onPressed: _publish,
+            ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddLateAthlete,
+        icon: const Icon(Icons.person_add),
+        label: const Text('Добавить'),
+      ),
       body: Column(children: [
-        SizedBox(height: 40, child: AppDisciplineChips(
-          items: const ['Скидж. 5км', 'Скидж. 10км', 'Каникросс', 'Нарты'],
-          selected: _disc,
-          onSelected: (v) => setState(() => _disc = v),
-        )),
-        Container(
+        // Published banner
+        if (_published)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+            child: Row(children: [
+              const Icon(Icons.check_circle, size: 16, color: Color(0xFF2E7D32)),
+              const SizedBox(width: 8),
+              Text('Стартовый лист опубликован', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: const Color(0xFF2E7D32))),
+              const Spacer(),
+              TextButton(onPressed: () => setState(() => _published = false), child: const Text('Снять', style: TextStyle(fontSize: 11))),
+            ]),
+          ),
+
+        // Discipline chips
+        SizedBox(
+          height: 44,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            itemCount: disciplines.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            itemBuilder: (context, i) {
+              final d = disciplines[i];
+              final isSelected = d.id == _selectedDiscId;
+              return ChoiceChip(
+                label: Text(d.name, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : null)),
+                selected: isSelected,
+                onSelected: (_) => setState(() => _selectedDiscId = d.id),
+              );
+            },
+          ),
+        ),
+
+        // Info bar
+        if (disc != null) Container(
           color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(children: [
-            Icon(Icons.timer, size: 16, color: cs.primary),
-            const SizedBox(width: 8),
-            const Text('Интервал:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 4),
-            DropdownButton<String>(value: _interval, underline: const SizedBox(), isDense: true, style: TextStyle(fontSize: 12, color: cs.primary, fontWeight: FontWeight.bold),
-              items: ['15с', '30с', '1 мин', '2 мин', '3 мин'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (v) => setState(() => _interval = v!)),
+            Icon(Icons.timer, size: 14, color: cs.primary),
+            const SizedBox(width: 6),
+            Text('Инт. ${disc.interval.inSeconds}с', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
             const SizedBox(width: 16),
-            Icon(Icons.schedule, size: 16, color: cs.primary),
+            Icon(Icons.schedule, size: 14, color: cs.primary),
             const SizedBox(width: 4),
-            const Text('Первый старт:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: () => showTimePicker(context: context, initialTime: const TimeOfDay(hour: 10, minute: 0)).then((t) { if (t != null) setState(() => _firstStart = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}:00'); }),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(border: Border.all(color: cs.primary.withValues(alpha: 0.3)), borderRadius: BorderRadius.circular(4)),
-                child: Text(_firstStart, style: TextStyle(fontSize: 12, fontFamily: 'monospace', color: cs.primary, fontWeight: FontWeight.bold)),
-              ),
+            Text(
+              'Старт ${disc.firstStartTime.hour.toString().padLeft(2, '0')}:${disc.firstStartTime.minute.toString().padLeft(2, '0')}',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary),
             ),
+            const Spacer(),
+            Text('${list.length} чел.', style: TextStyle(fontSize: 12, color: cs.outline)),
           ]),
         ),
+
+        // Table
         Expanded(
-          child: SingleChildScrollView(
-            scrollDirection: Axis.vertical,
-            child: AppProtocolTable(
-              forceTableView: _isTableView,
-              headerRow: AppProtocolRow(
-                isHeader: true,
-                bib: 'BIB',
-                name: 'ФИО',
-                cat: '',
-                dog: 'Собака',
-                time: 'Старт',
-                delta: '—',
-                penalty: '—',
-              ),
-              itemCount: _startList.length,
-              itemBuilder: (context, index, isCard) {
-                final a = _startList[index];
-                final isLate = a['status'] == 'late_add';
-                
-                return AppProtocolRow(
-                  isCardView: isCard,
-                  place: a['pos'] as int,
-                  bib: a['bib'] as String,
-                  name: a['name'] as String,
-                  cat: isLate ? 'ДОП. ЗАЯВКА' : '',
-                  dog: a['dog'] as String,
-                  time: a['time'] as String,
-                  delta: '—',
-                  penalty: '—',
-                  onTap: () => _showEditRow(index),
-                );
-              },
-            ),
-          ),
+          child: list.isEmpty
+              ? Center(child: Text('Нет участников', style: TextStyle(color: cs.outline)))
+              : SingleChildScrollView(
+                  child: AppProtocolTable(
+                    forceTableView: _isTableView,
+                    headerRow: AppProtocolRow(
+                      isHeader: true,
+                      bib: 'BIB',
+                      name: 'ФИО',
+                      cat: '',
+                      dog: 'Собака',
+                      time: 'Старт',
+                      delta: '—',
+                      penalty: '—',
+                    ),
+                    itemCount: list.length,
+                    itemBuilder: (context, index, isCard) {
+                      final a = list[index];
+                      final isLate = a['status'] == 'late_add';
+
+                      return AppProtocolRow(
+                        isCardView: isCard,
+                        place: a['pos'] as int,
+                        bib: a['bib'] as String,
+                        name: a['name'] as String,
+                        cat: isLate ? 'ДОП.' : '',
+                        dog: a['dog'] as String,
+                        time: a['time'] as String,
+                        delta: '—',
+                        penalty: '—',
+                        onTap: () => _showEditRow(index),
+                      );
+                    },
+                  ),
+                ),
         ),
+
+        // Footer stats
         Container(
           color: cs.surfaceContainerHighest,
           padding: const EdgeInsets.all(8),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-            Text('Всего: ${_startList.length}', style: const TextStyle(fontWeight: FontWeight.bold)),
-            Text('Подтв.: ${_startList.where((a) => a['status'] == 'confirmed').length}', style: TextStyle(color: cs.primary)),
-            Text('Доп.: ${_startList.where((a) => a['status'] == 'late_add').length}', style: TextStyle(color: cs.tertiary)),
-          ]),
+          child: SafeArea(
+            top: false,
+            child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
+              _stat('Всего', '${list.length}', cs.onSurface),
+              _stat('Подтв.', '${list.where((a) => a['status'] == 'confirmed').length}', cs.primary),
+              _stat('Доп.', '${list.where((a) => a['status'] == 'late_add').length}', cs.tertiary),
+              if (_published)
+                _stat('Статус', 'Опубликован', const Color(0xFF2E7D32)),
+            ]),
+          ),
         ),
       ]),
     );
+  }
+
+  Widget _stat(String label, String value, Color color) {
+    return Column(mainAxisSize: MainAxisSize.min, children: [
+      Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+      Text(label, style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7))),
+    ]);
   }
 }
