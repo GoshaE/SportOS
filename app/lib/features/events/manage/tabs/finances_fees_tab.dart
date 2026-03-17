@@ -1,25 +1,35 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/widgets/widgets.dart';
+import '../../../../domain/event/config_providers.dart';
+import '../../../../domain/event/event_config.dart' hide TimeOfDay;
 
-class FinancesFeesTab extends StatefulWidget {
+/// Вкладка «Взносы» — подключена к Config Engine.
+class FinancesFeesTab extends ConsumerStatefulWidget {
   const FinancesFeesTab({super.key});
 
   @override
-  State<FinancesFeesTab> createState() => _FinancesFeesTabState();
+  ConsumerState<FinancesFeesTab> createState() => _FinancesFeesTabState();
 }
 
-class _FinancesFeesTabState extends State<FinancesFeesTab> {
+class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
   String _paymentTier = 'sbp';
-  String _pricingMode = 'single';
-  bool _earlyBird = true;
-  String _earlyBirdType = 'percent';
-  final int _earlyBirdValue = 15;
-  int _bookingTimeout = 24;
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final config = ref.watch(eventConfigProvider);
+    final pricing = config.pricingConfig;
+    final disciplines = ref.watch(disciplineConfigsProvider);
+
+    void updatePricing(PricingConfig Function(PricingConfig p) fn) {
+      ref.read(eventConfigProvider.notifier).update(
+        (c) => c.copyWith(pricingConfig: fn(c.pricingConfig)),
+      );
+    }
+
     return ListView(padding: const EdgeInsets.all(12), children: [
+      // ─── Способ оплаты ───
       AppCard(
         padding: const EdgeInsets.all(16),
         children: [
@@ -40,68 +50,114 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
       const SizedBox(height: 12),
 
       if (_paymentTier != 'free') ...[
+        // ─── Валюта ───
+        AppCard(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Row(children: [
+              Icon(Icons.language, size: 20, color: cs.primary),
+              const SizedBox(width: 8),
+              const Text('Валюта', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+              const Spacer(),
+              SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'RUB', label: Text('₽', style: TextStyle(fontSize: 12))),
+                  ButtonSegment(value: 'USD', label: Text('\$', style: TextStyle(fontSize: 12))),
+                  ButtonSegment(value: 'EUR', label: Text('€', style: TextStyle(fontSize: 12))),
+                  ButtonSegment(value: 'KZT', label: Text('₸', style: TextStyle(fontSize: 12))),
+                ],
+                selected: {pricing.currency},
+                onSelectionChanged: (s) => updatePricing((p) => p.copyWith(currency: s.first)),
+                style: const ButtonStyle(visualDensity: VisualDensity.compact),
+              ),
+            ]),
+          ],
+        ),
+        const SizedBox(height: 12),
+
+        // ─── Цены по дисциплинам ───
         AppCard(
           padding: const EdgeInsets.all(16),
           children: [
             Row(children: [
               Icon(Icons.payments, size: 20, color: cs.primary),
               const SizedBox(width: 8),
-              const Text('Цены', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-              const Spacer(),
-              SegmentedButton<String>(
-                segments: const [
-                  ButtonSegment(value: 'single', label: Text('Единая', style: TextStyle(fontSize: 11))),
-                  ButtonSegment(value: 'per_discipline', label: Text('По дисц.', style: TextStyle(fontSize: 11))),
-                ],
-                selected: {_pricingMode},
-                onSelectionChanged: (s) => setState(() => _pricingMode = s.first),
-                style: const ButtonStyle(visualDensity: VisualDensity.compact),
-              ),
+              const Text('Цены по дисциплинам', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ]),
             const SizedBox(height: 16),
-            if (_pricingMode == 'single')
-              _priceRow(cs, 'Единая цена', 5000, cs.primary)
-            else ...[
-              _priceRow(cs, 'Скиджоринг 5км', 2000, cs.primary),
-              _priceRow(cs, 'Скиджоринг 10км', 2500, cs.secondary),
-              _priceRow(cs, 'Каникросс 3км', 1500, cs.tertiary),
-              _priceRow(cs, 'Нарты 15км', 3000, cs.error),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.add, size: 16), label: const Text('Добавить дисциплину'), style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact)),
-            ],
+            ...disciplines.asMap().entries.map((entry) {
+              final i = entry.key;
+              final d = entry.value;
+              final symbol = _currencySymbol(pricing.currency);
+              return _priceRow(cs, d.name, d.priceRub, symbol, _sportColor(cs, i), () {
+                _editPrice(context, d.name, d.id, d.priceRub, symbol);
+              });
+            }),
           ],
         ),
         const SizedBox(height: 12),
 
+        // ─── Early Bird + Таймаут ───
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: AppCard(
             padding: const EdgeInsets.all(16),
-            backgroundColor: _earlyBird ? cs.tertiary.withValues(alpha: 0.1) : null,
-            borderColor: _earlyBird ? cs.tertiary.withValues(alpha: 0.3) : null,
+            backgroundColor: pricing.earlyBirdEnabled ? cs.tertiary.withValues(alpha: 0.1) : null,
+            borderColor: pricing.earlyBirdEnabled ? cs.tertiary.withValues(alpha: 0.3) : null,
             children: [
               Row(children: [
-                Icon(Icons.access_time_filled, color: _earlyBird ? cs.tertiary : cs.onSurfaceVariant, size: 20),
+                Icon(Icons.access_time_filled, color: pricing.earlyBirdEnabled ? cs.tertiary : cs.onSurfaceVariant, size: 20),
                 const SizedBox(width: 8),
                 const Expanded(child: Text('Early Bird', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
                 SizedBox(
                   height: 24,
-                  child: Switch(value: _earlyBird, onChanged: (v) => setState(() => _earlyBird = v)),
+                  child: Switch(
+                    value: pricing.earlyBirdEnabled,
+                    onChanged: (v) => updatePricing((p) => p.copyWith(earlyBirdEnabled: v)),
+                  ),
                 ),
               ]),
-              if (_earlyBird) ...[
+              if (pricing.earlyBirdEnabled) ...[
                 const SizedBox(height: 12),
                 Row(children: [
                   SegmentedButton<String>(
-                    segments: const [ButtonSegment(value: 'percent', label: Text('%', style: TextStyle(fontSize: 12))), ButtonSegment(value: 'fixed', label: Text('₽', style: TextStyle(fontSize: 12)))],
-                    selected: {_earlyBirdType},
-                    onSelectionChanged: (s) => setState(() => _earlyBirdType = s.first),
+                    segments: const [
+                      ButtonSegment(value: 'percent', label: Text('%', style: TextStyle(fontSize: 12))),
+                      ButtonSegment(value: 'fixed', label: Text('₽', style: TextStyle(fontSize: 12))),
+                    ],
+                    selected: const {'percent'},
+                    onSelectionChanged: (_) {},
                     style: const ButtonStyle(visualDensity: VisualDensity.compact),
                   ),
                   const SizedBox(width: 8),
-                  Expanded(child: Text(_earlyBirdType == 'fixed' ? '−$_earlyBirdValue ₽' : '−$_earlyBirdValue%', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: cs.tertiary), textAlign: TextAlign.right)),
+                  Expanded(child: GestureDetector(
+                    onTap: () => _editDiscount(context, pricing.earlyBirdDiscountPercent, updatePricing),
+                    child: Text(
+                      '−${pricing.earlyBirdDiscountPercent}%',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: cs.tertiary),
+                      textAlign: TextAlign.right,
+                    ),
+                  )),
                 ]),
                 const SizedBox(height: 8),
-                Text('Действует до 01.03.2026', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                GestureDetector(
+                  onTap: () async {
+                    final date = await showDatePicker(
+                      context: context,
+                      initialDate: pricing.earlyBirdDeadline ?? config.startDate.subtract(const Duration(days: 14)),
+                      firstDate: DateTime.now(),
+                      lastDate: config.startDate,
+                    );
+                    if (date != null) {
+                      updatePricing((p) => p.copyWith(earlyBirdDeadline: date));
+                    }
+                  },
+                  child: Text(
+                    pricing.earlyBirdDeadline != null
+                        ? 'До ${_fmtDate(pricing.earlyBirdDeadline!)}'
+                        : 'Нажмите для выбора даты',
+                    style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, decoration: TextDecoration.underline),
+                  ),
+                ),
               ],
             ],
           )),
@@ -116,10 +172,16 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
               ]),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
-                initialValue: _bookingTimeout,
+                value: config.registrationConfig.refundDeadlineHours,
                 decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
                 items: [12, 24, 48, 72].map((h) => DropdownMenuItem(value: h, child: Text('$h ч.'))).toList(),
-                onChanged: (v) => setState(() => _bookingTimeout = v!),
+                onChanged: (v) {
+                  if (v != null) {
+                    ref.read(eventConfigProvider.notifier).update(
+                      (c) => c.copyWith(registrationConfig: c.registrationConfig.copyWith(refundDeadlineHours: v)),
+                    );
+                  }
+                },
               ),
               const SizedBox(height: 8),
               Text('На оплату после брони', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
@@ -128,6 +190,7 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
         ]),
         const SizedBox(height: 12),
 
+        // ─── Интеграция ───
         if (_paymentTier == 'requisites') AppCard(
           padding: const EdgeInsets.all(16),
           children: [
@@ -139,7 +202,6 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
             OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.add, size: 16), label: const Text('Альтернативные реквизиты'), style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact)),
           ],
         ),
-
         if (_paymentTier == 'sbp' || _paymentTier == 'acquiring') AppCard(
           padding: const EdgeInsets.all(16),
           children: [
@@ -203,7 +265,7 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
     );
   }
 
-  Widget _priceRow(ColorScheme cs, String label, int price, Color color) {
+  Widget _priceRow(ColorScheme cs, String label, int? price, String symbol, Color color, VoidCallback onEdit) {
     return Padding(padding: const EdgeInsets.only(bottom: 12), child: Row(children: [
       Container(width: 4, height: 32, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(2))),
       const SizedBox(width: 12),
@@ -211,10 +273,60 @@ class _FinancesFeesTabState extends State<FinancesFeesTab> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
         decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-        child: Text('$price ₽', style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 15)),
+        child: Text(price != null ? '$price $symbol' : 'Бесплатно', style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 15)),
       ),
       const SizedBox(width: 4),
-      IconButton(icon: const Icon(Icons.edit, size: 18), visualDensity: VisualDensity.compact, onPressed: () {}, color: cs.onSurfaceVariant),
+      IconButton(icon: const Icon(Icons.edit, size: 18), visualDensity: VisualDensity.compact, onPressed: onEdit, color: cs.onSurfaceVariant),
+    ]));
+  }
+
+  Color _sportColor(ColorScheme cs, int i) => [cs.primary, cs.secondary, cs.tertiary, cs.error, cs.primary][i % 5];
+
+  String _currencySymbol(String code) => switch (code) {
+    'RUB' => '₽', 'USD' => '\$', 'EUR' => '€', 'KZT' => '₸', 'BYN' => 'Br', _ => code,
+  };
+
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+
+  void _editPrice(BuildContext context, String name, String discId, int? current, String symbol) {
+    final ctrl = TextEditingController(text: '${current ?? 0}');
+    AppBottomSheet.show(context, title: name, child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(
+        controller: ctrl,
+        decoration: InputDecoration(labelText: 'Цена ($symbol)', border: const OutlineInputBorder(), hintText: '0 = бесплатно'),
+        keyboardType: TextInputType.number, autofocus: true,
+      ),
+      const SizedBox(height: 16),
+      SizedBox(width: double.infinity, child: FilledButton(
+        onPressed: () {
+          final price = int.tryParse(ctrl.text) ?? 0;
+          ref.read(eventConfigProvider.notifier).updateDiscipline(
+            discId, (d) => d.copyWith(priceRub: price > 0 ? price : null),
+          );
+          Navigator.pop(context);
+        },
+        child: const Text('Сохранить'),
+      )),
+    ]));
+  }
+
+  void _editDiscount(BuildContext context, int current, void Function(PricingConfig Function(PricingConfig)) updatePricing) {
+    final ctrl = TextEditingController(text: '$current');
+    AppBottomSheet.show(context, title: 'Скидка Early Bird', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(
+        controller: ctrl,
+        decoration: const InputDecoration(labelText: 'Процент', border: OutlineInputBorder(), suffixText: '%'),
+        keyboardType: TextInputType.number, autofocus: true,
+      ),
+      const SizedBox(height: 16),
+      SizedBox(width: double.infinity, child: FilledButton(
+        onPressed: () {
+          updatePricing((p) => p.copyWith(earlyBirdDiscountPercent: (int.tryParse(ctrl.text) ?? 20).clamp(1, 100)));
+          Navigator.pop(context);
+        },
+        child: const Text('Сохранить'),
+      )),
     ]));
   }
 

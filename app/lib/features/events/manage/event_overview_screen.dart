@@ -453,7 +453,6 @@ class EventOverviewScreen extends ConsumerWidget {
       children: [
         AppMenuGroup(title: 'Организация', items: [
           AppMenuItem(icon: Icons.payments, label: 'Финансы и сборы', badge: '157.5К', color: cs.primary, onTap: () => context.push('/manage/$eventId/finances')),
-          AppMenuItem(icon: Icons.sell, label: 'Ценообразование', color: cs.primary, onTap: () => context.push('/manage/$eventId/pricing')),
           AppMenuItem(icon: Icons.people, label: 'Участники', badge: '48 чел', color: cs.secondary, onTap: () => context.push('/manage/$eventId/participants')),
           AppMenuItem(icon: Icons.badge, label: 'Команда организаторов', badge: '5 чел', color: cs.secondary, onTap: () => context.push('/manage/$eventId/team')),
           AppMenuItem(icon: Icons.description, label: 'Документы и положения', badge: '4', color: cs.onSurfaceVariant, onTap: () => context.push('/manage/$eventId/documents')),
