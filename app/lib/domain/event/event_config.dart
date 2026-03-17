@@ -43,6 +43,19 @@ enum BibDayPolicy {
   pursuit,
 }
 
+/// Метод расчёта возраста участника.
+///
+/// Определяет, как система считает возраст для распределения
+/// по категориям при подаче заявки.
+enum AgeCalculation {
+  /// По году: возраст = год гонки − год рождения.
+  /// Стандарт FIS, IFSS, большинства федераций.
+  byYear,
+
+  /// Точный возраст на дату гонки.
+  exactDate,
+}
+
 /// Пол для категории.
 enum CategoryGender { any, male, female }
 
@@ -182,6 +195,7 @@ class EventConfig {
 
   // ── Категории ──
   final List<RaceCategory> raceCategories;
+  final AgeCalculation ageCalculation;
 
   const EventConfig({
     required this.id,
@@ -203,6 +217,7 @@ class EventConfig {
     this.courses = const [],
     this.bibPools = const [],
     this.raceCategories = const [],
+    this.ageCalculation = AgeCalculation.byYear,
   });
 
   EventConfig copyWith({
@@ -225,6 +240,7 @@ class EventConfig {
     List<Course>? courses,
     List<BibPool>? bibPools,
     List<RaceCategory>? raceCategories,
+    AgeCalculation? ageCalculation,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -246,6 +262,7 @@ class EventConfig {
       courses: courses ?? this.courses,
       bibPools: bibPools ?? this.bibPools,
       raceCategories: raceCategories ?? this.raceCategories,
+      ageCalculation: ageCalculation ?? this.ageCalculation,
     );
   }
 }
