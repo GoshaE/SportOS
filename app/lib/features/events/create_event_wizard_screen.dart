@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../domain/event/config_providers.dart';
+import '../../domain/event/event_config.dart' as ec show EventConfig, EventStatus, RaceDay, StartOrder;
 import '../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../domain/timing/models.dart';
 
@@ -318,20 +319,18 @@ class _CreateEventWizardScreenState extends ConsumerState<CreateEventWizardScree
       status: EventStatus.draft,
       isMultiDay: isMultiDay,
       days: [
-        RaceDay(
+        ec.RaceDay(
           dayNumber: 1,
           date: _startDate,
           disciplineIds: disciplines.map((d) => d.id).toList(),
-          startOrder: StartOrder.draw,
-          startTime: const TimeOfDay(hour: 10, minute: 0),
+          startOrder: ec.StartOrder.draw,
         ),
         if (isMultiDay)
-          RaceDay(
+          ec.RaceDay(
             dayNumber: 2,
             date: _endDate,
             disciplineIds: [],
-            startOrder: StartOrder.reverse,
-            startTime: const TimeOfDay(hour: 10, minute: 0),
+            startOrder: ec.StartOrder.reverse,
           ),
       ],
     ));
