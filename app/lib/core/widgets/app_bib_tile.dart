@@ -7,6 +7,7 @@ enum BibState {
   finished,   // Crossed out
   dns,        // Red, blocked
   current,    // Highlighted — accent background
+  disabled,   // Not started yet — muted, non-interactive
 }
 
 /// AppBibTile: Grid tile showing a BIB number with status styling.
@@ -143,6 +144,13 @@ class AppBibTile extends StatelessWidget {
       cs.tertiary.withValues(alpha: 0.5),
       null,
       Icons.play_circle_outline,
+    ),
+    BibState.disabled => (
+      cs.surfaceContainerHighest.withValues(alpha: 0.15),
+      cs.outline.withValues(alpha: 0.5),
+      cs.outlineVariant.withValues(alpha: 0.15),
+      null,
+      Icons.hourglass_empty,
     ),
   };
 }

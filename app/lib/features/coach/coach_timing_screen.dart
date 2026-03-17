@@ -466,13 +466,16 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
     final session = ref.watch(raceSessionProvider);
     if (session == null) return const Center(child: Text('Нет сессии'));
     final totalLaps = session.config.laps;
+    // Исключаем DNS, показываем оставшихся с разделением
+    final athletes = session.startList.all.where((a) => a.status != AthleteStatus.dns).toList();
     return GridView.extent(
       maxCrossAxisExtent: 130,
       childAspectRatio: 0.85,
       padding: const EdgeInsets.all(16),
       mainAxisSpacing: 12,
       crossAxisSpacing: 12,
-      children: session.startList.all.map((a) {
+      children: athletes.map((a) {
+        final isStarted = a.status == AthleteStatus.started;
         final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.owner == MarkOwner.coach).toList();
         final lapCount = bibMarks.length;
         final hasMarks = lapCount > 0;
@@ -484,18 +487,30 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
           splitInfo = TimeFormatter.compact(elapsed);
         }
 
-        final lapInfo = hasMarks
-            ? 'Круг $lapCount/$totalLaps${splitInfo != null ? '\n⏱$splitInfo' : ''}'
-            : 'Старт: ${TimeFormatter.clockTime(a.effectiveStartTime)}';
+        final String lapInfo;
+        if (!isStarted) {
+          lapInfo = 'Ожидает старта';
+        } else if (hasMarks) {
+          lapInfo = 'Круг $lapCount/$totalLaps${splitInfo != null ? '\n⏱$splitInfo' : ''}';
+        } else {
+          lapInfo = 'Старт: ${TimeFormatter.clockTime(a.effectiveStartTime)}';
+        }
+
+        final BibState state;
+        if (!isStarted) {
+          state = BibState.disabled;
+        } else if (hasMarks) {
+          state = lapCount >= totalLaps ? BibState.finished : BibState.current;
+        } else {
+          state = BibState.available;
+        }
 
         return AppBibTile(
           bib: a.bib,
           name: a.name,
           lapInfo: lapInfo,
-          state: hasMarks
-              ? (lapCount >= totalLaps ? BibState.finished : BibState.current)
-              : BibState.available,
-          onTap: () => _markFromGrid(a.bib),
+          state: state,
+          onTap: isStarted ? () => _markFromGrid(a.bib) : null,
         );
       }).toList(),
     );
