@@ -1,17 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import '../../domain/event/config_providers.dart';
+import '../../domain/event/event_config.dart' hide TimeOfDay;
+import '../../domain/timing/models.dart';
 
 /// Screen ID: M3 — Создать мероприятие (Лёгкий Wizard — 3 шага)
-class CreateEventWizardScreen extends StatefulWidget {
+///
+/// Сохраняет в Config Engine при создании.
+class CreateEventWizardScreen extends ConsumerStatefulWidget {
   const CreateEventWizardScreen({super.key});
 
   @override
-  State<CreateEventWizardScreen> createState() => _CreateEventWizardScreenState();
+  ConsumerState<CreateEventWizardScreen> createState() => _CreateEventWizardScreenState();
 }
 
-class _CreateEventWizardScreenState extends State<CreateEventWizardScreen> {
+class _CreateEventWizardScreenState extends ConsumerState<CreateEventWizardScreen> {
   int _step = 0;
 
   static const _sports = <String, Map<String, dynamic>>{
@@ -28,7 +34,13 @@ class _CreateEventWizardScreenState extends State<CreateEventWizardScreen> {
 
   final Set<String> _selectedSports = {};
   final _nameCtrl = TextEditingController();
+  final _descCtrl = TextEditingController();
+  final _locationCtrl = TextEditingController();
+  final _venueCtrl = TextEditingController();
   String _organizer = 'personal';
+
+  DateTime _startDate = DateTime.now().add(const Duration(days: 30));
+  DateTime _endDate = DateTime.now().add(const Duration(days: 30));
 
   @override
   Widget build(BuildContext context) {
@@ -110,6 +122,7 @@ class _CreateEventWizardScreenState extends State<CreateEventWizardScreen> {
       const SizedBox(height: 12),
       AppTextField(
         label: 'Описание (необязательно)',
+        controller: _descCtrl,
         hintText: 'Открытые соревнования по ездовому спорту...',
         maxLines: 3,
       ),
@@ -156,22 +169,36 @@ class _CreateEventWizardScreenState extends State<CreateEventWizardScreen> {
       Text('Когда и где?', style: theme.textTheme.headlineSmall),
       const SizedBox(height: 20),
       Row(children: [
-        Expanded(child: _dateTile('Начало', '15 марта 2026')),
+        Expanded(child: _dateTile('Начало', _startDate, (d) => setState(() {
+          _startDate = d;
+          if (_endDate.isBefore(d)) _endDate = d;
+        }))),
         const SizedBox(width: 12),
-        Expanded(child: _dateTile('Окончание', '16 марта 2026')),
+        Expanded(child: _dateTile('Окончание', _endDate, (d) => setState(() => _endDate = d))),
       ]),
       const SizedBox(height: 16),
-      AppTextField(label: 'Город', prefixIcon: Icons.location_city, hintText: 'Екатеринбург'),
+      AppTextField(label: 'Город', controller: _locationCtrl, prefixIcon: Icons.location_city, hintText: 'Екатеринбург'),
       const SizedBox(height: 12),
-      AppTextField(label: 'Площадка (необязательно)', prefixIcon: Icons.place, hintText: 'Парк Лесоводов, ул. Ленина 100'),
+      AppTextField(label: 'Площадка (необязательно)', controller: _venueCtrl, prefixIcon: Icons.place, hintText: 'Парк Лесоводов, ул. Ленина 100'),
     ]);
   }
 
-  Widget _dateTile(String label, String value) {
+  String _fmtDate(DateTime d) =>
+      '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
+
+  Widget _dateTile(String label, DateTime date, void Function(DateTime) onPick) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
     return InkWell(
-      onTap: () {},
+      onTap: () async {
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: date,
+          firstDate: DateTime.now(),
+          lastDate: DateTime(2030),
+        );
+        if (picked != null) onPick(picked);
+      },
       borderRadius: BorderRadius.circular(12),
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -185,7 +212,7 @@ class _CreateEventWizardScreenState extends State<CreateEventWizardScreen> {
           Row(children: [
             Icon(Icons.calendar_today, size: 18, color: cs.primary),
             const SizedBox(width: 8),
-            Text(value, style: theme.textTheme.titleSmall),
+            Text(_fmtDate(date), style: theme.textTheme.titleSmall),
           ]),
         ]),
       ),
@@ -245,12 +272,74 @@ class _CreateEventWizardScreenState extends State<CreateEventWizardScreen> {
     ]);
   }
 
+  /// Создать мероприятие и сохранить в Config Engine.
   void _create() {
     if (_selectedSports.isEmpty) {
       AppSnackBar.error(context, 'Выберите хотя бы один вид спорта');
       return;
     }
+    if (_nameCtrl.text.trim().isEmpty) {
+      AppSnackBar.error(context, 'Введите название мероприятия');
+      return;
+    }
+
+    final eventId = 'evt-${DateTime.now().millisecondsSinceEpoch}';
+    final isMultiDay = _endDate.isAfter(_startDate);
+
+    // Создать стартовую дисциплину для каждого вида спорта
+    final disciplines = <DisciplineConfig>[];
+    final startTime = DateTime(_startDate.year, _startDate.month, _startDate.day, 10, 0);
+    var offset = Duration.zero;
+
+    for (final sportKey in _selectedSports) {
+      final sportName = (_sports[sportKey]!['name'] as String);
+      disciplines.add(DisciplineConfig(
+        id: 'd-${sportKey}-${DateTime.now().millisecondsSinceEpoch}',
+        name: sportName,
+        distanceKm: 5.0,
+        startType: StartType.individual,
+        firstStartTime: startTime.add(offset),
+        laps: 1,
+        dayNumber: 1,
+        categories: const ['М', 'Ж'],
+      ));
+      offset += const Duration(hours: 2);
+    }
+
+    // Сохранить в Config Engine
+    ref.read(eventConfigProvider.notifier).update((c) => EventConfig(
+      id: eventId,
+      name: _nameCtrl.text.trim(),
+      startDate: _startDate,
+      endDate: _endDate,
+      location: [_locationCtrl.text.trim(), _venueCtrl.text.trim()]
+          .where((s) => s.isNotEmpty).join(', '),
+      description: _descCtrl.text.trim().isNotEmpty ? _descCtrl.text.trim() : null,
+      status: EventStatus.draft,
+      isMultiDay: isMultiDay,
+      days: [
+        RaceDay(
+          dayNumber: 1,
+          date: _startDate,
+          disciplineIds: disciplines.map((d) => d.id).toList(),
+          startOrder: StartOrder.draw,
+          startTime: const TimeOfDay(hour: 10, minute: 0),
+        ),
+        if (isMultiDay)
+          RaceDay(
+            dayNumber: 2,
+            date: _endDate,
+            disciplineIds: [],
+            startOrder: StartOrder.reverse,
+            startTime: const TimeOfDay(hour: 10, minute: 0),
+          ),
+      ],
+    ));
+
+    // Сохранить дисциплины
+    ref.read(eventConfigProvider.notifier).setDisciplines(disciplines);
+
     AppSnackBar.success(context, 'Мероприятие создано! Настройте дисциплины.');
-    context.go('/manage/evt-new');
+    context.go('/manage/$eventId');
   }
 }

@@ -142,6 +142,46 @@ final displaySettingsForDisciplineProvider = Provider.family<DisplaySettings, St
 });
 
 // ─────────────────────────────────────────────────────────────────
+// PARTICIPANTS PROVIDER
+// ─────────────────────────────────────────────────────────────────
+
+/// Управление списком участников мероприятия.
+class ParticipantsNotifier extends Notifier<List<Participant>> {
+  @override
+  List<Participant> build() => List.from(demoParticipants);
+
+  /// Добавить участника.
+  void add(Participant p) {
+    state = [...state, p];
+  }
+
+  /// Удалить участника.
+  void remove(String id) {
+    state = state.where((p) => p.id != id).toList();
+  }
+
+  /// Обновить участника.
+  void update(String id, Participant Function(Participant) updater) {
+    state = state.map((p) => p.id == id ? updater(p) : p).toList();
+  }
+
+  /// Подтвердить заявку.
+  void approve(String id) {
+    update(id, (p) => p.copyWith(applicationStatus: ApplicationStatus.approved));
+  }
+
+  /// Отметить как оплаченного.
+  void markPaid(String id) {
+    update(id, (p) => p.copyWith(paymentStatus: PaymentStatus.paid));
+  }
+}
+
+final participantsProvider = NotifierProvider<ParticipantsNotifier, List<Participant>>(
+  ParticipantsNotifier.new,
+);
+
+
+// ─────────────────────────────────────────────────────────────────
 // DEMO DATA
 // ─────────────────────────────────────────────────────────────────
 

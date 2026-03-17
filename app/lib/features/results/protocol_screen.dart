@@ -1,62 +1,59 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_podium_view.dart';
+import '../../domain/timing/timing.dart';
+import '../../domain/event/config_providers.dart';
 
-class _AthleteData {
-  final int? place;
-  final String bib;
-  final String name;
-  final String cat;
-  final String dog;
-  final String time;
-  final String delta;
-  final String penalty;
-  final String? avatarUrl;
-
-  const _AthleteData({
-    this.place,
-    required this.bib,
-    required this.name,
-    required this.cat,
-    required this.dog,
-    required this.time,
-    required this.delta,
-    required this.penalty,
-    this.avatarUrl,
-  });
-}
-
-/// Screen ID: RS2 — Протоколы (утверждение + подпись + экспорт + multi-day)
-class ProtocolScreen extends StatefulWidget {
+/// Screen ID: RS2 — Протоколы (данные из ResultCalculator или демо)
+class ProtocolScreen extends ConsumerStatefulWidget {
   const ProtocolScreen({super.key});
 
   @override
-  State<ProtocolScreen> createState() => _ProtocolScreenState();
+  ConsumerState<ProtocolScreen> createState() => _ProtocolScreenState();
 }
 
-class _ProtocolScreenState extends State<ProtocolScreen> {
-  String _disc = 'Скиджоринг 5км';
+class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
+  String _disc = '';
   bool _approved = false;
   int _currentDay = 1;
   final int _totalDays = 2;
   bool? _isTableView;
 
-  final List<_AthleteData> _fakeData = [
-    _AthleteData(place: 1, bib: '07', name: 'Петров А.', cat: 'M 25', dog: 'Rex', time: '00:38:12', delta: '—', penalty: '—', avatarUrl: 'assets/images/avatar1.jpeg'),
-    _AthleteData(place: 2, bib: '24', name: 'Иванов В.', cat: 'M 25', dog: 'Storm', time: '00:39:45', delta: '+1:33', penalty: '—', avatarUrl: 'assets/images/avatar2.jpg'),
-    _AthleteData(place: 3, bib: '55', name: 'Волков Е.', cat: 'M 35', dog: 'Alaska', time: '00:41:02', delta: '+2:50', penalty: '—', avatarUrl: 'assets/images/avatar3.jpeg'),
-    _AthleteData(place: 4, bib: '12', name: 'Сидоров Б.', cat: 'M 25', dog: 'Luna', time: '00:41:33', delta: '+3:21', penalty: '+5с', avatarUrl: 'assets/images/avatar4.jpeg'),
-    _AthleteData(place: 5, bib: '77', name: 'Новиков З.', cat: 'Ж 25', dog: 'Rocky', time: '00:42:15', delta: '+4:03', penalty: '—', avatarUrl: 'assets/images/avatar5.jpeg'),
-    _AthleteData(place: 6, bib: '63', name: 'Лебедев Ж.', cat: 'M 25', dog: 'Max', time: '—', delta: '—', penalty: '—', avatarUrl: 'assets/images/avatar6.png'),
-  ];
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final session = ref.watch(raceSessionProvider);
+
+    // Если есть активная сессия — реальные результаты
+    List<RaceResult> results;
+    String discName;
+    List<String> discNames;
+
+    if (session != null) {
+      results = session.calculateResults();
+      discName = session.config.name;
+      discNames = [discName];
+      if (_disc.isEmpty) _disc = discName;
+    } else {
+      // Fallback: демо для протоколов когда нет активной сессии
+      results = _demoResults();
+      discName = 'Скиджоринг 5км';
+      discNames = ['Скиджоринг 5км', 'Скиджоринг 10км', 'Каникросс 3км', 'Нарты 15км'];
+      if (_disc.isEmpty) _disc = discName;
+    }
+
+    // Stats
+    final finished = results.where((r) => r.status == AthleteStatus.finished).length;
+    final dnf = results.where((r) => r.status == AthleteStatus.dnf).length;
+    final dns = results.where((r) => r.status == AthleteStatus.dns).length;
+    final total = results.length;
+
+    // Podium
+    final podium = results.where((r) => r.position != null && r.position! <= 3).toList();
 
     return Scaffold(
       appBar: AppAppBar(
@@ -120,7 +117,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                       const SizedBox(height: 6),
                     ],
                     AppDisciplineChips(
-                      items: const ['Скиджоринг 5км', 'Скиджоринг 10км', 'Каникросс 3км', 'Нарты 15км'],
+                      items: discNames,
                       selected: _disc,
                       onSelected: (v) => setState(() => _disc = v),
                       padding: EdgeInsets.zero,
@@ -136,72 +133,98 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                     : _buildUnapprovedBanner(cs, theme),
                 ),
 
-                // ── Сводка ──
+                // ── Сводка (реальные данные) ──
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Row(children: [
-                    _statPill(cs, theme, '5', 'Финиш', cs.primary),
+                    _statPill(cs, theme, '$finished', 'Финиш', cs.primary),
                     const SizedBox(width: 4),
-                    _statPill(cs, theme, '1', 'DNF', cs.error),
+                    _statPill(cs, theme, '$dnf', 'DNF', cs.error),
                     const SizedBox(width: 4),
-                    _statPill(cs, theme, '0', 'DNS', cs.onSurfaceVariant),
+                    _statPill(cs, theme, '$dns', 'DNS', cs.onSurfaceVariant),
                     const Spacer(),
-                    Text('Участников: 6', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
+                    Text('Участников: $total', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
                   ]),
                 ),
                 const SizedBox(height: 8),
+
+                // ── Источник данных ──
+                if (session != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: cs.primaryContainer.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Row(children: [
+                        Icon(Icons.stream, size: 14, color: cs.primary),
+                        const SizedBox(width: 6),
+                        Text('Данные из активной сессии хронометража', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
+                      ]),
+                    ),
+                  ),
               ],
             ),
           ),
 
           // ── Пьедестал Почета (ТОП-3) ──
-          if (_fakeData.where((a) => a.place != null && a.place! <= 3).isNotEmpty)
+          if (podium.isNotEmpty)
             SliverToBoxAdapter(
               child: AppPodiumView(
-                athletes: _fakeData
-                    .where((a) => a.place != null && a.place! <= 3)
-                    .map((a) => PodiumAthlete(
-                          place: a.place!,
-                          name: a.name,
-                          bib: a.bib,
-                          time: a.time,
-                          dog: a.dog,
-                          delta: a.delta,
-                          avatarUrl: a.avatarUrl,
-                        ))
-                    .toList(),
+                athletes: podium.map((r) => PodiumAthlete(
+                  place: r.position!,
+                  name: r.name,
+                  bib: r.bib,
+                  time: TimeFormatter.compact(r.netTime),
+                  dog: '',
+                  delta: r.gapToLeader != null ? '+${TimeFormatter.compact(r.gapToLeader!)}' : '—',
+                )).toList(),
               ),
             ),
 
-          // ── Таблица результатов (Glass-строки / Карточки) ──
+          // ── Таблица результатов ──
           SliverPadding(
             padding: const EdgeInsets.only(bottom: 24),
             sliver: SliverToBoxAdapter(
-            child: AppProtocolTable( // Renamed widget
-              forceTableView: _isTableView,
-              headerRow: const AppProtocolRow(
-                isHeader: true,
-                bib: '', name: '', cat: '', dog: '', time: '', delta: '', penalty: '',
+              child: AppProtocolTable(
+                forceTableView: _isTableView,
+                headerRow: const AppProtocolRow(
+                  isHeader: true,
+                  bib: '', name: '', cat: '', dog: '', time: '', delta: '', penalty: '',
+                ),
+                itemCount: results.length,
+                itemBuilder: (context, index, isCardView) {
+                  final r = results[index];
+                  final timeStr = r.status == AthleteStatus.finished
+                      ? TimeFormatter.compact(r.resultTime)
+                      : r.status == AthleteStatus.dns ? 'DNS'
+                      : r.status == AthleteStatus.dsq ? 'DSQ'
+                      : r.status == AthleteStatus.dnf ? 'DNF'
+                      : '—';
+                  final deltaStr = r.gapToLeader != null
+                      ? '+${TimeFormatter.compact(r.gapToLeader!)}'
+                      : '—';
+                  final penaltyStr = r.penaltyTime > Duration.zero
+                      ? '+${TimeFormatter.compact(r.penaltyTime)}'
+                      : '—';
+
+                  return AppProtocolRow(
+                    isCardView: isCardView,
+                    place: r.position,
+                    bib: r.bib,
+                    name: r.name,
+                    cat: '',
+                    dog: '',
+                    time: timeStr,
+                    delta: deltaStr,
+                    penalty: penaltyStr,
+                    onTap: () => _showAthleteCard(context, r),
+                  );
+                },
               ),
-              itemCount: _fakeData.length,
-              itemBuilder: (context, index, isCardView) {
-                final a = _fakeData[index];
-                return AppProtocolRow(
-                  isCardView: isCardView,
-                  place: a.place,
-                  
-                  bib: a.bib,
-                  name: a.name,
-                  cat: a.cat,
-                  dog: a.dog,
-                  time: a.time,
-                  delta: a.delta,
-                  penalty: a.penalty,
-                  onTap: () => _showAthleteCard(context, a.bib, a.name, a.time),
-                );
-              },
             ),
-          ),
           ),
 
           // ── Подписи ──
@@ -230,6 +253,21 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         ],
       ),
     );
+  }
+
+  // ─────────────────────────────────────
+  // ДЕМО РЕЗУЛЬТАТЫ (когда нет сессии)
+  // ─────────────────────────────────────
+
+  List<RaceResult> _demoResults() {
+    return [
+      RaceResult(entryId: 'p-1', bib: '07', name: 'Петров А.', grossTime: const Duration(minutes: 38, seconds: 12), netTime: const Duration(minutes: 38, seconds: 12), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 38, seconds: 12), position: 1, status: AthleteStatus.finished, speedKmh: 9.4),
+      RaceResult(entryId: 'p-3', bib: '24', name: 'Иванов В.', grossTime: const Duration(minutes: 39, seconds: 45), netTime: const Duration(minutes: 39, seconds: 45), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 39, seconds: 45), position: 2, gapToLeader: const Duration(minutes: 1, seconds: 33), status: AthleteStatus.finished, speedKmh: 9.1),
+      RaceResult(entryId: 'p-6', bib: '55', name: 'Волков Е.', grossTime: const Duration(minutes: 41, seconds: 2), netTime: const Duration(minutes: 41, seconds: 2), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 41, seconds: 2), position: 3, gapToLeader: const Duration(minutes: 2, seconds: 50), status: AthleteStatus.finished, speedKmh: 8.8),
+      RaceResult(entryId: 'p-2', bib: '12', name: 'Сидоров Б.', grossTime: const Duration(minutes: 41, seconds: 33), netTime: const Duration(minutes: 41, seconds: 28), penaltyTime: const Duration(seconds: 5), resultTime: const Duration(minutes: 41, seconds: 33), position: 4, gapToLeader: const Duration(minutes: 3, seconds: 21), status: AthleteStatus.finished, speedKmh: 8.7),
+      RaceResult(entryId: 'p-8', bib: '77', name: 'Новиков З.', grossTime: const Duration(minutes: 42, seconds: 15), netTime: const Duration(minutes: 42, seconds: 15), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 42, seconds: 15), position: 5, gapToLeader: const Duration(minutes: 4, seconds: 3), status: AthleteStatus.finished, speedKmh: 8.5),
+      RaceResult(entryId: 'p-7', bib: '63', name: 'Лебедев Ж.', grossTime: Duration.zero, netTime: Duration.zero, penaltyTime: Duration.zero, resultTime: Duration.zero, status: AthleteStatus.dnf),
+    ];
   }
 
   // ─────────────────────────────────────
@@ -304,18 +342,15 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     );
   }
 
-
-
-  // (Удален _placeWidget, _row и _dnfRow - они теперь внутри AppProtocolRow)
-
-
-
-
   // ─────────────────────────────────────
   // МОДАЛКИ
   // ─────────────────────────────────────
 
-  void _showAthleteCard(BuildContext context, String bib, String name, String time) {
+  void _showAthleteCard(BuildContext context, RaceResult r) {
+    final timeStr = r.status == AthleteStatus.finished
+        ? TimeFormatter.compact(r.resultTime)
+        : r.status.name.toUpperCase();
+
     AppBottomSheet.show(
       context,
       title: 'Карточка участника',
@@ -328,32 +363,51 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary, borderRadius: BorderRadius.circular(8)),
-                child: Text(bib, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
+                child: Text(r.bib, style: TextStyle(color: Theme.of(context).colorScheme.onPrimary, fontWeight: FontWeight.bold, fontSize: 18)),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    Text('Скиджоринг 5км', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text(r.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                    if (r.position != null) Text('Место: ${r.position}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),
-              Text(time, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'monospace', color: Theme.of(context).colorScheme.primary)),
+              Text(timeStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'monospace', color: Theme.of(context).colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 24),
-          const AppCard(
-            padding: EdgeInsets.all(16),
-            children: [
-              Text('Детали кругов', style: TextStyle(fontWeight: FontWeight.bold)),
-              SizedBox(height: 8),
-              AppSplitRow(label: 'Круг 1', time: '12:05'),
-              AppSplitRow(label: 'Круг 2', time: '13:10'),
-              AppSplitRow(label: 'Круг 3', time: '12:57'),
-            ],
-          ),
+          if (r.splitTimes.isNotEmpty || r.lapTimes.isNotEmpty)
+            AppCard(
+              padding: const EdgeInsets.all(16),
+              children: [
+                const Text('Детали кругов', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 8),
+                if (r.lapTimes.isNotEmpty)
+                  ...r.lapTimes.asMap().entries.map((e) =>
+                    AppSplitRow(label: 'Круг ${e.key + 1}', time: TimeFormatter.compact(e.value)),
+                  )
+                else if (r.splitTimes.isNotEmpty)
+                  ...r.splitTimes.asMap().entries.map((e) =>
+                    AppSplitRow(label: 'Сплит ${e.key + 1}', time: TimeFormatter.compact(e.value)),
+                  ),
+                if (r.penaltyTime > Duration.zero) ...[
+                  const Divider(),
+                  AppSplitRow(label: 'Штрафы', time: '+${TimeFormatter.compact(r.penaltyTime)}'),
+                ],
+              ],
+            )
+          else
+            const AppCard(
+              padding: EdgeInsets.all(16),
+              children: [
+                Text('Детали кругов', style: TextStyle(fontWeight: FontWeight.bold)),
+                SizedBox(height: 8),
+                Text('Нет данных о кругах'),
+              ],
+            ),
           const SizedBox(height: 16),
           FilledButton(
             onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
@@ -390,10 +444,10 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           const SizedBox(height: 16),
           AppInfoBanner.info(title: 'После утверждения изменения возможны только через протест.'),
           const SizedBox(height: 16),
-          AppCard(
-            padding: const EdgeInsets.all(16),
+          const AppCard(
+            padding: EdgeInsets.all(16),
             children: [
-              const TextField(
+              TextField(
                 decoration: InputDecoration(
                   labelText: 'PIN электронной подписи',
                   border: OutlineInputBorder(),
@@ -437,23 +491,8 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           child: Column(children: [
             const SizedBox(height: 16),
             Text('ОФИЦИАЛЬНЫЙ ПРОТОКОЛ', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-            Text('Соревнование: Кубок Урала 2026', style: Theme.of(context).textTheme.bodySmall),
-            Text('Дисциплина: Скиджоринг 5км', style: Theme.of(context).textTheme.bodySmall),
-            const Spacer(),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('1. Петров А.А.', style: Theme.of(context).textTheme.bodySmall),
-                  Text('2. Иванов В.В.', style: Theme.of(context).textTheme.bodySmall),
-                ]),
-                Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Text('00:38:12', style: Theme.of(context).textTheme.bodySmall),
-                  Text('00:39:45', style: Theme.of(context).textTheme.bodySmall),
-                ]),
-              ]),
-            ),
+            Text('Чемпионат Урала 2026', style: Theme.of(context).textTheme.bodySmall),
+            Text('Дисциплина: $_disc', style: Theme.of(context).textTheme.bodySmall),
             const Spacer(),
             const Divider(),
             Padding(
@@ -490,5 +529,3 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     ]);
   }
 }
-
-

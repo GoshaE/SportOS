@@ -898,3 +898,89 @@ const List<ChecklistItemConfig> defaultChecklistItems = [
   ChecklistItemConfig(id: 'cl-08', title: 'Хронометраж', description: 'Система протестирована', assignedRole: 'timing', sortOrder: 8),
   ChecklistItemConfig(id: 'cl-09', title: 'Брифинг', description: 'Проведён для участников', required: false, assignedRole: 'referee', sortOrder: 9),
 ];
+
+// ─────────────────────────────────────────────────────────────────
+// PARTICIPANT (ЗАЯВКА)
+// ─────────────────────────────────────────────────────────────────
+
+/// Статус оплаты.
+enum PaymentStatus { unpaid, paid, refunded }
+
+/// Статус заявки.
+enum ApplicationStatus { pending, approved, rejected, cancelled }
+
+/// Участник / Заявка на мероприятие.
+class Participant {
+  final String id;
+  final String name;
+  final String? phone;
+  final String? email;
+  final String disciplineId;
+  final String disciplineName;
+  final String bib;
+  final String? category;
+  final String? dogName;
+  final PaymentStatus paymentStatus;
+  final ApplicationStatus applicationStatus;
+  final int? priceRub;
+  final DateTime registeredAt;
+
+  const Participant({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.email,
+    required this.disciplineId,
+    required this.disciplineName,
+    required this.bib,
+    this.category,
+    this.dogName,
+    this.paymentStatus = PaymentStatus.unpaid,
+    this.applicationStatus = ApplicationStatus.pending,
+    this.priceRub,
+    required this.registeredAt,
+  });
+
+  Participant copyWith({
+    String? name,
+    String? phone,
+    String? email,
+    String? disciplineId,
+    String? disciplineName,
+    String? bib,
+    String? category,
+    String? dogName,
+    PaymentStatus? paymentStatus,
+    ApplicationStatus? applicationStatus,
+    int? priceRub,
+  }) {
+    return Participant(
+      id: id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      email: email ?? this.email,
+      disciplineId: disciplineId ?? this.disciplineId,
+      disciplineName: disciplineName ?? this.disciplineName,
+      bib: bib ?? this.bib,
+      category: category ?? this.category,
+      dogName: dogName ?? this.dogName,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      applicationStatus: applicationStatus ?? this.applicationStatus,
+      priceRub: priceRub ?? this.priceRub,
+      registeredAt: registeredAt,
+    );
+  }
+}
+
+/// Демо-участники.
+final List<Participant> demoParticipants = [
+  Participant(id: 'p-1', name: 'Петров А.А.', phone: '+7 912 111-11-11', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '07', category: 'М 25', dogName: 'Rex', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 1)),
+  Participant(id: 'p-2', name: 'Сидоров Б.Б.', phone: '+7 912 222-22-22', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '12', category: 'М 25', dogName: 'Luna', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 3)),
+  Participant(id: 'p-3', name: 'Иванов В.В.', phone: '+7 912 333-33-33', disciplineId: 'd-skijor-20', disciplineName: 'Скидж. 10км', bib: '24', category: 'М 25', dogName: 'Storm', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 3500, registeredAt: DateTime(2026, 2, 5)),
+  Participant(id: 'p-4', name: 'Козлов Г.Г.', phone: '+7 912 444-44-44', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '31', category: 'М 35', dogName: 'Wolf', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.approved, priceRub: 3000, registeredAt: DateTime(2026, 2, 7)),
+  Participant(id: 'p-5', name: 'Морозов Д.Д.', email: 'morozov@mail.ru', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '42', category: 'М 30', dogName: 'Buddy', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.pending, priceRub: 1500, registeredAt: DateTime(2026, 2, 10)),
+  Participant(id: 'p-6', name: 'Волков Е.Е.', phone: '+7 912 666-66-66', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '55', category: 'М 35', dogName: 'Alaska', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 12)),
+  Participant(id: 'p-7', name: 'Лебедев Ж.Ж.', phone: '+7 912 777-77-77', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '63', category: 'М 40', dogName: 'Max', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.pending, priceRub: 3000, registeredAt: DateTime(2026, 2, 14)),
+  Participant(id: 'p-8', name: 'Новиков З.З.', phone: '+7 912 888-88-88', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '77', category: 'Ж 25', dogName: 'Rocky', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 1500, registeredAt: DateTime(2026, 2, 16)),
+];
+
