@@ -203,6 +203,12 @@ class EventConfig {
   // ── Цены ──
   final PricingConfig pricingConfig;
 
+  // ── Хронометраж ──
+  final TimingConfig timingConfig;
+
+  // ── Библиотека штрафов ──
+  final List<PenaltyTemplate> penaltyTemplates;
+
   const EventConfig({
     required this.id,
     required this.name,
@@ -226,6 +232,8 @@ class EventConfig {
     this.ageCalculation = AgeCalculation.byYear,
     this.registrationConfig = const RegistrationConfig(),
     this.pricingConfig = const PricingConfig(),
+    this.timingConfig = const TimingConfig(),
+    this.penaltyTemplates = defaultPenaltyTemplates,
   });
 
   EventConfig copyWith({
@@ -251,6 +259,8 @@ class EventConfig {
     AgeCalculation? ageCalculation,
     RegistrationConfig? registrationConfig,
     PricingConfig? pricingConfig,
+    TimingConfig? timingConfig,
+    List<PenaltyTemplate>? penaltyTemplates,
   }) {
     return EventConfig(
       id: id ?? this.id,
@@ -275,6 +285,8 @@ class EventConfig {
       ageCalculation: ageCalculation ?? this.ageCalculation,
       registrationConfig: registrationConfig ?? this.registrationConfig,
       pricingConfig: pricingConfig ?? this.pricingConfig,
+      timingConfig: timingConfig ?? this.timingConfig,
+      penaltyTemplates: penaltyTemplates ?? this.penaltyTemplates,
     );
   }
 }
@@ -742,3 +754,97 @@ class PromoCode {
 
   bool get isExhausted => maxUses != null && usedCount >= maxUses!;
 }
+
+// ─────────────────────────────────────────────────────────────────
+// TIMING CONFIG
+// ─────────────────────────────────────────────────────────────────
+
+/// Точность хронометража.
+enum TimingPrecision { seconds, tenths, hundredths, milliseconds }
+
+/// Общие настройки хронометража.
+class TimingConfig {
+  final TimingPrecision precision;
+  final String timeFormat;      // 'HH:mm:ss.S' etc
+  final bool dualTiming;        // мастер + контрольный
+  final bool gpsTracking;
+  final bool auditLog;
+  final bool doubleDnfConfirm;  // двойное подтверждение DNF
+  final bool photoFinish;
+
+  const TimingConfig({
+    this.precision = TimingPrecision.tenths,
+    this.timeFormat = 'HH:mm:ss.S',
+    this.dualTiming = false,
+    this.gpsTracking = false,
+    this.auditLog = true,
+    this.doubleDnfConfirm = true,
+    this.photoFinish = false,
+  });
+
+  TimingConfig copyWith({
+    TimingPrecision? precision,
+    String? timeFormat,
+    bool? dualTiming,
+    bool? gpsTracking,
+    bool? auditLog,
+    bool? doubleDnfConfirm,
+    bool? photoFinish,
+  }) {
+    return TimingConfig(
+      precision: precision ?? this.precision,
+      timeFormat: timeFormat ?? this.timeFormat,
+      dualTiming: dualTiming ?? this.dualTiming,
+      gpsTracking: gpsTracking ?? this.gpsTracking,
+      auditLog: auditLog ?? this.auditLog,
+      doubleDnfConfirm: doubleDnfConfirm ?? this.doubleDnfConfirm,
+      photoFinish: photoFinish ?? this.photoFinish,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
+// PENALTY TEMPLATE (библиотека штрафов)
+// ─────────────────────────────────────────────────────────────────
+
+/// Шаблон штрафа для быстрого назначения.
+///
+/// Организатор настраивает библиотеку штрафов до старта,
+/// судьи на гонке выбирают шаблон вместо ручного ввода.
+class PenaltyTemplate {
+  final String id;
+  /// Код нарушения (напр. «P1», «F03», «ДСК»).
+  final String code;
+  /// Описание (напр. «Помеха на дистанции»).
+  final String description;
+  /// Штрафное время (null = DSQ/DNF — дисквалификация).
+  final Duration? timePenalty;
+  /// Порядок сортировки.
+  final int sortOrder;
+
+  const PenaltyTemplate({
+    required this.id,
+    required this.code,
+    required this.description,
+    this.timePenalty,
+    this.sortOrder = 0,
+  });
+
+  /// DSQ-штраф (дисквалификация без времени).
+  bool get isDsq => timePenalty == null;
+
+  String get displayTime =>
+      isDsq ? 'DSQ' : '+${timePenalty!.inSeconds}с';
+}
+
+/// Стандартная библиотека штрафов.
+const List<PenaltyTemplate> defaultPenaltyTemplates = [
+  PenaltyTemplate(id: 'pt-01', code: 'P1', description: 'Помеха на дистанции', timePenalty: Duration(seconds: 15), sortOrder: 1),
+  PenaltyTemplate(id: 'pt-02', code: 'P2', description: 'Фальстарт', timePenalty: Duration(seconds: 10), sortOrder: 2),
+  PenaltyTemplate(id: 'pt-03', code: 'P3', description: 'Срезка трассы', timePenalty: Duration(seconds: 30), sortOrder: 3),
+  PenaltyTemplate(id: 'pt-04', code: 'P4', description: 'Пропуск ворот/чекпоинта', timePenalty: Duration(seconds: 60), sortOrder: 4),
+  PenaltyTemplate(id: 'pt-05', code: 'P5', description: 'Жестокое обращение с собакой', sortOrder: 5), // DSQ
+  PenaltyTemplate(id: 'pt-06', code: 'P6', description: 'Посторонняя помощь', timePenalty: Duration(seconds: 30), sortOrder: 6),
+  PenaltyTemplate(id: 'pt-07', code: 'P7', description: 'Неспортивное поведение', sortOrder: 7), // DSQ
+  PenaltyTemplate(id: 'pt-08', code: 'P8', description: 'Нарушение экипировки', timePenalty: Duration(seconds: 15), sortOrder: 8),
+];
