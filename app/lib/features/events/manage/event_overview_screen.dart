@@ -60,11 +60,10 @@ class EventOverviewScreen extends ConsumerWidget {
     final participants = ref.watch(participantsProvider);
     final totalParticipants = participants.length;
     final daysUntilStart = eventConfig.startDate.difference(DateTime.now()).inDays;
-    final daysLabel = daysUntilStart > 0 ? '$daysUntilStart' : daysUntilStart == 0 ? '0' : '—';
-    final daysSubtitle = daysUntilStart > 0 ? 'дн. до старта' : daysUntilStart == 0 ? 'Сегодня старт!' : 'Уже прошло';
+    final daysLabel = daysUntilStart > 0 ? '$daysUntilStart дн.' : daysUntilStart == 0 ? 'Сегодня!' : 'Прошло';
     final paidParticipants = participants.where((p) => p.paymentStatus == PaymentStatus.paid).toList();
     final revenue = paidParticipants.fold<int>(0, (sum, p) => sum + (p.priceRub ?? 0));
-    final revenueStr = revenue >= 1000 ? '${(revenue / 1000).toStringAsFixed(1)}К' : '$revenue';
+    final revenueStr = revenue >= 1000 ? '${(revenue / 1000).toStringAsFixed(1)}К ₽' : '$revenue ₽';
     final bibAssigned = participants.where((p) => p.bib.isNotEmpty).length;
     final vetPassed = participants.where((p) => p.vetStatus == VetStatus.passed).length;
     final mandatePassed = participants.where((p) => p.mandateStatus == MandateStatus.passed).length;
@@ -82,38 +81,87 @@ class EventOverviewScreen extends ConsumerWidget {
     final totalChecks = checkItems.length;
     final overallProgress = totalChecks > 0 ? doneCount / totalChecks : 0.0;
 
+    // Status data
+    final (statusLabel, statusHint, statusIcon, statusColor) = switch (eventConfig.status) {
+      EventStatus.draft => ('Черновик', 'Не видно участникам', Icons.edit_note, cs.outline),
+      EventStatus.registrationOpen => ('Регистрация открыта', 'Принимаем заявки', Icons.how_to_reg, const Color(0xFF2E7D32)),
+      EventStatus.registrationClosed => ('Регистрация закрыта', 'Финальная подготовка', Icons.lock_outline, const Color(0xFFE65100)),
+      EventStatus.inProgress => ('Гонка идёт', 'Хронометраж активен', Icons.play_circle, cs.primary),
+      EventStatus.completed => ('Завершено', 'Протоколы готовы', Icons.check_circle, const Color(0xFF1565C0)),
+      EventStatus.archived => ('Архив', '', Icons.archive, cs.outline),
+    };
+    final (nextLabel, nextStatus) = switch (eventConfig.status) {
+      EventStatus.draft => ('Открыть регистрацию', EventStatus.registrationOpen),
+      EventStatus.registrationOpen => ('Закрыть регистрацию', EventStatus.registrationClosed),
+      EventStatus.registrationClosed => ('Начать гонку', EventStatus.inProgress),
+      EventStatus.inProgress => ('Завершить', EventStatus.completed),
+      EventStatus.completed => ('Архивировать', EventStatus.archived),
+      EventStatus.archived => (null, null),
+    };
+
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       children: [
-        // ─── Status Banner ───
-        _buildStatusBanner(context, cs, eventConfig, ref),
-        const SizedBox(height: 20),
-
-        // ─── KPI Row ───
-        Row(children: [
-          Expanded(child: _kpiCard(cs, isDark, Icons.groups, '$totalParticipants', 'Участники', cs.primary)),
-          const SizedBox(width: 10),
-          Expanded(child: _kpiCard(cs, isDark, Icons.calendar_today, daysLabel, daysSubtitle, const Color(0xFF00838F))),
-          const SizedBox(width: 10),
-          Expanded(child: _kpiCard(cs, isDark, Icons.payments, revenueStr, 'Собрано ₽', cs.tertiary)),
-          const SizedBox(width: 10),
-          Expanded(child: _kpiCard(cs, isDark, Icons.check_circle, '$checkedIn', 'Чек-ин', const Color(0xFF2E7D32))),
-        ]),
-        const SizedBox(height: 28),
-
-        // ─── Quick Actions ───
-        Text('Быстрые действия', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
-        const SizedBox(height: 10),
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          clipBehavior: Clip.none,
-          child: Row(children: [
-            _quickActionCard(context, cs, Icons.qr_code_scanner, 'Чек-ин', cs.primary, () => context.push('/manage/$eventId/checkin')),
-            _quickActionCard(context, cs, Icons.format_list_numbered, 'Старт-лист', const Color(0xFF00838F), () => context.push('/manage/$eventId/startlist')),
-            _quickActionCard(context, cs, Icons.people, 'Участники', const Color(0xFF6A1B9A), () => context.push('/manage/$eventId/participants')),
-            _quickActionCard(context, cs, Icons.campaign, 'Push', cs.tertiary, () => _showAnnouncementsModal(context, cs)),
+        // ═══ HERO CARD: Status + KPIs unified ═══
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20),
+            gradient: LinearGradient(
+              colors: [statusColor.withValues(alpha: 0.12), cs.surfaceContainerHigh.withValues(alpha: isDark ? 0.6 : 0.9)],
+              begin: Alignment.topLeft, end: Alignment.bottomRight,
+            ),
+            border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+          ),
+          child: Column(children: [
+            // Status row
+            Padding(padding: const EdgeInsets.fromLTRB(16, 14, 16, 0), child: Row(children: [
+              Flexible(child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(statusIcon, size: 16, color: statusColor),
+                  const SizedBox(width: 6),
+                  Flexible(child: Text(statusLabel, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: statusColor), overflow: TextOverflow.ellipsis, maxLines: 1)),
+                ]),
+              )),
+              const SizedBox(width: 8),
+              Text(daysLabel, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: daysUntilStart == 0 ? cs.primary : cs.onSurface)),
+            ])),
+            const SizedBox(height: 16),
+            // KPI metrics row
+            Padding(padding: const EdgeInsets.symmetric(horizontal: 16), child: Row(children: [
+              _heroKpi(cs, Icons.groups, '$totalParticipants', 'Участники', cs.primary),
+              Container(width: 1, height: 40, color: cs.outlineVariant.withValues(alpha: 0.3)),
+              _heroKpi(cs, Icons.how_to_reg, '$checkedIn / $totalParticipants', 'Чек-ин', const Color(0xFF2E7D32)),
+              Container(width: 1, height: 40, color: cs.outlineVariant.withValues(alpha: 0.3)),
+              _heroKpi(cs, Icons.payments, revenueStr, 'Сборы', cs.tertiary),
+            ])),
+            const SizedBox(height: 14),
+            // Next status button
+            if (nextLabel != null)
+              Padding(padding: const EdgeInsets.fromLTRB(16, 0, 16, 14), child: SizedBox(width: double.infinity, child: FilledButton.icon(
+                style: FilledButton.styleFrom(backgroundColor: statusColor, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 12), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                icon: Icon(nextStatus == EventStatus.inProgress ? Icons.play_arrow : Icons.arrow_forward, size: 18),
+                label: Text(nextLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
+                onPressed: () => ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(status: nextStatus)),
+              )))
+            else const SizedBox(height: 14),
           ]),
         ),
+        const SizedBox(height: 16),
+
+        // ═══ ACTION BUTTONS (real buttons, 2×2 grid) ═══
+        Row(children: [
+          Expanded(child: _actionButton(context, cs, Icons.qr_code_scanner, 'Чек-ин', () => context.push('/manage/$eventId/checkin'))),
+          const SizedBox(width: 8),
+          Expanded(child: _actionButton(context, cs, Icons.format_list_numbered, 'Старт-лист', () => context.push('/manage/$eventId/startlist'))),
+        ]),
+        const SizedBox(height: 8),
+        Row(children: [
+          Expanded(child: _actionButton(context, cs, Icons.people, 'Участники', () => context.push('/manage/$eventId/participants'))),
+          const SizedBox(width: 8),
+          Expanded(child: _actionButton(context, cs, Icons.campaign, 'Push-уведомление', () => _showAnnouncementsModal(context, cs))),
+        ]),
         const SizedBox(height: 28),
 
         // ─── Preparation Progress ───
@@ -152,62 +200,29 @@ class EventOverviewScreen extends ConsumerWidget {
     );
   }
 
-  // ─── Status Banner ───
-  Widget _buildStatusBanner(BuildContext context, ColorScheme cs, EventConfig eventConfig, WidgetRef ref) {
-    final (label, hint, icon, color) = switch (eventConfig.status) {
-      EventStatus.draft => ('Черновик', 'Мероприятие не видно участникам', Icons.edit_note, cs.outline),
-      EventStatus.registrationOpen => ('Регистрация открыта', 'Участники могут подавать заявки', Icons.how_to_reg, const Color(0xFF2E7D32)),
-      EventStatus.registrationClosed => ('Регистрация закрыта', 'Жеребьёвка и финальная подготовка', Icons.lock_outline, const Color(0xFFE65100)),
-      EventStatus.inProgress => ('Гонка идёт', 'Хронометраж активен', Icons.play_circle, cs.primary),
-      EventStatus.completed => ('Завершено', 'Протоколы опубликованы', Icons.check_circle, const Color(0xFF1565C0)),
-      EventStatus.archived => ('Архив', 'Мероприятие в архиве', Icons.archive, cs.outline),
-    };
+  // ─── Hero KPI metric ───
+  Widget _heroKpi(ColorScheme cs, IconData icon, String value, String label, Color color) {
+    return Expanded(child: Column(children: [
+      Icon(icon, size: 20, color: color),
+      const SizedBox(height: 4),
+      FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: cs.onSurface, height: 1))),
+      const SizedBox(height: 2),
+      Text(label, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant), maxLines: 1),
+    ]));
+  }
 
-    final (nextLabel, nextStatus) = switch (eventConfig.status) {
-      EventStatus.draft => ('Открыть регистрацию', EventStatus.registrationOpen),
-      EventStatus.registrationOpen => ('Закрыть регистрацию', EventStatus.registrationClosed),
-      EventStatus.registrationClosed => ('Начать гонку', EventStatus.inProgress),
-      EventStatus.inProgress => ('Завершить', EventStatus.completed),
-      EventStatus.completed => ('Архивировать', EventStatus.archived),
-      EventStatus.archived => (null, null),
-    };
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+  // ─── Action Button ───
+  Widget _actionButton(BuildContext context, ColorScheme cs, IconData icon, String label, VoidCallback onTap) {
+    return OutlinedButton.icon(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: cs.primary,
+        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
-      child: Row(children: [
-        Container(
-          width: 40, height: 40,
-          decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Icon(icon, size: 20, color: color),
-        ),
-        const SizedBox(width: 12),
-        Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: color)),
-          Text(hint, style: TextStyle(fontSize: 11, color: cs.outline)),
-        ])),
-        if (nextLabel != null)
-          FilledButton.tonal(
-            style: FilledButton.styleFrom(
-              backgroundColor: color.withValues(alpha: 0.15),
-              foregroundColor: color,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              minimumSize: Size.zero,
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-            onPressed: () {
-              ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(status: nextStatus));
-            },
-            child: Text(nextLabel, style: const TextStyle(fontSize: 12)),
-          ),
-      ]),
+      icon: Icon(icon, size: 18),
+      label: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+      onPressed: onTap,
     );
   }
 
@@ -491,55 +506,8 @@ class EventOverviewScreen extends ConsumerWidget {
     );
   }
 
-  // ─── KPI Card ───
-  Widget _kpiCard(ColorScheme cs, bool isDark, IconData icon, String value, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: isDark ? cs.surfaceContainerHigh.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : cs.outlineVariant.withValues(alpha: 0.2)),
-        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 8, offset: const Offset(0, 2))],
-      ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Container(
-          width: 32, height: 32,
-          decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
-          child: Icon(icon, size: 18, color: color),
-        ),
-        const SizedBox(height: 8),
-        FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: cs.onSurface, height: 1))),
-        const SizedBox(height: 2),
-        Text(label, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, height: 1.1), maxLines: 1, overflow: TextOverflow.ellipsis),
-      ]),
-    );
-  }
 
-  // ─── Quick Action Card ───
-  Widget _quickActionCard(BuildContext context, ColorScheme cs, IconData icon, String label, Color color, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 88,
-        height: 80,
-        margin: const EdgeInsets.only(right: 10),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: color.withValues(alpha: 0.2)),
-        ),
-        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-          Container(
-            width: 38, height: 38,
-            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: color, size: 20),
-          ),
-          const SizedBox(height: 6),
-          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color, height: 1), textAlign: TextAlign.center),
-        ]),
-      ),
-    );
-  }
+
 
   // ─── Checklist Card ───
   Widget _checklistCard(BuildContext context, ColorScheme cs, bool isDark, _CheckItem item) {
