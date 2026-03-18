@@ -81,7 +81,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             crossAxisSpacing: 10,
             children: session.onCourseAthletes.map((a) {
               final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.type == MarkType.finish && m.owner == MarkOwner.finishJudge).toList();
-              final isFinished = a.status == AthleteStatus.finished || bibMarks.isNotEmpty;
+              final isFinished = a.status == AthleteStatus.finished || bibMarks.length >= session.config.laps;
               final isDnf = a.status == AthleteStatus.dnf;
               final isDsq = a.status == AthleteStatus.dsq;
 

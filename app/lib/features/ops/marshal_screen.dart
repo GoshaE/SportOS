@@ -24,7 +24,14 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
 
   bool _isMarked(String bib) {
     final session = ref.read(raceSessionProvider);
-    return session?.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal).isNotEmpty ?? false;
+    if (session == null) return false;
+    final checkpointMarks = session.marking.marksForBib(bib)
+        .where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal).length;
+    if (checkpointMarks == 0) return false;
+    // For multi-lap: marked on current lap if checkpoints > completed finish laps
+    final finishMarks = session.marking.officialMarksForBib(bib)
+        .where((m) => m.type == MarkType.finish).length;
+    return checkpointMarks > finishMarks;
   }
 
   void _tryTogglePassed(String bib) {
@@ -54,11 +61,14 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
     final notifier = ref.read(raceSessionProvider.notifier);
 
     if (_isMarked(bib)) {
-      AppDialog.confirm(context, title: 'Отменить отметку BIB $bib?', message: 'Атлет будет снова показан как "не прошёл", а время отсечки будет удалено.').then((ok) {
+      AppDialog.confirm(context, title: 'Отменить отметку BIB $bib?', message: 'Последняя отсечка маршала будет удалена.').then((ok) {
         if (ok == true) {
-          final bibMarks = session.marking.marksForBib(bib).where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal).toList();
-          for (final m in bibMarks) {
-            notifier.deleteMark(m.id);
+          final bibMarks = session.marking.marksForBib(bib)
+              .where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal)
+              .toList()
+            ..sort((a, b) => b.correctedTime.compareTo(a.correctedTime));
+          if (bibMarks.isNotEmpty) {
+            notifier.deleteMark(bibMarks.first.id); // удаляем только последнюю
           }
         }
       });
