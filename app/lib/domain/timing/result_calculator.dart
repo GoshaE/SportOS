@@ -61,6 +61,12 @@ class ResultCalculator {
       final laps = _elapsed.lapTimes(athlete.bib, marks, athlete);
       final speed = _elapsed.speedKmh(config.distanceKm, net);
 
+      // Per-lap speed
+      final lapDistKm = config.lapLengthM != null
+          ? config.lapLengthM! / 1000.0
+          : config.distanceKm / config.laps;
+      final lapSpeeds = laps.map((lt) => _elapsed.speedKmh(lapDistKm, lt)).toList();
+
       results.add(RaceResult(
         entryId: athlete.entryId,
         bib: athlete.bib,
@@ -72,6 +78,7 @@ class ResultCalculator {
         speedKmh: speed,
         splitTimes: splits,
         lapTimes: laps,
+        lapSpeeds: lapSpeeds,
         status: AthleteStatus.finished,
       ));
     }
@@ -128,6 +135,7 @@ class ResultCalculator {
         speedKmh: finished[i].speedKmh,
         splitTimes: finished[i].splitTimes,
         lapTimes: finished[i].lapTimes,
+        lapSpeeds: finished[i].lapSpeeds,
         position: finished[i].position,
         gapToLeader: leaderGap,
         gapToPrev: prevGap,

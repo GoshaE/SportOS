@@ -288,19 +288,22 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
       final finishMarks = bibMarks.where((m) => m.type == MarkType.finish).toList();
       final hasFinish = finishMarks.length >= session.config.laps;
 
-      // Include ALL checkpoint marks (including marshal) for visual info
-      final allBibMarks = session.marking.marksForBib(a.bib);
-      final allCheckpoints = allBibMarks.where((m) => m.type == MarkType.checkpoint).toList()
-        ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+      // Use engine for proper per-lap calculations
+      final allOfficialMarks = session.marking.officialMarks;
+      final laps = _elapsedCalc.lapTimes(a.bib, allOfficialMarks, a);
+      final splits = _elapsedCalc.splitTimes(a.bib, allOfficialMarks, a);
 
-      // Build split display: checkpoint splits + finish lap times
+      // Build split display: per-lap times (not cumulative)
       final splitParts = <String>[];
-      for (final cp in allCheckpoints) {
-        splitParts.add(TimeFormatter.compact(_elapsedCalc.netTime(a, cp.correctedTime)));
-      }
-      if (finishMarks.isNotEmpty) {
-        for (final fm in finishMarks) {
-          splitParts.add(TimeFormatter.compact(_elapsedCalc.netTime(a, fm.correctedTime)));
+      if (session.config.laps > 1) {
+        // Multi-lap: show L1: time / L2: time
+        for (var i = 0; i < laps.length; i++) {
+          splitParts.add('L${i + 1}: ${TimeFormatter.compact(laps[i])}');
+        }
+      } else {
+        // Single-lap: show checkpoint splits (cumulative from start)
+        for (var i = 0; i < splits.length; i++) {
+          splitParts.add(TimeFormatter.compact(splits[i]));
         }
       }
       final splitDisplay = splitParts.isEmpty ? '—' : splitParts.join(' / ');

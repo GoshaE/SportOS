@@ -367,6 +367,7 @@ class RaceResult {
   final double? speedKmh;
   final List<Duration> splitTimes;
   final List<Duration> lapTimes;
+  final List<double?> lapSpeeds;
   int position;
   final Duration? gapToLeader;
   final Duration? gapToPrev;
@@ -383,6 +384,7 @@ class RaceResult {
     this.speedKmh,
     this.splitTimes = const [],
     this.lapTimes = const [],
+    this.lapSpeeds = const [],
     this.position = 0,
     this.gapToLeader,
     this.gapToPrev,

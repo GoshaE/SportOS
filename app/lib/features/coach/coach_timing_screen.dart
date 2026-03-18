@@ -359,9 +359,23 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   final checkpointMarks = allBibMarks.where((m) => m.type == MarkType.checkpoint).toList();
                   final hasFinish = finishMarks.length >= session.config.laps;
 
-                  final splitText = checkpointMarks.isNotEmpty
-                      ? TimeFormatter.compact(_elapsedCalc.netTime(a, checkpointMarks.first.correctedTime))
-                      : '—';
+                  // Lap-aware split display
+                  final String splitText;
+                  if (session.config.laps > 1) {
+                    final allOfficialMarks = session.marking.officialMarks;
+                    final laps = _elapsedCalc.lapTimes(a.bib, allOfficialMarks, a);
+                    if (laps.isEmpty) {
+                      splitText = '—';
+                    } else {
+                      splitText = laps.asMap().entries
+                          .map((e) => 'L${e.key + 1}: ${TimeFormatter.compact(e.value)}')
+                          .join(' / ');
+                    }
+                  } else {
+                    splitText = checkpointMarks.isNotEmpty
+                        ? TimeFormatter.compact(_elapsedCalc.netTime(a, checkpointMarks.first.correctedTime))
+                        : '—';
+                  }
 
                   final String finishText;
                   final String? placeText;
