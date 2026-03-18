@@ -147,26 +147,18 @@ class _FinancesModerationTabState extends State<FinancesModerationTab> {
           Row(
             children: [
               Expanded(
-                child: OutlinedButton.icon(
+                child: AppButton.smallDanger(
+                  text: 'Отклонить',
+                  icon: Icons.close,
                   onPressed: () => _rejectReceipt(index),
-                  icon: const Icon(Icons.close),
-                  label: const Text('Отклонить'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: cs.error,
-                    side: BorderSide(color: cs.error),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
                 ),
               ),
               const SizedBox(width: 16),
               Expanded(
-                child: FilledButton.icon(
+                child: AppButton.primary(
+                  text: 'Подтвердить',
+                  icon: Icons.check,
                   onPressed: () => _acceptReceipt(index),
-                  icon: const Icon(Icons.check),
-                  label: const Text('Подтвердить'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
                 ),
               ),
             ],
@@ -249,12 +241,9 @@ class _FinancesModerationTabState extends State<FinancesModerationTab> {
                         
                         const SizedBox(height: 8),
                         // Кнопка для открытия модалки
-                        SizedBox(
-                          width: double.infinity,
-                          child: FilledButton.tonal(
+                        AppButton.small(
+                            text: 'Сверить чек',
                             onPressed: () => _showReceiptDetails(index),
-                            child: const Text('Сверить чек'),
-                          ),
                         ),
                       ],
                     ),

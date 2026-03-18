@@ -37,12 +37,7 @@ class FinancesPromosTab extends ConsumerWidget {
         // ─── Заголовок + кнопка ───
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           const Text('Список промокодов', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          OutlinedButton.icon(
-            onPressed: () => _showCreatePromo(context, updatePricing),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Добавить'),
-            style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-          ),
+          AppButton.smallSecondary(text: 'Добавить', icon: Icons.add, onPressed: () => _showCreatePromo(context, updatePricing)),
         ]),
         const SizedBox(height: 12),
 
@@ -145,27 +140,28 @@ class FinancesPromosTab extends ConsumerWidget {
       context,
       title: 'Новый промокод',
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        TextField(
+        AppTextField(
+          label: 'Код (например, SALE20)',
           controller: codeCtrl,
-          decoration: const InputDecoration(labelText: 'Код (например, SALE20)', border: OutlineInputBorder(), hintText: 'EARLY2026'),
-          textCapitalization: TextCapitalization.characters,
+          hintText: 'EARLY2026',
         ),
         const SizedBox(height: 16),
         Row(children: [
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'Скидка %',
             controller: discountCtrl,
-            decoration: const InputDecoration(labelText: 'Скидка %', border: OutlineInputBorder()),
             keyboardType: TextInputType.number,
           )),
           const SizedBox(width: 16),
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'Макс. использований',
             controller: maxCtrl,
-            decoration: const InputDecoration(labelText: 'Макс. использований', border: OutlineInputBorder(), hintText: '∞'),
+            hintText: '∞',
             keyboardType: TextInputType.number,
           )),
         ]),
         const SizedBox(height: 24),
-        FilledButton(onPressed: () {
+        AppButton.primary(text: 'Создать', onPressed: () {
           if (codeCtrl.text.trim().isEmpty) {
             AppSnackBar.error(context, 'Введите код промокода');
             return;
@@ -179,7 +175,7 @@ class FinancesPromosTab extends ConsumerWidget {
           updatePricing((p) => p.copyWith(promoCodes: [...p.promoCodes, promo]));
           Navigator.of(context, rootNavigator: true).pop();
           AppSnackBar.success(context, 'Промокод ${promo.code} создан');
-        }, child: const Text('Создать')),
+        }),
       ]),
     );
   }

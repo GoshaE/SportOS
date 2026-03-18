@@ -197,7 +197,7 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
             _reqCard(cs, Icons.credit_card, '4276 **** **** 1234', 'Сбербанк'),
             _reqCard(cs, Icons.person, 'Иванов Иван Иванович', 'Получатель'),
             const SizedBox(height: 8),
-            OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.add, size: 16), label: const Text('Альтернативные реквизиты'), style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact)),
+            AppButton.smallSecondary(text: 'Альтернативные реквизиты', icon: Icons.add, onPressed: () {}),
           ],
         ),
         if (_paymentTier == 'sbp' || _paymentTier == 'acquiring') AppCard(
@@ -226,10 +226,11 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
             const SizedBox(height: 12),
             AppTextField(label: 'Merchant ID / Terminal Key'),
             const SizedBox(height: 16),
-            SizedBox(width: double.infinity, child: FilledButton.icon(
+            AppButton.primary(
+              text: 'Подключить интеграцию',
+              icon: Icons.check,
               onPressed: () => AppSnackBar.info(context, 'Тестовое подключение...'),
-              icon: const Icon(Icons.check, size: 18), label: const Text('Подключить интеграцию'),
-            )),
+            ),
           ],
         ),
       ],
@@ -295,13 +296,16 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
   void _editPrice(BuildContext context, String name, String discId, int? current, String symbol) {
     final ctrl = TextEditingController(text: '${current ?? 0}');
     AppBottomSheet.show(context, title: name, child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(
+      AppTextField(
+        label: 'Цена ($symbol)',
         controller: ctrl,
-        decoration: InputDecoration(labelText: 'Цена ($symbol)', border: const OutlineInputBorder(), hintText: '0 = бесплатно'),
-        keyboardType: TextInputType.number, autofocus: true,
+        hintText: '0 = бесплатно',
+        keyboardType: TextInputType.number,
+        autofocus: true,
       ),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           final price = int.tryParse(ctrl.text) ?? 0;
           ref.read(eventConfigProvider.notifier).updateDiscipline(
@@ -309,27 +313,27 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
           );
           Navigator.pop(context);
         },
-        child: const Text('Сохранить'),
-      )),
+      ),
     ]));
   }
 
   void _editDiscount(BuildContext context, int current, void Function(PricingConfig Function(PricingConfig)) updatePricing) {
     final ctrl = TextEditingController(text: '$current');
     AppBottomSheet.show(context, title: 'Скидка Early Bird', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(
+      AppTextField(
+        label: 'Процент',
         controller: ctrl,
-        decoration: const InputDecoration(labelText: 'Процент', border: OutlineInputBorder(), suffixText: '%'),
-        keyboardType: TextInputType.number, autofocus: true,
+        keyboardType: TextInputType.number,
+        autofocus: true,
       ),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           updatePricing((p) => p.copyWith(earlyBirdDiscountPercent: (int.tryParse(ctrl.text) ?? 20).clamp(1, 100)));
           Navigator.pop(context);
         },
-        child: const Text('Сохранить'),
-      )),
+      ),
     ]));
   }
 
