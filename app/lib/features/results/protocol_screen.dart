@@ -241,8 +241,8 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                   Text('Подписи', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
                   const SizedBox(height: 8),
                   Row(children: [
-                    Expanded(child: AppSignatureRow(role: 'Главный судья', name: 'Иванов П.', signed: _approved)),
-                    Expanded(child: AppSignatureRow(role: 'Секретарь', name: 'Смирнова А.', signed: _approved)),
+                    Expanded(child: AppSignatureRow(role: 'Главный судья', name: 'Иванов П.', signed: session?.isApproved ?? false)),
+                    Expanded(child: AppSignatureRow(role: 'Секретарь', name: 'Смирнова А.', signed: session?.isApproved ?? false)),
                   ]),
                 ]),
               ),
@@ -511,8 +511,8 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
             Padding(
               padding: const EdgeInsets.all(16),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
-                _previewSignature('Главный судья', 'Иванов П.К.', _approved, cs),
-                _previewSignature('Секретарь', 'Смирнова А.А.', _approved, cs),
+                _previewSignature('Главный судья', 'Иванов П.К.', ref.read(raceSessionProvider)?.isApproved ?? false, cs),
+                _previewSignature('Секретарь', 'Смирнова А.А.', ref.read(raceSessionProvider)?.isApproved ?? false, cs),
               ]),
             ),
           ]),
@@ -521,8 +521,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
         Text('Настройки документа', style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
         CheckboxListTile(dense: true, contentPadding: EdgeInsets.zero,
           title: const Text('Добавить QR-коды подписей (ЭЦП)'),
-          value: _approved, onChanged: _approved ? (_) {} : null,
-          subtitle: !_approved ? Text('Сначала утвердите протокол', style: TextStyle(color: cs.error)) : null,
+          value: ref.read(raceSessionProvider)?.isApproved ?? false,
+          onChanged: (ref.read(raceSessionProvider)?.isApproved ?? false) ? (_) {} : null,
+          subtitle: !(ref.read(raceSessionProvider)?.isApproved ?? false) ? Text('Сначала утвердите протокол', style: TextStyle(color: cs.error)) : null,
         ),
         CheckboxListTile(dense: true, contentPadding: EdgeInsets.zero,
           title: const Text('Включать логотипы спонсоров'),
