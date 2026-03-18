@@ -70,6 +70,15 @@ class DrawResult {
       );
 }
 
+/// Стартовая группа — блок участников с буфером перед ним.
+class StartGroup {
+  final String name;
+  final int count;
+  int bufferMinutes;
+
+  StartGroup({required this.name, this.count = 0, this.bufferMinutes = 0});
+}
+
 // ─────────────────────────────────────────────────────────────────
 // SCREEN
 // ─────────────────────────────────────────────────────────────────
@@ -84,7 +93,9 @@ class DrawScreen extends ConsumerStatefulWidget {
 
 class _DrawScreenState extends ConsumerState<DrawScreen> {
   final Map<String, DrawResult> _results = {};
+  final Map<String, List<StartGroup>> _groups = {};
   String? _selectedDiscId;
+  bool _useGroups = false;
 
   String _mode = 'auto';
   String _seeding = 'random';
@@ -99,6 +110,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     final disciplines = ref.read(disciplineConfigsProvider);
     final participants = ref.read(participantsProvider);
     final config = ref.read(eventConfigProvider);
+    final defaultBuffer = config.drawConfig.bufferMinutes;
 
     for (final d in disciplines) {
       if (_results.containsKey(d.id)) continue;
@@ -110,14 +122,30 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 
       final entries = _buildEntries(discParticipants, d, pool);
       _results[d.id] = DrawResult(disciplineId: d.id, entries: entries);
+
+      // Auto-detect groups from categories
+      _groups[d.id] = _detectGroups(discParticipants, defaultBuffer);
     }
     if (mounted) setState(() {});
   }
 
+  /// Auto-detect start groups from participant categories.
+  List<StartGroup> _detectGroups(List<Participant> participants, int defaultBuffer) {
+    final counts = <String, int>{};
+    for (final p in participants) {
+      final key = p.category ?? (p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?');
+      counts[key] = (counts[key] ?? 0) + 1;
+    }
+    var isFirst = true;
+    return counts.entries.map((e) {
+      final group = StartGroup(name: e.key, count: e.value, bufferMinutes: isFirst ? 0 : defaultBuffer);
+      isFirst = false;
+      return group;
+    }).toList();
+  }
+
   /// Build draw entries from real participants.
   List<DrawEntry> _buildEntries(List<Participant> participants, DisciplineConfig disc, BibPool? pool) {
-    final config = ref.read(eventConfigProvider);
-    final draw = config.drawConfig;
     final bibStart = pool?.rangeStart ?? 1;
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
@@ -126,11 +154,6 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 
     // Shuffle all
     final shuffled = List<Participant>.from(participants)..shuffle(Random());
-
-    // Group by gender if needed
-    if (draw.grouping == DrawGrouping.byGender) {
-      return _buildGroupedEntries(shuffled, draw, bibStart, baseSeconds, intervalSec);
-    }
 
     return List.generate(shuffled.length, (i) {
       final p = shuffled[i];
@@ -149,85 +172,11 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     });
   }
 
-  /// Build entries grouped by gender with buffer between groups.
-  List<DrawEntry> _buildGroupedEntries(
-    List<Participant> participants, DrawConfig draw,
-    int bibStart, int baseSeconds, int intervalSec,
-  ) {
-    final groups = <String, List<Participant>>{};
-    for (final p in participants) {
-      final g = p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?';
-      groups.putIfAbsent(g, () => []).add(p);
-    }
-
-    final entries = <DrawEntry>[];
-    var currentSec = baseSeconds;
-    var bibCounter = bibStart;
-    var position = 1;
-
-    for (final groupKey in draw.groupOrder) {
-      final groupParticipants = groups.remove(groupKey) ?? [];
-      if (groupParticipants.isEmpty) continue;
-
-      // Add buffer BEFORE this group (except first group)
-      if (entries.isNotEmpty) {
-        currentSec += draw.bufferMinutes * 60;
-      }
-
-      for (final p in groupParticipants) {
-        entries.add(DrawEntry(
-          position: position,
-          bib: bibCounter,
-          participantId: p.id,
-          name: p.name,
-          gender: groupKey,
-          dog: p.dogName ?? '',
-          startTime: _fmtTime(currentSec),
-          category: p.category,
-          city: p.city,
-        ));
-        position++;
-        bibCounter++;
-        currentSec += intervalSec;
-      }
-    }
-
-    // Remaining ungrouped (gender = '?' etc.)
-    for (final remaining in groups.values) {
-      if (remaining.isEmpty) continue;
-      if (entries.isNotEmpty) currentSec += draw.bufferMinutes * 60;
-      for (final p in remaining) {
-        entries.add(DrawEntry(
-          position: position,
-          bib: bibCounter,
-          participantId: p.id,
-          name: p.name,
-          gender: '?',
-          dog: p.dogName ?? '',
-          startTime: _fmtTime(currentSec),
-          category: p.category,
-          city: p.city,
-        ));
-        position++;
-        bibCounter++;
-        currentSec += intervalSec;
-      }
-    }
-
-    return entries;
-  }
-
   String _fmtTime(int totalSec) {
     final h = totalSec ~/ 3600;
     final m = (totalSec % 3600) ~/ 60;
     final s = totalSec % 60;
     return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  String _currentGroupingValue() {
-    final draw = ref.read(eventConfigProvider).drawConfig;
-    if (draw.grouping != DrawGrouping.byGender) return 'joint';
-    return draw.groupOrder.firstOrNull == 'Ж' ? 'fm' : 'mf';
   }
 
   void _openDiscipline(String id) => setState(() => _selectedDiscId = id);
@@ -236,49 +185,51 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   void _reshuffle(DisciplineConfig disc) {
     final result = _results[disc.id];
     if (result == null) return;
-    final config = ref.read(eventConfigProvider);
-    final draw = config.drawConfig;
     final entries = List<DrawEntry>.from(result.entries)..shuffle();
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
     final intervalSec = disc.interval.inSeconds;
     final baseSeconds = hour * 3600 + minute * 60;
 
-    if (draw.grouping == DrawGrouping.byGender) {
-      // Group by gender, apply order + buffer
-      final groups = <String, List<DrawEntry>>{};
+    if (_useGroups) {
+      final groups = _groups[disc.id] ?? [];
+      // Group entries by category
+      final buckets = <String, List<DrawEntry>>{};
       for (final e in entries) {
-        groups.putIfAbsent(e.gender, () => []).add(e);
+        final key = e.category ?? e.gender;
+        buckets.putIfAbsent(key, () => []).add(e);
       }
 
       final sorted = <DrawEntry>[];
       var currentSec = baseSeconds;
       var position = 1;
+      final bibStart = entries.isEmpty ? 1 : entries.map((e) => e.bib).reduce((a, b) => a < b ? a : b);
+      var bibCounter = bibStart;
 
-      for (final groupKey in draw.groupOrder) {
-        final group = groups.remove(groupKey) ?? [];
-        if (group.isEmpty) continue;
-        if (sorted.isNotEmpty) currentSec += draw.bufferMinutes * 60;
-        for (final e in group) {
-          sorted.add(e.copyWith(position: position, startTime: _fmtTime(currentSec)));
+      for (final group in groups) {
+        final bucket = buckets.remove(group.name) ?? [];
+        if (bucket.isEmpty) continue;
+        // Add buffer before group (per-group)
+        currentSec += group.bufferMinutes * 60;
+        for (final e in bucket) {
+          sorted.add(e.copyWith(position: position, bib: bibCounter, startTime: _fmtTime(currentSec)));
           position++;
+          bibCounter++;
           currentSec += intervalSec;
         }
       }
-      // Remaining
-      for (final remaining in groups.values) {
-        if (remaining.isEmpty) continue;
-        if (sorted.isNotEmpty) currentSec += draw.bufferMinutes * 60;
+      // Remaining not in any group
+      for (final remaining in buckets.values) {
         for (final e in remaining) {
-          sorted.add(e.copyWith(position: position, startTime: _fmtTime(currentSec)));
+          sorted.add(e.copyWith(position: position, bib: bibCounter, startTime: _fmtTime(currentSec)));
           position++;
+          bibCounter++;
           currentSec += intervalSec;
         }
       }
 
       setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: sorted));
     } else {
-      // Joint: simple sequential
       _recalcTimes(entries, disc);
       setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
     }
@@ -552,31 +503,6 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               onChanged: (v) => setState(() => _mode = v!),
             )),
             const SizedBox(width: 8),
-            Expanded(child: DropdownButtonFormField<String>(
-              decoration: const InputDecoration(labelText: 'Группировка', border: OutlineInputBorder(), isDense: true),
-              isExpanded: true,
-              items: const [
-                DropdownMenuItem(value: 'joint', child: Text('Вместе')),
-                DropdownMenuItem(value: 'mf', child: Text('М → Ж')),
-                DropdownMenuItem(value: 'fm', child: Text('Ж → М')),
-              ],
-              initialValue: _currentGroupingValue(),
-              onChanged: (v) {
-                final notifier = ref.read(eventConfigProvider.notifier);
-                switch (v) {
-                  case 'joint':
-                    notifier.update((c) => c.copyWith(drawConfig: c.drawConfig.copyWith(grouping: DrawGrouping.joint)));
-                  case 'mf':
-                    notifier.update((c) => c.copyWith(drawConfig: c.drawConfig.copyWith(grouping: DrawGrouping.byGender, groupOrder: ['М', 'Ж'])));
-                  case 'fm':
-                    notifier.update((c) => c.copyWith(drawConfig: c.drawConfig.copyWith(grouping: DrawGrouping.byGender, groupOrder: ['Ж', 'М'])));
-                }
-                setState(() {});
-              },
-            )),
-          ]),
-          const SizedBox(height: 8),
-          Row(children: [
             Expanded(child: DropdownButtonFormField(
               decoration: const InputDecoration(labelText: 'Посев', border: OutlineInputBorder(), isDense: true),
               isExpanded: true,
@@ -588,7 +514,9 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               initialValue: _seeding,
               onChanged: (v) => setState(() => _seeding = v!),
             )),
-            const SizedBox(width: 8),
+          ]),
+          const SizedBox(height: 8),
+          Row(children: [
             Expanded(child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               decoration: BoxDecoration(
@@ -598,15 +526,34 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               child: Row(children: [
                 Icon(Icons.schedule, size: 16, color: cs.outline),
                 const SizedBox(width: 6),
-                Text(
-                  'Инт. ${disc.interval.inSeconds}с',
-                  style: TextStyle(fontSize: 13, color: cs.onSurface),
-                ),
+                Text('Инт. ${disc.interval.inSeconds}с', style: TextStyle(fontSize: 13, color: cs.onSurface)),
               ]),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: InkWell(
+              onTap: () => setState(() => _useGroups = !_useGroups),
+              borderRadius: BorderRadius.circular(4),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                decoration: BoxDecoration(
+                  border: Border.all(color: _useGroups ? cs.primary : cs.outlineVariant),
+                  borderRadius: BorderRadius.circular(4),
+                  color: _useGroups ? cs.primaryContainer.withValues(alpha: 0.15) : null,
+                ),
+                child: Row(children: [
+                  Icon(_useGroups ? Icons.view_list : Icons.view_stream, size: 16, color: _useGroups ? cs.primary : cs.outline),
+                  const SizedBox(width: 6),
+                  Text(_useGroups ? 'Группы ✓' : 'Без групп', style: TextStyle(fontSize: 13, color: _useGroups ? cs.primary : cs.onSurface, fontWeight: _useGroups ? FontWeight.w600 : FontWeight.normal)),
+                ]),
+              ),
             )),
           ]),
         ])),
       ),
+
+      // ── Start Groups section ──
+      if (_useGroups && (_groups[disc.id]?.isNotEmpty ?? false))
+        _buildGroupsSection(cs, disc),
 
       // Empty state
       if (entries.isEmpty)
@@ -682,6 +629,96 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         ]),
       )),
     ]);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Start Groups section
+  // ═══════════════════════════════════════════════════════════════
+
+  Widget _buildGroupsSection(ColorScheme cs, DisciplineConfig disc) {
+    final groups = _groups[disc.id]!;
+
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 0),
+          child: Row(children: [
+            Icon(Icons.view_list, size: 16, color: cs.primary),
+            const SizedBox(width: 6),
+            Text('Стартовые группы', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: cs.primary)),
+            const Spacer(),
+            Text('Перетаскивайте для порядка', style: TextStyle(fontSize: 11, color: cs.outline)),
+          ]),
+        ),
+        const Divider(height: 8),
+        ReorderableListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: groups.length,
+          onReorder: (oldIndex, newIndex) {
+            if (newIndex > oldIndex) newIndex--;
+            setState(() {
+              final item = groups.removeAt(oldIndex);
+              groups.insert(newIndex, item);
+            });
+          },
+          itemBuilder: (context, i) {
+            final g = groups[i];
+            final isFirst = i == 0;
+            return ListTile(
+              key: ValueKey('group-${g.name}-$i'),
+              dense: true,
+              leading: CircleAvatar(
+                radius: 14,
+                backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
+                child: Text('${i + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
+              ),
+              title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+              subtitle: Text('${g.count} чел.${isFirst ? '' : ' · буфер ${g.bufferMinutes} мин'}', style: TextStyle(fontSize: 12, color: cs.outline)),
+              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                if (!isFirst)
+                  InkWell(
+                    onTap: () => _editGroupBuffer(context, g),
+                    borderRadius: BorderRadius.circular(8),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: cs.outlineVariant),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('${g.bufferMinutes} мин', style: TextStyle(fontSize: 12, color: cs.primary, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                const SizedBox(width: 4),
+                const Icon(Icons.drag_handle, size: 20),
+              ]),
+            );
+          },
+        ),
+      ]),
+    );
+  }
+
+  void _editGroupBuffer(BuildContext context, StartGroup group) {
+    final ctrl = TextEditingController(text: '${group.bufferMinutes}');
+    AppBottomSheet.show(context, title: 'Буфер перед «${group.name}»', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      TextField(
+        controller: ctrl,
+        decoration: const InputDecoration(labelText: 'Минуты', border: OutlineInputBorder(), suffixText: 'мин'),
+        keyboardType: TextInputType.number,
+        autofocus: true,
+      ),
+      const SizedBox(height: 16),
+      SizedBox(width: double.infinity, child: FilledButton(
+        onPressed: () {
+          setState(() => group.bufferMinutes = (int.tryParse(ctrl.text) ?? 5).clamp(0, 120));
+          Navigator.pop(context);
+        },
+        child: const Text('Сохранить'),
+      )),
+    ]));
   }
 
   void _recalcTimes(List<DrawEntry> list, DisciplineConfig disc) {

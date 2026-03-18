@@ -72,14 +72,6 @@ class DrawSettingsScreen extends ConsumerWidget {
             ),
             const Divider(height: 1, indent: 16),
             AppSettingsTile.radio(
-              title: 'По полу (М → Ж)',
-              subtitle: 'Мужчины, затем женщины (буфер ${draw.bufferMinutes} мин.)',
-              value: DrawGrouping.byGender,
-              groupValue: draw.grouping,
-              onChanged: (_) => updateDraw((d) => d.copyWith(grouping: DrawGrouping.byGender, groupOrder: ['М', 'Ж'])),
-            ),
-            const Divider(height: 1, indent: 16),
-            AppSettingsTile.radio(
               title: 'По категориям',
               subtitle: 'CEC → OPEN → Юн...',
               value: DrawGrouping.byCategory,
