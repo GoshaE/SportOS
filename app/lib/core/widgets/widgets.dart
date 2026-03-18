@@ -35,6 +35,7 @@ export 'app_info_panel.dart';
 export 'app_discipline_chips.dart';
 export 'app_protocol_table.dart';
 export 'app_protocol_row.dart';
+export 'app_result_table.dart';
 export 'app_user_profile_sheet.dart';
 
 // ── Domain widgets ──

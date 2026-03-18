@@ -202,57 +202,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
               const SizedBox(height: 8),
               Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
             ]))
-          : AppProtocolTable(
-              itemCount: table.rows.length,
-              forceTableView: true,
-              headerRow: AppProtocolRow(
-                isHeader: true,
-                bib: 'BIB',
-                name: ds.showDogNames ? 'Спортсмен / Собака' : 'Спортсмен',
-                cat: 'Кат.',
-                dog: _showSplits
-                    ? (session.config.laps > 1 ? 'Круги' : 'Сплиты')
-                    : (ds.showDogNames ? 'Собака' : (ds.showSpeed ? 'Скор.' : '—')),
-                time: 'Время',
-                delta: ds.showGapToLeader ? '+Лидер' : (ds.showGapToPrev ? 'Разр.' : ''),
-                penalty: 'Штр.',
-              ),
-              itemBuilder: (ctx, i, isCard) {
-                final row = table.rows[i];
-
-                // Build split/dog column from ResultTable cells
-                final String dogCol;
-                if (_showSplits) {
-                  final lapParts = <String>[];
-                  for (var lap = 1; lap <= session.config.laps; lap++) {
-                    final val = row.cell('lap${lap}_time');
-                    if (val.isNotEmpty) lapParts.add(val);
-                  }
-                  if (lapParts.isNotEmpty) {
-                    dogCol = lapParts.join(' / ');
-                  } else {
-                    dogCol = row.cell('split').isNotEmpty ? row.cell('split') : '—';
-                  }
-                } else {
-                  dogCol = row.cell('dog').isNotEmpty ? row.cell('dog') : '—';
-                }
-
-                return AppProtocolRow(
-                  isCardView: isCard,
-                  place: row.rawCell('place') is int ? row.rawCell('place') as int : null,
-                  placeText: row.rawCell('place') is! int ? row.cell('place') : null,
-                  bib: row.cell('bib'),
-                  name: row.cell('name'),
-                  cat: row.cell('category'),
-                  dog: dogCol,
-                  time: row.cell('result_time'),
-                  delta: row.cell('gap_leader').isNotEmpty
-                      ? row.cell('gap_leader')
-                      : (row.cell('gap_prev').isNotEmpty ? row.cell('gap_prev') : ''),
-                  penalty: row.cell('penalty'),
-                );
-              },
-            ),
+          : AppResultTable(table: table, compact: true),
       ),
 
       // ── Auto-refresh indicator ──
