@@ -213,6 +213,26 @@ class ParticipantsNotifier extends Notifier<List<Participant>> {
   void markPaid(String id) {
     update(id, (p) => p.copyWith(paymentStatus: PaymentStatus.paid));
   }
+
+  /// Установить статус мандатной комиссии.
+  void setMandateStatus(String id, MandateStatus status) {
+    update(id, (p) => p.copyWith(mandateStatus: status));
+  }
+
+  /// Установить статус ветконтроля.
+  void setVetStatus(String id, VetStatus status) {
+    update(id, (p) => p.copyWith(vetStatus: status));
+  }
+
+  /// Переключить чек-ин (прибытие).
+  void toggleCheckIn(String id) {
+    final p = state.firstWhere((p) => p.id == id);
+    if (p.checkInTime != null) {
+      update(id, (p) => p.copyWith(clearCheckInTime: true));
+    } else {
+      update(id, (p) => p.copyWith(checkInTime: DateTime.now()));
+    }
+  }
 }
 
 final participantsProvider = NotifierProvider<ParticipantsNotifier, List<Participant>>(

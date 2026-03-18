@@ -975,6 +975,12 @@ enum PaymentStatus { unpaid, paid, refunded }
 /// Статус заявки.
 enum ApplicationStatus { pending, approved, rejected, cancelled }
 
+/// Статус мандатной комиссии.
+enum MandateStatus { pending, passed, failed }
+
+/// Статус ветконтроля.
+enum VetStatus { pending, passed, failed }
+
 /// Участник / Заявка на мероприятие.
 class Participant {
   final String id;
@@ -999,6 +1005,11 @@ class Participant {
   final String? rank;         // разряд / квалификация
   final String? insuranceNo;  // номер страховки
 
+  // ─── Операционные статусы ───
+  final MandateStatus mandateStatus;
+  final VetStatus vetStatus;
+  final DateTime? checkInTime; // null = не прибыл
+
   const Participant({
     required this.id,
     required this.name,
@@ -1019,6 +1030,9 @@ class Participant {
     this.club,
     this.rank,
     this.insuranceNo,
+    this.mandateStatus = MandateStatus.pending,
+    this.vetStatus = VetStatus.pending,
+    this.checkInTime,
   });
 
   /// Вычисляет возраст на указанную дату (или сегодня).
@@ -1089,6 +1103,10 @@ class Participant {
     String? club,
     String? rank,
     String? insuranceNo,
+    MandateStatus? mandateStatus,
+    VetStatus? vetStatus,
+    DateTime? checkInTime,
+    bool clearCheckInTime = false,
   }) {
     return Participant(
       id: id,
@@ -1110,6 +1128,9 @@ class Participant {
       club: club ?? this.club,
       rank: rank ?? this.rank,
       insuranceNo: insuranceNo ?? this.insuranceNo,
+      mandateStatus: mandateStatus ?? this.mandateStatus,
+      vetStatus: vetStatus ?? this.vetStatus,
+      checkInTime: clearCheckInTime ? null : (checkInTime ?? this.checkInTime),
     );
   }
 }
