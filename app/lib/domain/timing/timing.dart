@@ -20,4 +20,3 @@ export 'result_table_builder.dart';
 export 'time_formatter.dart';
 export 'providers.dart';
 export 'race_session.dart';
-export 'athlete_registry.dart';

@@ -8,7 +8,8 @@ import 'package:sportos_app/domain/event/config_providers.dart';
 
 /// Посты хронометража — выбор роли.
 ///
-/// При открытии инициализирует [RaceSession] (единое состояние гонки).
+/// При открытии инициализирует [RaceSession] (единое состояние гонки)
+/// с участниками из [participantsProvider] (Excel / ручной ввод).
 /// Все вложенные экраны (Стартёр, Финиш, Маршал, Диктор) читают из него.
 class OpsTimingHubScreen extends ConsumerStatefulWidget {
   final String eventId;
@@ -20,42 +21,67 @@ class OpsTimingHubScreen extends ConsumerStatefulWidget {
 }
 
 class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
+  String? _selectedDisciplineId;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _ensureSession();
+      _initSession();
     });
   }
 
-  void _ensureSession() {
-    final session = ref.read(raceSessionProvider);
-    if (session != null) return;
+  // ═══════════════════════════════════════
+  // Session initialization
+  // ═══════════════════════════════════════
 
-    // Берём конфиг дисциплины из Event Config Engine
+  /// Инициализирует сессию с участниками из participantsProvider,
+  /// отфильтрованными по выбранной дисциплине.
+  void _initSession() {
     final disciplines = ref.read(disciplineConfigsProvider);
     if (disciplines.isEmpty) return;
 
-    // Ищем дисциплину для этого eventId, иначе берём первую
+    // Если дисциплина не выбрана — берём первую
+    _selectedDisciplineId ??= disciplines.first.id;
     final config = disciplines.firstWhere(
-      (d) => d.id.contains(widget.eventId),
+      (d) => d.id == _selectedDisciplineId,
       orElse: () => disciplines.first,
     );
 
-    // Стартуем сессию без спортсменов
-    ref.read(raceSessionProvider.notifier).startSession(config, []);
+    // Получаем участников для этой дисциплины
+    final participants = ref.read(participantsProvider);
+    final filtered = participants
+        .where((p) => p.disciplineId == config.id)
+        .toList();
+
+    // Конвертируем Participant → формат для startSession
+    final athletes = filtered.map((p) => (
+      entryId: p.id,
+      bib: p.bib,
+      name: p.name,
+      category: p.category,
+      waveId: null as String?,
+    )).toList();
+
+    // Стартуем (или рестартуем) сессию
+    ref.read(raceSessionProvider.notifier).startSession(config, athletes);
+    if (mounted) setState(() {});
+  }
+
+  /// Переключить дисциплину → переинициализировать сессию.
+  void _switchDiscipline(String disciplineId) {
+    if (_selectedDisciplineId == disciplineId) return;
+    setState(() => _selectedDisciplineId = disciplineId);
+    _initSession();
   }
 
   // ═══════════════════════════════════════
-  // Добавление спортсмена из реестра
+  // Добавление спортсмена из участников
   // ═══════════════════════════════════════
 
   void _showAddAthleteSheet() {
     final session = ref.read(raceSessionProvider);
     if (session == null) return;
-
-
 
     AppBottomSheet.show(
       context,
@@ -63,22 +89,43 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
       initialHeight: 0.7,
       child: StatefulBuilder(
         builder: (ctx, setSheetState) {
-          // re-read session to see updates
           final currentSession = ref.read(raceSessionProvider);
           final currentBibs = currentSession?.startList.all.map((e) => e.bib).toSet() ?? {};
+
+          // Берём участников из participantsProvider для текущей дисциплины
+          final participants = ref.read(participantsProvider);
+          final discId = _selectedDisciplineId;
+          final filtered = discId != null
+              ? participants.where((p) => p.disciplineId == discId).toList()
+              : participants;
+
+          if (filtered.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.people_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
+                const SizedBox(height: 12),
+                Text(
+                  'Нет участников для текущей дисциплины.\nДобавьте через Excel или вручную на странице Участники.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                ),
+              ]),
+            );
+          }
 
           return ListView(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            children: AthleteRegistry.athletes.map((a) {
-              final alreadyAdded = currentBibs.contains(a.bib);
+            children: filtered.map((p) {
+              final alreadyAdded = currentBibs.contains(p.bib);
               return ListTile(
                 leading: CircleAvatar(
                   backgroundColor: alreadyAdded
                       ? Theme.of(context).colorScheme.primaryContainer
                       : Theme.of(context).colorScheme.surfaceContainerHighest,
                   child: Text(
-                    a.bib,
+                    p.bib,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
                       color: alreadyAdded
@@ -87,12 +134,12 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
                     ),
                   ),
                 ),
-                title: Text(a.name, style: TextStyle(
+                title: Text(p.name, style: TextStyle(
                   fontWeight: FontWeight.w600,
                   decoration: alreadyAdded ? TextDecoration.lineThrough : null,
                   color: alreadyAdded ? Theme.of(context).colorScheme.outline : null,
                 )),
-                subtitle: Text(a.category, style: TextStyle(
+                subtitle: Text('${p.disciplineName}${p.category != null ? ' · ${p.category}' : ''}', style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 )),
@@ -101,14 +148,14 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
                     : Icon(Icons.add_circle_outline, color: Theme.of(context).colorScheme.onSurfaceVariant),
                 onTap: alreadyAdded ? null : () {
                   ref.read(raceSessionProvider.notifier).addAthlete(
-                    entryId: a.entryId,
-                    bib: a.bib,
-                    name: a.name,
-                    category: a.category,
+                    entryId: p.id,
+                    bib: p.bib,
+                    name: p.name,
+                    category: p.category,
                   );
                   setSheetState(() {}); // обновить BottomSheet
                   setState(() {}); // обновить основной экран
-                  AppSnackBar.success(context, 'BIB ${a.bib} ${a.name} — добавлен');
+                  AppSnackBar.success(context, 'BIB ${p.bib} ${p.name} — добавлен');
                 },
               );
             }).toList(),
@@ -126,6 +173,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
     final eventId = widget.eventId;
     final athleteCount = session?.startList.all.length ?? 0;
     final startedCount = session?.startList.startedCount ?? 0;
+    final disciplines = ref.watch(disciplineConfigsProvider);
 
     return Scaffold(
       appBar: AppAppBar(
@@ -136,6 +184,40 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
+          // ── Discipline picker ──
+          if (disciplines.length > 1) ...[
+            Text('Дисциплина', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: disciplines.map((d) {
+                  final isSelected = d.id == _selectedDisciplineId;
+                  // Count participants for this discipline
+                  final count = ref.read(participantsProvider).where((p) => p.disciplineId == d.id).length;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: FilterChip(
+                      label: Text('${d.name} ($count)', style: TextStyle(
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: isSelected ? cs.onPrimaryContainer : cs.onSurfaceVariant,
+                      )),
+                      selected: isSelected,
+                      onSelected: (_) => _switchDiscipline(d.id),
+                      selectedColor: cs.primaryContainer.withValues(alpha: 0.6),
+                      showCheckmark: false,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(color: isSelected ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.15)),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
+
           // Session info
           if (session != null) ...[
             AppCard(
@@ -255,7 +337,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
         if (athleteCount == 0) ...[
           const SizedBox(height: 10),
           Text(
-            'Добавьте спортсменов из реестра для начала работы',
+            'Участники из Excel/ручного ввода будут автоматически подгружены.\nИли добавьте вручную кнопкой "Добавить".',
             style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
           ),
         ],
