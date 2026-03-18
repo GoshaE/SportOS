@@ -32,6 +32,7 @@ class AppSelect<T> extends StatelessWidget {
   final List<SelectItem<T>> items;
   final ValueChanged<T>? onChanged;
   final String? placeholder;
+  final String? hintText;
   final String? helperText;
   final bool enabled;
 
@@ -42,6 +43,7 @@ class AppSelect<T> extends StatelessWidget {
     this.value,
     this.onChanged,
     this.placeholder,
+    this.hintText,
     this.helperText,
     this.enabled = true,
   });
@@ -54,7 +56,7 @@ class AppSelect<T> extends StatelessWidget {
 
     // Find current label
     final currentItem = items.where((i) => i.value == value).firstOrNull;
-    final displayText = currentItem?.label ?? placeholder ?? 'Выберите...';
+    final displayText = currentItem?.label ?? hintText ?? placeholder ?? 'Выберите...';
     final isPlaceholder = currentItem == null;
 
     return Column(

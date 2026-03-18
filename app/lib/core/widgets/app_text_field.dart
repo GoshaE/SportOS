@@ -27,6 +27,8 @@ class AppTextField extends StatelessWidget {
   final List<TextInputFormatter>? inputFormatters;
   final FocusNode? focusNode;
   final bool enabled;
+  final String? initialValue;
+  final String? errorText;
 
   const AppTextField({
     super.key,
@@ -48,6 +50,8 @@ class AppTextField extends StatelessWidget {
     this.inputFormatters,
     this.focusNode,
     this.enabled = true,
+    this.initialValue,
+    this.errorText,
   });
 
   @override
@@ -72,6 +76,7 @@ class AppTextField extends StatelessWidget {
         // ── Input field ──
         TextFormField(
           controller: controller,
+          initialValue: controller == null ? initialValue : null,
           validator: validator,
           keyboardType: keyboardType,
           obscureText: obscureText,
@@ -87,6 +92,7 @@ class AppTextField extends StatelessWidget {
           style: TextStyle(fontSize: 15, color: cs.onSurface),
           decoration: InputDecoration(
             hintText: hintText,
+            errorText: errorText,
             prefixIcon: prefixIcon != null ? Icon(prefixIcon, size: 20) : null,
             suffix: suffix,
           ),
