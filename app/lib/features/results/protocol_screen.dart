@@ -17,7 +17,6 @@ class ProtocolScreen extends ConsumerStatefulWidget {
 
 class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
   String _disc = '';
-  bool _approved = false;
   int _currentDay = 1;
   final int _totalDays = 2;
   bool? _isTableView;
@@ -128,9 +127,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                 // ── Статус протокола ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: _approved
-                    ? _buildApprovedBanner(cs, theme)
-                    : _buildUnapprovedBanner(cs, theme),
+                  child: (session?.isApproved ?? false)
+                    ? _buildApprovedBanner(cs, theme, session!.approvedAt)
+                    : _buildUnapprovedBanner(cs, theme, hasSession: session != null),
                 ),
 
                 // ── Сводка (реальные данные) ──
@@ -274,7 +273,10 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
   // ВИДЖЕТЫ
   // ─────────────────────────────────────
 
-  Widget _buildApprovedBanner(ColorScheme cs, ThemeData theme) {
+  Widget _buildApprovedBanner(ColorScheme cs, ThemeData theme, DateTime? approvedAt) {
+    final dateStr = approvedAt != null
+        ? '${approvedAt.day.toString().padLeft(2, '0')}.${approvedAt.month.toString().padLeft(2, '0')}.${approvedAt.year} ${approvedAt.hour.toString().padLeft(2, '0')}:${approvedAt.minute.toString().padLeft(2, '0')}'
+        : '—';
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -291,14 +293,23 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Official — Утверждён', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.primary)),
-          Text('Ed25519 · 10.03.2026 18:30', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+          Text(dateStr, style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           if (_currentDay == 0) Text('Общий зачёт: сумма дней', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
+        const SizedBox(width: 8),
+        TextButton.icon(
+          onPressed: () {
+            ref.read(raceSessionProvider.notifier).revokeApproval();
+            AppSnackBar.info(context, 'Утверждение отозвано');
+          },
+          icon: const Icon(Icons.undo, size: 16),
+          label: const Text('Отозвать'),
+        ),
       ]),
     );
   }
 
-  Widget _buildUnapprovedBanner(ColorScheme cs, ThemeData theme) {
+  Widget _buildUnapprovedBanner(ColorScheme cs, ThemeData theme, {bool hasSession = false}) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -317,12 +328,14 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
           Text('Unofficial — Предварительный', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary)),
           if (_currentDay == 0) Text('Общий зачёт: сумма дней', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
-        const SizedBox(width: 8),
-        FilledButton.tonalIcon(
-          onPressed: _showApprove,
-          icon: const Icon(Icons.verified, size: 16),
-          label: const Text('Утвердить'),
-        ),
+        if (hasSession) ...[
+          const SizedBox(width: 8),
+          FilledButton.tonalIcon(
+            onPressed: _showApprove,
+            icon: const Icon(Icons.verified, size: 16),
+            label: const Text('Утвердить'),
+          ),
+        ],
       ]),
     );
   }
@@ -428,9 +441,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
           text: 'Подписать',
           icon: Icons.edit_document,
           onPressed: () {
-            setState(() => _approved = true);
+            ref.read(raceSessionProvider.notifier).approveResults();
             Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.success(context, 'Протокол успешно подписан');
+            AppSnackBar.success(context, 'Протокол успешно утверждён');
           },
         ),
       ],

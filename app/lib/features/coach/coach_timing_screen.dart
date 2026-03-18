@@ -375,7 +375,10 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                     finishText = TimeFormatter.compact(_elapsedCalc.netTime(a, finishMarks.last.correctedTime));
                     placeText = null;
                   } else {
-                    finishText = '...';
+                    final completedLaps = finishMarks.length;
+                    finishText = session.config.laps > 1
+                        ? 'Круг ${completedLaps + 1}/${session.config.laps}'
+                        : '...';
                     placeText = 'LIVE';
                   }
 

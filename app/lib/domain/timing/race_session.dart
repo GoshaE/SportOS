@@ -46,6 +46,10 @@ class RaceSession {
 
   final List<Penalty> _penalties;
 
+  /// Протокол утверждён (preliminary → official).
+  bool isApproved = false;
+  DateTime? approvedAt;
+
   RaceSession({
     required this.config,
     required this.clock,
@@ -122,6 +126,8 @@ class RaceSessionState {
   List<StartEntry> get startedAthletes => session.startedAthletes;
   List<StartEntry> get onCourseAthletes => session.onCourseAthletes;
   bool get hasAthletes => session.hasAthletes;
+  bool get isApproved => session.isApproved;
+  DateTime? get approvedAt => session.approvedAt;
   List<Penalty> get penalties => session.penalties;
   List<RaceResult> calculateResults() => session.calculateResults();
 
@@ -246,6 +252,24 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
 
   void markFinished(String bib) {
     _session?.startList.markFinished(bib);
+    _notify();
+  }
+
+  // ─── Protocol Approval ─────────────────────────────────────────
+
+  void approveResults() {
+    final s = _session;
+    if (s == null) return;
+    s.isApproved = true;
+    s.approvedAt = DateTime.now();
+    _notify();
+  }
+
+  void revokeApproval() {
+    final s = _session;
+    if (s == null) return;
+    s.isApproved = false;
+    s.approvedAt = null;
     _notify();
   }
 

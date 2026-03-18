@@ -98,7 +98,10 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                 lapInfo = TimeFormatter.compact(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
                 bibState = BibState.finished;
               } else {
-                lapInfo = 'На трассе';
+                final completedLaps = bibMarks.length;
+                lapInfo = session.config.laps > 1
+                    ? 'Круг ${completedLaps + 1}/${session.config.laps}'
+                    : 'На трассе';
                 bibState = BibState.available;
               }
 

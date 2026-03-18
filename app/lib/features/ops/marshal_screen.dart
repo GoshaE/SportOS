@@ -342,7 +342,11 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
                 }
                 bibState = BibState.assigned;
               } else {
-                lapInfo = a.categoryName;
+                final officialMarks = session.marking.officialMarksForBib(a.bib)
+                    .where((m) => m.type == MarkType.finish).length;
+                lapInfo = session.config.laps > 1
+                    ? 'Круг ${officialMarks + 1}/${session.config.laps}'
+                    : a.categoryName;
                 bibState = BibState.available;
               }
 

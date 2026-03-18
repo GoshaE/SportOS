@@ -311,13 +311,19 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
           category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
           timeDisplay: 'DNS', deltaDisplay: '', penaltyDisplay: '—',
         ));
+      } else if (a.status == AthleteStatus.dsq) {
+        statusRows.add(_ResultRow(
+          place: -1, placeText: 'DSQ', bib: a.bib, name: a.name,
+          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
+          timeDisplay: 'DSQ', deltaDisplay: '', penaltyDisplay: '—',
+        ));
       } else if (a.status == AthleteStatus.dnf) {
         statusRows.add(_ResultRow(
           place: -1, placeText: 'DNF', bib: a.bib, name: a.name,
           category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
           timeDisplay: 'DNF', deltaDisplay: '', penaltyDisplay: '—',
         ));
-      } else if (hasFinish) {
+      } else if (a.status == AthleteStatus.finished || hasFinish) {
         final netTime = _elapsedCalc.netTime(a, finishMarks.last.correctedTime);
         finished.add(_ResultRow(
           place: 0, placeText: null, bib: a.bib, name: a.name,
@@ -327,10 +333,14 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
         ));
       } else if (a.status == AthleteStatus.started) {
         // Реально стартовал — на трассе
+        final completedLaps = finishMarks.length;
+        final lapDisplay = session.config.laps > 1
+            ? 'Круг ${completedLaps + 1}/${session.config.laps}'
+            : 'на трассе';
         onTrack.add(_ResultRow(
           place: 0, placeText: 'LIVE', bib: a.bib, name: a.name,
           category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
-          timeDisplay: 'на трассе', deltaDisplay: '', penaltyDisplay: '—',
+          timeDisplay: lapDisplay, deltaDisplay: '', penaltyDisplay: '—',
         ));
       } else {
         // waiting / current — ещё НЕ стартовал
