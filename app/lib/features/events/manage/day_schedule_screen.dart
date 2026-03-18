@@ -236,7 +236,9 @@ class _DayTimeline extends StatelessWidget {
           const SizedBox(height: 16),
 
           // Save
-          SizedBox(width: double.infinity, child: FilledButton.icon(
+          AppButton.primary(
+            text: 'Сохранить',
+            icon: Icons.save,
             onPressed: () {
               ref.read(eventConfigProvider.notifier).updateDiscipline(d.id, (old) => old.copyWith(
                 firstStartTime: DateTime(
@@ -247,9 +249,7 @@ class _DayTimeline extends StatelessWidget {
               Navigator.pop(ctx);
               AppSnackBar.success(context, 'Время старта обновлено: ${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}');
             },
-            icon: const Icon(Icons.save),
-            label: const Text('Сохранить'),
-          )),
+          ),
           const SizedBox(height: 8),
         ]);
       },

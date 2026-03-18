@@ -176,21 +176,21 @@ class DrawSettingsScreen extends ConsumerWidget {
   void _editBuffer(BuildContext context, int currentMinutes, void Function(DrawConfig Function(DrawConfig)) updateDraw) {
     final ctrl = TextEditingController(text: '$currentMinutes');
     AppBottomSheet.show(context, title: 'Буфер между группами', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(
+      AppTextField(
+        label: 'Минуты',
         controller: ctrl,
-        decoration: const InputDecoration(labelText: 'Минуты', border: OutlineInputBorder(), suffixText: 'мин'),
         keyboardType: TextInputType.number,
         autofocus: true,
       ),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           final mins = int.tryParse(ctrl.text) ?? 5;
           updateDraw((d) => d.copyWith(bufferMinutes: mins.clamp(0, 60)));
           Navigator.pop(context);
         },
-        child: const Text('Сохранить'),
-      )),
+      ),
     ]));
   }
 

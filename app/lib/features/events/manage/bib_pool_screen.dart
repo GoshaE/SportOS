@@ -121,11 +121,7 @@ class BibPoolScreen extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // ─── Add button ───
-                OutlinedButton.icon(
-                  onPressed: () => _addPool(context, ref, disciplines, pools),
-                  icon: const Icon(Icons.add),
-                  label: const Text('Добавить пул'),
-                ),
+                AppButton.smallSecondary(text: 'Добавить пул', icon: Icons.add, onPressed: () => _addPool(context, ref, disciplines, pools)),
               ],
             ),
     );
@@ -153,17 +149,9 @@ class BibPoolScreen extends ConsumerWidget {
           textAlign: TextAlign.center,
         ),
         const SizedBox(height: 28),
-        FilledButton.icon(
-          onPressed: () => _smartAutoSetup(ref, disciplines, context),
-          icon: const Icon(Icons.auto_fix_high),
-          label: Text('Авто для ${disciplines.length} дисциплин'),
-        ),
+        AppButton.small(text: 'Авто для ${disciplines.length} дисциплин', icon: Icons.auto_fix_high, onPressed: () => _smartAutoSetup(ref, disciplines, context)),
         const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: () => _addPool(context, ref, disciplines, []),
-          icon: const Icon(Icons.add),
-          label: const Text('Вручную'),
-        ),
+        AppButton.smallSecondary(text: 'Вручную', icon: Icons.add, onPressed: () => _addPool(context, ref, disciplines, [])),
       ]),
     ));
   }
@@ -274,7 +262,9 @@ class BibPoolScreen extends ConsumerWidget {
             onChanged: (v) => setModal(() => selectedDisciplineId = v),
           ),
           const SizedBox(height: 16),
-          SizedBox(width: double.infinity, child: FilledButton.icon(
+          AppButton.primary(
+            text: 'Сохранить',
+            icon: Icons.save,
             onPressed: () {
               final updated = BibPool(
                 id: pool.id,
@@ -294,9 +284,7 @@ class BibPoolScreen extends ConsumerWidget {
               ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(bibPools: pools));
               Navigator.pop(ctx);
             },
-            icon: const Icon(Icons.save),
-            label: const Text('Сохранить'),
-          )),
+          ),
           const SizedBox(height: 8),
         ]);
       },

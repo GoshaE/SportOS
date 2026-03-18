@@ -138,20 +138,20 @@ class PreStartChecklistScreen extends ConsumerWidget {
 
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: OutlinedButton.icon(
+          Expanded(child: AppButton.smallSecondary(
+            text: 'Добавить пункт',
+            icon: Icons.add,
             onPressed: () => _addItem(context, ref, items),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Добавить пункт'),
           )),
           const SizedBox(width: 8),
-          OutlinedButton(
+          AppButton.smallSecondary(
+            text: 'Сброс',
             onPressed: () {
               ref.read(eventConfigProvider.notifier).update(
                 (c) => c.copyWith(checklistItems: defaultChecklistItems),
               );
               AppSnackBar.info(context, 'Чек-лист сброшен к стандарту');
             },
-            child: const Text('Сброс'),
           ),
         ]),
         const SizedBox(height: 32),
@@ -194,11 +194,10 @@ class PreStartChecklistScreen extends ConsumerWidget {
             onChanged: (v) => setModal(() => selectedRole = v),
           )),
           const SizedBox(width: 12),
-          Expanded(child: CheckboxListTile(
-            dense: true, contentPadding: EdgeInsets.zero,
-            title: const Text('Обязательно', style: TextStyle(fontSize: 13)),
+          Expanded(child: AppCheckbox(
+            label: 'Обязательно',
             value: isRequired,
-            onChanged: (v) => setModal(() => isRequired = v!),
+            onChanged: (v) => setModal(() => isRequired = v),
           )),
         ]),
         const SizedBox(height: 16),
