@@ -31,16 +31,11 @@ class AppResultTable extends StatelessWidget {
   /// Show card mode instead of table mode.
   final bool showCards;
 
-  /// Minimum width per column type (px). If total minWidth > viewport,
-  /// horizontal scroll activates automatically.
-  final double minColumnWidth;
-
   const AppResultTable({
     super.key,
     required this.table,
     this.onRowTap,
     this.showCards = false,
-    this.minColumnWidth = 60,
   });
 
   @override
@@ -116,30 +111,16 @@ class AppResultTable extends StatelessWidget {
     });
   }
 
-  /// Calculate minimum table width from column types.
+  /// Calculate minimum table width from [ColumnDef.minWidth].
+  ///
+  /// If sum(minWidth) > viewport → horizontal scroll ON.
+  /// If sum(minWidth) ≤ viewport → columns stretch via flex, no scroll.
   double _calcMinTableWidth(List<ColumnDef> columns) {
-    double total = 0;
+    double total = 28; // horizontal padding (14 * 2)
     for (final col in columns) {
-      total += _minWidthForColumn(col);
+      total += col.minWidth;
     }
-    // Add horizontal padding (14 * 2)
-    return total + 28;
-  }
-
-  /// Minimum width per column type to remain readable.
-  double _minWidthForColumn(ColumnDef col) {
-    switch (col.type) {
-      case ColumnType.number: return 40; // #, BIB
-      case ColumnType.text:
-        // Name column needs more space
-        if (col.id == 'name') return 140;
-        if (col.id == 'category') return 50;
-        return minColumnWidth;
-      case ColumnType.time: return 75; // 00:00.0
-      case ColumnType.speed: return 55; // 12.5
-      case ColumnType.gap: return 65; // +00:05
-      case ColumnType.status: return 60; // LIVE, DNF
-    }
+    return total;
   }
 
   // ═══════════════════════════════════════

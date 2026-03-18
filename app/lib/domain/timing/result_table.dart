@@ -45,7 +45,8 @@ enum ColumnAlign { left, center, right }
 /// - `id` — уникальный ключ (используется как ключ в `ResultRow.cells`)
 /// - `label` — заголовок для отображения
 /// - `type` — тип данных (влияет на дефолтное выравнивание)
-/// - `flex` — относительная ширина
+/// - `flex` — относительная ширина (распределение оставшегося места)
+/// - `minWidth` — минимальная ширина в dp (для определения горизонтального скролла)
 class ColumnDef {
   final String id;
   final String label;
@@ -53,12 +54,24 @@ class ColumnDef {
   final ColumnAlign align;
   final double flex;
 
+  /// Минимальная ширина колонки в logical pixels.
+  ///
+  /// Используется виджетом `AppResultTable` для определения
+  /// необходимости горизонтального скролла:
+  /// - sum(minWidth) > viewport → scroll ON
+  /// - sum(minWidth) ≤ viewport → columns stretch via flex
+  ///
+  /// Значение задаётся в `ResultTableBuilder` с учётом
+  /// семантики колонки и ожидаемой длины контента.
+  final double minWidth;
+
   const ColumnDef({
     required this.id,
     required this.label,
     this.type = ColumnType.text,
     this.align = ColumnAlign.left,
     this.flex = 1.0,
+    this.minWidth = 50,
   });
 }
 

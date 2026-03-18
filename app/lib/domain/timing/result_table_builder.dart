@@ -52,19 +52,19 @@ class ResultTableBuilder {
     final cols = <ColumnDef>[];
 
     // ── Always present ──
-    cols.add(const ColumnDef(id: 'place', label: '№', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5));
-    cols.add(const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6));
-    cols.add(const ColumnDef(id: 'name', label: 'Спортсмен', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0));
-    cols.add(const ColumnDef(id: 'category', label: 'Кат.', type: ColumnType.text, align: ColumnAlign.center, flex: 0.6));
+    cols.add(const ColumnDef(id: 'place', label: '№', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 40));
+    cols.add(const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 50));
+    cols.add(const ColumnDef(id: 'name', label: 'Спортсмен', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0, minWidth: 140));
+    cols.add(const ColumnDef(id: 'category', label: 'Кат.', type: ColumnType.text, align: ColumnAlign.center, flex: 0.8, minWidth: 80));
 
     // ── Dog name (ездовой спорт) ──
     if (display.showDogNames) {
-      cols.add(const ColumnDef(id: 'dog', label: 'Собака', type: ColumnType.text, align: ColumnAlign.left, flex: 1.2));
+      cols.add(const ColumnDef(id: 'dog', label: 'Собака', type: ColumnType.text, align: ColumnAlign.left, flex: 1.2, minWidth: 100));
     }
 
     // ── Club ──
     if (display.showClub) {
-      cols.add(const ColumnDef(id: 'club', label: 'Клуб', type: ColumnType.text, align: ColumnAlign.left, flex: 1.0));
+      cols.add(const ColumnDef(id: 'club', label: 'Клуб', type: ColumnType.text, align: ColumnAlign.left, flex: 1.0, minWidth: 90));
     }
 
     // ── Per-lap columns (multi-lap) ──
@@ -76,6 +76,7 @@ class ResultTableBuilder {
           type: ColumnType.time,
           align: ColumnAlign.right,
           flex: 1.0,
+          minWidth: 75,
         ));
       }
     }
@@ -89,39 +90,40 @@ class ResultTableBuilder {
           type: ColumnType.speed,
           align: ColumnAlign.right,
           flex: 0.8,
+          minWidth: 65,
         ));
       }
     }
 
     // ── Checkpoint splits (single-lap or explicit) ──
     if (config.laps == 1 && display.showCheckpoints) {
-      cols.add(const ColumnDef(id: 'split', label: 'Сплит', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0));
+      cols.add(const ColumnDef(id: 'split', label: 'Сплит', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0, minWidth: 75));
     }
 
     // ── Result time ──
-    cols.add(const ColumnDef(id: 'result_time', label: 'Время', type: ColumnType.time, align: ColumnAlign.right, flex: 1.2));
+    cols.add(const ColumnDef(id: 'result_time', label: 'Время', type: ColumnType.time, align: ColumnAlign.right, flex: 1.2, minWidth: 85));
 
     // ── Penalty ──
-    cols.add(const ColumnDef(id: 'penalty', label: 'Штр.', type: ColumnType.time, align: ColumnAlign.right, flex: 0.7));
+    cols.add(const ColumnDef(id: 'penalty', label: 'Штр.', type: ColumnType.time, align: ColumnAlign.right, flex: 0.7, minWidth: 55));
 
     // ── Total speed ──
     if (display.showSpeed) {
-      cols.add(const ColumnDef(id: 'total_speed', label: 'Скорость', type: ColumnType.speed, align: ColumnAlign.right, flex: 0.9));
+      cols.add(const ColumnDef(id: 'total_speed', label: 'Скорость', type: ColumnType.speed, align: ColumnAlign.right, flex: 0.9, minWidth: 65));
     }
 
     // ── Pace ──
     if (display.showPace) {
-      cols.add(const ColumnDef(id: 'pace', label: 'Темп', type: ColumnType.speed, align: ColumnAlign.right, flex: 0.9));
+      cols.add(const ColumnDef(id: 'pace', label: 'Темп', type: ColumnType.speed, align: ColumnAlign.right, flex: 0.9, minWidth: 60));
     }
 
     // ── Gap to leader ──
     if (display.showGapToLeader) {
-      cols.add(const ColumnDef(id: 'gap_leader', label: '+Лидер', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.9));
+      cols.add(const ColumnDef(id: 'gap_leader', label: '+Лидер', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.9, minWidth: 70));
     }
 
     // ── Gap to previous ──
     if (display.showGapToPrev) {
-      cols.add(const ColumnDef(id: 'gap_prev', label: 'Разрыв', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.9));
+      cols.add(const ColumnDef(id: 'gap_prev', label: 'Разрыв', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.9, minWidth: 70));
     }
 
     return cols;
