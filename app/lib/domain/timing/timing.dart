@@ -14,6 +14,8 @@ export 'marking_service.dart';
 export 'elapsed_calculator.dart';
 export 'gap_calculator.dart';
 export 'result_calculator.dart';
+export 'result_table.dart';
+export 'result_table_builder.dart';
 export 'time_formatter.dart';
 export 'providers.dart';
 export 'race_session.dart';

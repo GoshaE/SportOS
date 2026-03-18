@@ -4,14 +4,11 @@ import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
 import '../../domain/event/config_providers.dart';
-import '../../domain/event/event_config.dart';
 
 /// Screen ID: RS1 — Live результаты (с split-times, multi-day, отсечки)
 ///
 /// Подключён к [raceSessionProvider]: показывает реальные данные из Timing Engine.
-/// - Нет сессии → пустое состояние
-/// - Сессия запущена, но никто не стартовал → "Ожидание старта"
-/// - Атлеты на трассе / финишировавшие → live таблица через AppProtocolTable
+/// Использует [ResultTableBuilder] для генерации таблицы — экран только рендерит.
 class LiveResultsScreen extends ConsumerStatefulWidget {
   const LiveResultsScreen({super.key});
 
@@ -24,7 +21,8 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   bool _showSplits = false;
   String? _selectedDiscId;
 
-  final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
+  static const _tableBuilder = ResultTableBuilder();
+  static const _resultCalc = ResultCalculator();
 
   @override
   Widget build(BuildContext context) {
@@ -78,52 +76,41 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   }
 
   // ═══════════════════════════════════════
-  // Main body with session
+  // Main body with session (powered by ResultTableEngine)
   // ═══════════════════════════════════════
 
   Widget _buildBody(ThemeData theme, ColorScheme cs, RaceSessionState session) {
+    final ds = session.config.displaySettings;
 
-    // Compute stats
-    int finishedCount = 0;
-    int onTrackCount = 0;
-    int dnfCount = 0;
-    int dnsCount = 0;
-    int dsqCount = 0;
-    int waitingCount = 0;
+    // ── Build ResultTable from engine ──
+    final results = _resultCalc.calculate(
+      config: session.config,
+      startList: session.startList.all,
+      marks: session.marking.officialMarks,
+      penalties: session.penalties,
+    );
+    final table = _tableBuilder.build(
+      results: results,
+      config: session.config,
+      display: ds,
+      athletes: session.startList.all,
+      marks: session.marking.officialMarks,
+    );
 
-    for (final a in session.startList.all) {
-      final bibMarks = session.marking.officialMarksForBib(a.bib);
-      final finishMarks = bibMarks.where((m) => m.type == MarkType.finish).toList();
-      final hasFinish = finishMarks.length >= session.config.laps;
-
-      if (a.status == AthleteStatus.dns) {
-        dnsCount++;
-      } else if (a.status == AthleteStatus.dsq) {
-        dsqCount++;
-      } else if (a.status == AthleteStatus.dnf) {
-        dnfCount++;
-      } else if (a.status == AthleteStatus.finished || hasFinish) {
-        finishedCount++;
-      } else if (a.status == AthleteStatus.started) {
-        onTrackCount++;
-      } else {
-        // waiting, current — ещё не стартовали
-        waitingCount++;
-      }
-    }
-
-    // Build sorted results list
-    final resultRows = _buildResultRows(session);
+    // ── Compute stats from table rows ──
+    final finishedCount = table.rows.where((r) => r.type == RowType.finished).length;
+    final onTrackCount = table.rows.where((r) => r.type == RowType.onTrack).length;
+    final dnfCount = table.rows.where((r) => r.type == RowType.dnf).length;
+    final dnsCount = table.rows.where((r) => r.type == RowType.dns).length;
+    final dsqCount = table.rows.where((r) => r.type == RowType.dsq).length;
+    final waitingCount = table.rows.where((r) => r.type == RowType.waiting).length;
 
     // ── Read Config Engine ──
     final eventConfig = ref.watch(eventConfigProvider);
     final disciplines = ref.watch(disciplineConfigsProvider);
     final totalDays = eventConfig.isMultiDay ? eventConfig.days.length : 0;
 
-    // Select first discipline by default
     _selectedDiscId ??= disciplines.isNotEmpty ? disciplines.first.id : null;
-    final selectedDisc = disciplines.where((d) => d.id == _selectedDiscId).firstOrNull;
-    final ds = selectedDisc?.displaySettings ?? const DisplaySettings();
 
     return Column(children: [
       // ── Шапка: дни + дисциплины + статистика ──
@@ -145,12 +132,6 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
                   visualDensity: VisualDensity.compact,
                 ),
               )),
-              ChoiceChip(
-                label: Text('Общий', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _currentDay == 0 ? null : cs.tertiary)),
-                selected: _currentDay == 0,
-                onSelected: (_) => setState(() => _currentDay = 0),
-                visualDensity: VisualDensity.compact,
-              ),
             ])),
             const SizedBox(height: 6),
           ],
@@ -169,7 +150,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
                 )),
           ])),
           const SizedBox(height: 8),
-          // Статистика (динамическая)
+          // Статистика
           Row(children: [
             Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
               _statPill(cs, theme, '$finishedCount', 'Финиш', cs.primary),
@@ -180,13 +161,17 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
                 _statPill(cs, theme, '$waitingCount', 'Ожидает', cs.outline),
                 const SizedBox(width: 6),
               ],
-              _statPill(cs, theme, '$dnfCount', 'DNF', cs.error),
-              const SizedBox(width: 6),
+              if (dnfCount > 0) ...[
+                _statPill(cs, theme, '$dnfCount', 'DNF', cs.error),
+                const SizedBox(width: 6),
+              ],
               if (dsqCount > 0) ...[
                 _statPill(cs, theme, '$dsqCount', 'DSQ', cs.error),
                 const SizedBox(width: 6),
               ],
-              _statPill(cs, theme, '$dnsCount', 'DNS', cs.onSurfaceVariant),
+              if (dnsCount > 0) ...[
+                _statPill(cs, theme, '$dnsCount', 'DNS', cs.outline),
+              ],
             ]))),
             const SizedBox(width: 8),
             // Splits toggle
@@ -210,15 +195,15 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
         ]),
       ),
 
-      // ── Таблица результатов ──
-      Expanded(child: resultRows.isEmpty
+      // ── Таблица результатов (from ResultTableEngine) ──
+      Expanded(child: table.rows.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
               const SizedBox(height: 8),
               Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
             ]))
           : AppProtocolTable(
-              itemCount: resultRows.length,
+              itemCount: table.rows.length,
               forceTableView: true,
               headerRow: AppProtocolRow(
                 isHeader: true,
@@ -226,25 +211,45 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
                 name: ds.showDogNames ? 'Спортсмен / Собака' : 'Спортсмен',
                 cat: 'Кат.',
                 dog: _showSplits
-                    ? (ds.showCheckpoints ? 'Сплиты / КП' : 'Сплиты')
+                    ? (session.config.laps > 1 ? 'Круги' : 'Сплиты')
                     : (ds.showDogNames ? 'Собака' : (ds.showSpeed ? 'Скор.' : '—')),
                 time: 'Время',
-                delta: ds.showGapToLeader ? 'Отст.' : (ds.showGapToPrev ? 'Разр.' : ''),
+                delta: ds.showGapToLeader ? '+Лидер' : (ds.showGapToPrev ? 'Разр.' : ''),
                 penalty: 'Штр.',
               ),
               itemBuilder: (ctx, i, isCard) {
-                final r = resultRows[i];
+                final row = table.rows[i];
+
+                // Build split/dog column from ResultTable cells
+                final String dogCol;
+                if (_showSplits) {
+                  final lapParts = <String>[];
+                  for (var lap = 1; lap <= session.config.laps; lap++) {
+                    final val = row.cell('lap${lap}_time');
+                    if (val.isNotEmpty) lapParts.add(val);
+                  }
+                  if (lapParts.isNotEmpty) {
+                    dogCol = lapParts.join(' / ');
+                  } else {
+                    dogCol = row.cell('split').isNotEmpty ? row.cell('split') : '—';
+                  }
+                } else {
+                  dogCol = row.cell('dog').isNotEmpty ? row.cell('dog') : '—';
+                }
+
                 return AppProtocolRow(
                   isCardView: isCard,
-                  place: r.place > 0 ? r.place : null,
-                  placeText: r.placeText,
-                  bib: r.bib,
-                  name: r.name,
-                  cat: r.category,
-                  dog: _showSplits ? r.splitDisplay : r.dogName,
-                  time: r.timeDisplay,
-                  delta: ds.showGapToLeader ? r.deltaDisplay : (ds.showGapToPrev ? r.deltaDisplay : ''),
-                  penalty: r.penaltyDisplay,
+                  place: row.rawCell('place') is int ? row.rawCell('place') as int : null,
+                  placeText: row.rawCell('place') is! int ? row.cell('place') : null,
+                  bib: row.cell('bib'),
+                  name: row.cell('name'),
+                  cat: row.cell('category'),
+                  dog: dogCol,
+                  time: row.cell('result_time'),
+                  delta: row.cell('gap_leader').isNotEmpty
+                      ? row.cell('gap_leader')
+                      : (row.cell('gap_prev').isNotEmpty ? row.cell('gap_prev') : ''),
+                  penalty: row.cell('penalty'),
                 );
               },
             ),
@@ -267,118 +272,6 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   }
 
   // ═══════════════════════════════════════
-  // Build result rows from Timing Engine
-  // ═══════════════════════════════════════
-
-  List<_ResultRow> _buildResultRows(RaceSessionState session) {
-    final athletes = session.startList.all;
-    if (athletes.isEmpty) return [];
-
-    final rows = <_ResultRow>[];
-    Duration? leaderTime;
-
-    // Separate: finished athletes (sorted by net time) + on track + DNF/DNS
-    final finished = <_ResultRow>[];
-    final onTrack = <_ResultRow>[];
-    final waitingRows = <_ResultRow>[]; // ожидают старта
-    final statusRows = <_ResultRow>[]; // DNF, DNS
-
-    for (final a in athletes) {
-      final bibMarks = session.marking.officialMarksForBib(a.bib);
-      final finishMarks = bibMarks.where((m) => m.type == MarkType.finish).toList();
-      final hasFinish = finishMarks.length >= session.config.laps;
-
-      // Use engine for proper per-lap calculations
-      final allOfficialMarks = session.marking.officialMarks;
-      final laps = _elapsedCalc.lapTimes(a.bib, allOfficialMarks, a);
-      final splits = _elapsedCalc.splitTimes(a.bib, allOfficialMarks, a);
-
-      // Build split display: per-lap times (not cumulative)
-      final splitParts = <String>[];
-      if (session.config.laps > 1) {
-        // Multi-lap: show L1: time / L2: time
-        for (var i = 0; i < laps.length; i++) {
-          splitParts.add('L${i + 1}: ${TimeFormatter.compact(laps[i])}');
-        }
-      } else {
-        // Single-lap: show checkpoint splits (cumulative from start)
-        for (var i = 0; i < splits.length; i++) {
-          splitParts.add(TimeFormatter.compact(splits[i]));
-        }
-      }
-      final splitDisplay = splitParts.isEmpty ? '—' : splitParts.join(' / ');
-
-      if (a.status == AthleteStatus.dns) {
-        statusRows.add(_ResultRow(
-          place: -1, placeText: 'DNS', bib: a.bib, name: a.name,
-          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
-          timeDisplay: 'DNS', deltaDisplay: '', penaltyDisplay: '—',
-        ));
-      } else if (a.status == AthleteStatus.dsq) {
-        statusRows.add(_ResultRow(
-          place: -1, placeText: 'DSQ', bib: a.bib, name: a.name,
-          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
-          timeDisplay: 'DSQ', deltaDisplay: '', penaltyDisplay: '—',
-        ));
-      } else if (a.status == AthleteStatus.dnf) {
-        statusRows.add(_ResultRow(
-          place: -1, placeText: 'DNF', bib: a.bib, name: a.name,
-          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
-          timeDisplay: 'DNF', deltaDisplay: '', penaltyDisplay: '—',
-        ));
-      } else if (a.status == AthleteStatus.finished || hasFinish) {
-        final netTime = _elapsedCalc.netTime(a, finishMarks.last.correctedTime);
-        finished.add(_ResultRow(
-          place: 0, placeText: null, bib: a.bib, name: a.name,
-          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
-          timeDisplay: TimeFormatter.full(netTime), deltaDisplay: '',
-          penaltyDisplay: '—', netTime: netTime,
-        ));
-      } else if (a.status == AthleteStatus.started) {
-        // Реально стартовал — на трассе
-        final completedLaps = finishMarks.length;
-        final lapDisplay = session.config.laps > 1
-            ? 'Круг ${completedLaps + 1}/${session.config.laps}'
-            : 'на трассе';
-        onTrack.add(_ResultRow(
-          place: 0, placeText: 'LIVE', bib: a.bib, name: a.name,
-          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: splitDisplay,
-          timeDisplay: lapDisplay, deltaDisplay: '', penaltyDisplay: '—',
-        ));
-      } else {
-        // waiting / current — ещё НЕ стартовал
-        waitingRows.add(_ResultRow(
-          place: -1, placeText: '—', bib: a.bib, name: a.name,
-          category: 'M', dogName: a.categoryName ?? '—', splitDisplay: '—',
-          timeDisplay: 'ожидает', deltaDisplay: '', penaltyDisplay: '—',
-        ));
-      }
-    }
-
-    // Sort finished by net time
-    finished.sort((a, b) => (a.netTime ?? Duration.zero).compareTo(b.netTime ?? Duration.zero));
-
-    // Assign places and deltas
-    for (int i = 0; i < finished.length; i++) {
-      final r = finished[i];
-      leaderTime ??= r.netTime;
-      final delta = i == 0
-          ? '—'
-          : '+${TimeFormatter.compact(r.netTime! - leaderTime!)}';
-      rows.add(r.copyWith(place: i + 1, deltaDisplay: delta));
-    }
-
-    // Add on-track athletes
-    rows.addAll(onTrack);
-    // Add waiting athletes
-    rows.addAll(waitingRows);
-    // Add DNF/DNS
-    rows.addAll(statusRows);
-
-    return rows;
-  }
-
-  // ═══════════════════════════════════════
   // UI Widgets
   // ═══════════════════════════════════════
 
@@ -394,56 +287,6 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
         const SizedBox(width: 3),
         Text(label, style: TextStyle(fontSize: 9, color: color)),
       ]),
-    );
-  }
-
-  // _chip removed — discipline chips now generated from Config Engine provider
-}
-
-// ═══════════════════════════════════════
-// Data model for result rows
-// ═══════════════════════════════════════
-
-class _ResultRow {
-  final int place;
-  final String? placeText;
-  final String bib;
-  final String name;
-  final String category;
-  final String dogName;
-  final String splitDisplay;
-  final String timeDisplay;
-  final String deltaDisplay;
-  final String penaltyDisplay;
-  final Duration? netTime;
-
-  const _ResultRow({
-    required this.place,
-    this.placeText,
-    required this.bib,
-    required this.name,
-    required this.category,
-    required this.dogName,
-    required this.splitDisplay,
-    required this.timeDisplay,
-    required this.deltaDisplay,
-    required this.penaltyDisplay,
-    this.netTime,
-  });
-
-  _ResultRow copyWith({int? place, String? deltaDisplay}) {
-    return _ResultRow(
-      place: place ?? this.place,
-      placeText: placeText,
-      bib: bib,
-      name: name,
-      category: category,
-      dogName: dogName,
-      splitDisplay: splitDisplay,
-      timeDisplay: timeDisplay,
-      deltaDisplay: deltaDisplay ?? this.deltaDisplay,
-      penaltyDisplay: penaltyDisplay,
-      netTime: netTime,
     );
   }
 }
