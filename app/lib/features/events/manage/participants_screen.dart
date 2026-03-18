@@ -26,6 +26,10 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
   String? _selectedDisciplineId; // null = «Все»
   bool _showCards = false;
 
+  // ── Multi-select state ──
+  bool _selectMode = false;
+  final Set<String> _selected = {};
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -43,28 +47,48 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
 
     return Scaffold(
       appBar: AppAppBar(
-        title: Text(widget.isOrganizer ? 'Участники ($total)' : 'Список участников ($total)'),
+        title: Text(_selectMode
+            ? 'Выбрано: ${_selected.length}'
+            : widget.isOrganizer ? 'Участники ($total)' : 'Список участников ($total)'),
+        leading: _selectMode
+            ? IconButton(icon: const Icon(Icons.close), onPressed: _exitSelectMode)
+            : null,
         actions: [
-          // Card/Table toggle
-          IconButton(
-            icon: Icon(_showCards ? Icons.table_rows : Icons.view_agenda, size: 20),
-            tooltip: _showCards ? 'Таблица' : 'Карточки',
-            onPressed: () => setState(() => _showCards = !_showCards),
-          ),
-          if (widget.isOrganizer) ...[
-            IconButton(icon: const Icon(Icons.upload_file, size: 20), tooltip: 'Из Excel', onPressed: () => context.push('/manage/$eventId/import')),
-            IconButton(icon: const Icon(Icons.person_add, size: 20), tooltip: 'Добавить', onPressed: () => _showAddParticipant(context)),
+          if (_selectMode) ...[
+            IconButton(
+              icon: Icon(_selected.length == allParticipants.length ? Icons.deselect : Icons.select_all, size: 20),
+              tooltip: _selected.length == allParticipants.length ? 'Снять всё' : 'Выбрать всех',
+              onPressed: () => setState(() {
+                if (_selected.length == allParticipants.length) {
+                  _selected.clear();
+                } else {
+                  _selected.addAll(allParticipants.map((p) => p.id));
+                }
+              }),
+            ),
+          ] else ...[
+            // Card/Table toggle
+            IconButton(
+              icon: Icon(_showCards ? Icons.table_rows : Icons.view_agenda, size: 20),
+              tooltip: _showCards ? 'Таблица' : 'Карточки',
+              onPressed: () => setState(() => _showCards = !_showCards),
+            ),
+            if (widget.isOrganizer) ...[
+              IconButton(icon: const Icon(Icons.upload_file, size: 20), tooltip: 'Из Excel', onPressed: () => context.push('/manage/$eventId/import')),
+              IconButton(icon: const Icon(Icons.person_add, size: 20), tooltip: 'Добавить', onPressed: () => _showAddParticipant(context)),
+            ],
           ],
         ],
       ),
       body: Column(children: [
         // ── Discipline filter chips ──
-        _DisciplineChips(
-          disciplines: disciplines,
-          selectedId: _selectedDisciplineId,
-          totalCount: total,
-          onSelected: (id) => setState(() => _selectedDisciplineId = id),
-        ),
+        if (!_selectMode)
+          _DisciplineChips(
+            disciplines: disciplines,
+            selectedId: _selectedDisciplineId,
+            totalCount: total,
+            onSelected: (id) => setState(() => _selectedDisciplineId = id),
+          ),
 
         // ── Search ──
         Padding(
@@ -88,6 +112,11 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
               : _buildStackedTables(filtered, disciplines, cs, theme),
         ),
       ]),
+
+      // ── Bottom Action Bar (select mode) ──
+      bottomNavigationBar: _selectMode && _selected.isNotEmpty
+          ? _buildBulkActionBar(context, cs)
+          : null,
     );
   }
 
@@ -196,6 +225,17 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
           showCards: _showCards,
           onRowTap: (row) {
             if (row.entryId.startsWith('cat-')) return;
+            if (_selectMode) {
+              setState(() {
+                if (_selected.contains(row.entryId)) {
+                  _selected.remove(row.entryId);
+                  if (_selected.isEmpty) _selectMode = false;
+                } else {
+                  _selected.add(row.entryId);
+                }
+              });
+              return;
+            }
             final p = participants.firstWhere(
               (p) => p.id == row.entryId,
               orElse: () => participants.first,
@@ -204,6 +244,14 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
               _showParticipantActions(context, p);
             }
           },
+          onRowLongPress: widget.isOrganizer ? (row) {
+            if (row.entryId.startsWith('cat-')) return;
+            setState(() {
+              _selectMode = true;
+              _selected.add(row.entryId);
+            });
+          } : null,
+          selectedRowIds: _selectMode ? _selected : null,
         ),
 
         const SizedBox(height: 12),
@@ -535,6 +583,166 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         Expanded(child: TextField(controller: clubCtrl, decoration: const InputDecoration(labelText: 'Клуб', border: OutlineInputBorder()))),
       ]),
     ])));
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Multi-select helpers
+  // ═══════════════════════════════════════════════════════════════
+
+  void _exitSelectMode() => setState(() {
+    _selectMode = false;
+    _selected.clear();
+  });
+
+  Widget _buildBulkActionBar(BuildContext context, ColorScheme cs) {
+    final n = _selected.length;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+      decoration: BoxDecoration(
+        color: cs.surfaceContainerHighest,
+        border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
+      ),
+      child: SafeArea(
+        child: Row(children: [
+          Text('$n чел.', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onSurface)),
+          const SizedBox(width: 12),
+          Expanded(child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(children: [
+              _bulkChip(cs, Icons.wc, 'Пол', () => _showBulkGender(context)),
+              const SizedBox(width: 8),
+              _bulkChip(cs, Icons.payment, 'Оплата', () => _showBulkPayment(context)),
+              const SizedBox(width: 8),
+              _bulkChip(cs, Icons.verified_user, 'Заявка', () => _showBulkApplication(context)),
+              const SizedBox(width: 8),
+              _bulkChip(cs, Icons.delete_outline, 'Удалить', () => _showBulkDelete(context), isDestructive: true),
+            ]),
+          )),
+        ]),
+      ),
+    );
+  }
+
+  Widget _bulkChip(ColorScheme cs, IconData icon, String label, VoidCallback onTap, {bool isDestructive = false}) {
+    final color = isDestructive ? cs.error : cs.primary;
+    return ActionChip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
+      onPressed: onTap,
+      side: BorderSide(color: color.withValues(alpha: 0.3)),
+      backgroundColor: color.withValues(alpha: 0.08),
+    );
+  }
+
+  // ─── Bulk: Gender ───
+  void _showBulkGender(BuildContext context) {
+    AppBottomSheet.show(context, title: 'Установить пол (${_selected.length} чел.)', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      ListTile(
+        leading: const Icon(Icons.male, color: Colors.blue),
+        title: const Text('Мужской'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(gender: 'male'));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Пол → Мужской (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.female, color: Colors.pink),
+        title: const Text('Женский'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(gender: 'female'));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Пол → Женский (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+    ]));
+  }
+
+  // ─── Bulk: Payment ───
+  void _showBulkPayment(BuildContext context) {
+    AppBottomSheet.show(context, title: 'Оплата (${_selected.length} чел.)', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      ListTile(
+        leading: const Icon(Icons.check_circle, color: Colors.green),
+        title: const Text('Отметить оплаченными'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(paymentStatus: PaymentStatus.paid));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Оплата ✓ (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+      ListTile(
+        leading: Icon(Icons.cancel, color: Colors.orange.shade700),
+        title: const Text('Отметить неоплаченными'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(paymentStatus: PaymentStatus.unpaid));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Оплата ✗ (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+    ]));
+  }
+
+  // ─── Bulk: Application status ───
+  void _showBulkApplication(BuildContext context) {
+    AppBottomSheet.show(context, title: 'Заявка (${_selected.length} чел.)', child: Column(mainAxisSize: MainAxisSize.min, children: [
+      ListTile(
+        leading: const Icon(Icons.check_circle, color: Colors.green),
+        title: const Text('Подтвердить'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(applicationStatus: ApplicationStatus.approved));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Заявки подтверждены (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.hourglass_empty, color: Colors.orange),
+        title: const Text('На рассмотрении'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(applicationStatus: ApplicationStatus.pending));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Заявки → На рассмотрении (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+      ListTile(
+        leading: const Icon(Icons.block, color: Colors.red),
+        title: const Text('Отклонить'),
+        onTap: () {
+          ref.read(participantsProvider.notifier).bulkUpdate(_selected, (p) => p.copyWith(applicationStatus: ApplicationStatus.rejected));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, 'Заявки отклонены (${_selected.length} чел.)');
+          _exitSelectMode();
+        },
+      ),
+    ]));
+  }
+
+  // ─── Bulk: Delete ───
+  void _showBulkDelete(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Удалить участников?'),
+      content: Text('Будет удалено ${_selected.length} участников. Это действие необратимо.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: cs.error),
+          onPressed: () {
+            final count = _selected.length;
+            ref.read(participantsProvider.notifier).bulkRemove(_selected);
+            Navigator.pop(ctx);
+            AppSnackBar.success(context, 'Удалено $count участников');
+            _exitSelectMode();
+          },
+          child: const Text('Удалить'),
+        ),
+      ],
+    ));
   }
 
   Widget _buildEmptyState(ColorScheme cs) {

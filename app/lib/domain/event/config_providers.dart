@@ -224,6 +224,16 @@ class ParticipantsNotifier extends Notifier<List<Participant>> {
     update(id, (p) => p.copyWith(vetStatus: status));
   }
 
+  /// Массовое обновление нескольких участников.
+  void bulkUpdate(Set<String> ids, Participant Function(Participant) updater) {
+    state = state.map((p) => ids.contains(p.id) ? updater(p) : p).toList();
+  }
+
+  /// Массовое удаление.
+  void bulkRemove(Set<String> ids) {
+    state = state.where((p) => !ids.contains(p.id)).toList();
+  }
+
   /// Переключить чек-ин (прибытие).
   void toggleCheckIn(String id) {
     final p = state.firstWhere((p) => p.id == id);

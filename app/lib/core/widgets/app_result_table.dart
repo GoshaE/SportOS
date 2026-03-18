@@ -27,6 +27,10 @@ import 'package:sportos_app/domain/timing/result_table.dart';
 class AppResultTable extends StatelessWidget {
   final ResultTable table;
   final void Function(ResultRow row)? onRowTap;
+  final void Function(ResultRow row)? onRowLongPress;
+
+  /// IDs of selected rows (for multi-select highlight).
+  final Set<String>? selectedRowIds;
 
   /// Show card mode instead of table mode.
   final bool showCards;
@@ -35,6 +39,8 @@ class AppResultTable extends StatelessWidget {
     super.key,
     required this.table,
     this.onRowTap,
+    this.onRowLongPress,
+    this.selectedRowIds,
     this.showCards = false,
   });
 
@@ -77,7 +83,10 @@ class AppResultTable extends StatelessWidget {
           columns: table.columns,
           row: table.rows[i],
           index: i,
+          isSelected: selectedRowIds?.contains(table.rows[i].entryId) ?? false,
+          showCheckbox: selectedRowIds != null,
           onTap: onRowTap != null ? () => onRowTap!(table.rows[i]) : null,
+          onLongPress: onRowLongPress != null ? () => onRowLongPress!(table.rows[i]) : null,
         ),
       );
 
@@ -150,9 +159,17 @@ class AppResultTable extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 4),
         itemBuilder: (ctx, i) {
           final row = table.rows[i];
+          final isSelected = selectedRowIds?.contains(row.entryId) ?? false;
           return GestureDetector(
             onTap: onRowTap != null ? () => onRowTap!(row) : null,
-            child: _CardRow(columns: table.columns, row: row, theme: theme, cs: cs),
+            onLongPress: onRowLongPress != null ? () => onRowLongPress!(row) : null,
+            child: Container(
+              decoration: isSelected ? BoxDecoration(
+                border: Border.all(color: cs.primary, width: 2),
+                borderRadius: BorderRadius.circular(14),
+              ) : null,
+              child: _CardRow(columns: table.columns, row: row, theme: theme, cs: cs),
+            ),
           );
         },
       );
@@ -205,13 +222,19 @@ class _TableRow extends StatelessWidget {
   final List<ColumnDef> columns;
   final ResultRow row;
   final int index;
+  final bool isSelected;
+  final bool showCheckbox;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const _TableRow({
     required this.columns,
     required this.row,
     required this.index,
+    this.isSelected = false,
+    this.showCheckbox = false,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -220,29 +243,41 @@ class _TableRow extends StatelessWidget {
     final cs = theme.colorScheme;
 
     // Zebra
-    final bgColor = index.isEven
-        ? Colors.transparent
-        : cs.surfaceContainerLowest.withValues(alpha: 0.4);
+    final bgColor = isSelected
+        ? cs.primaryContainer.withValues(alpha: 0.25)
+        : index.isEven
+            ? Colors.transparent
+            : cs.surfaceContainerLowest.withValues(alpha: 0.4);
 
-    final rowTint = _rowTint(row.type, cs);
+    final rowTint = isSelected ? null : _rowTint(row.type, cs);
 
     Widget content = Container(
       constraints: const BoxConstraints(minHeight: 44),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       color: rowTint ?? bgColor,
       child: Row(
-        children: columns.map((col) {
-          final cell = row.cells[col.id] ?? CellValue.empty;
-          return Expanded(
-            flex: (col.flex * 10).round(),
-            child: _CellWidget(col: col, cell: cell),
-          );
-        }).toList(),
+        children: [
+          if (showCheckbox) ...[
+            Icon(
+              isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
+              size: 20,
+              color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
+            ),
+            const SizedBox(width: 8),
+          ],
+          ...columns.map((col) {
+            final cell = row.cells[col.id] ?? CellValue.empty;
+            return Expanded(
+              flex: (col.flex * 10).round(),
+              child: _CellWidget(col: col, cell: cell),
+            );
+          }),
+        ],
       ),
     );
 
-    if (onTap != null) {
-      return InkWell(onTap: onTap, child: content);
+    if (onTap != null || onLongPress != null) {
+      return InkWell(onTap: onTap, onLongPress: onLongPress, child: content);
     }
     return content;
   }
