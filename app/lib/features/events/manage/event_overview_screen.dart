@@ -32,7 +32,7 @@ class EventOverviewScreen extends ConsumerWidget {
               context.go('/my');
             }
           },
-          title: const Text('Чемпионат Урала 2026'),
+          title: Text(ref.watch(eventConfigProvider).name),
           actions: [
             IconButton(icon: const Icon(Icons.share), onPressed: () {}),
           ],
@@ -57,6 +57,16 @@ class EventOverviewScreen extends ConsumerWidget {
   // ===========================================================================
   Widget _buildDashboardTab(BuildContext context, ColorScheme cs, bool isDark, String eventId, ThemeData theme, WidgetRef ref) {
     final eventConfig = ref.watch(eventConfigProvider);
+    final participants = ref.watch(participantsProvider);
+    final totalParticipants = participants.length;
+    final daysUntilStart = eventConfig.startDate.difference(DateTime.now()).inDays;
+    final daysLabel = daysUntilStart > 0 ? '$daysUntilStart дн.' : daysUntilStart == 0 ? 'Сегодня' : 'Прошло';
+    final paidParticipants = participants.where((p) => p.paymentStatus == PaymentStatus.paid).toList();
+    final revenue = paidParticipants.fold<int>(0, (sum, p) => sum + (p.priceRub ?? 0));
+    final revenueStr = revenue >= 1000 ? '${(revenue / 1000).toStringAsFixed(1)}К' : '$revenue';
+    final bibAssigned = participants.where((p) => p.bib.isNotEmpty).length;
+    final vetPassed = participants.where((p) => p.vetStatus == VetStatus.passed).length;
+    final mandatePassed = participants.where((p) => p.mandateStatus == MandateStatus.passed).length;
     
     return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -91,7 +101,7 @@ class EventOverviewScreen extends ConsumerWidget {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Регистрация открыта',
+                            eventConfig.status == EventStatus.registrationOpen ? 'Регистрация открыта' : 'Участники',
                             style: TextStyle(color: cs.onPrimary, fontWeight: FontWeight.bold, fontSize: 13),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -105,9 +115,9 @@ class EventOverviewScreen extends ConsumerWidget {
                         FittedBox(
                           fit: BoxFit.scaleDown,
                           alignment: Alignment.centerLeft,
-                          child: Text('48 / 60', style: TextStyle(color: cs.onPrimary, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1)),
+                          child: Text('$totalParticipants', style: TextStyle(color: cs.onPrimary, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1)),
                         ),
-                        Text('Участников (12 мест)', style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.8), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                        Text('Участников', style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.8), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                       ],
                     ),
                   ],
@@ -128,7 +138,7 @@ class EventOverviewScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('5 дней', style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(daysLabel, style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
                         Text('До старта', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
                       ],
                     ),
@@ -142,7 +152,7 @@ class EventOverviewScreen extends ConsumerWidget {
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text('157.5К', style: TextStyle(color: cs.tertiary, fontSize: 18, fontWeight: FontWeight.bold)),
+                        Text(revenueStr, style: TextStyle(color: cs.tertiary, fontSize: 18, fontWeight: FontWeight.bold)),
                         Text('Собрано ₽', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
                       ],
                     ),
@@ -180,11 +190,11 @@ class EventOverviewScreen extends ConsumerWidget {
           padding: EdgeInsets.zero,
           child: Column(
             children: [
-              _buildChecklistItem(cs, 'Жеребьёвка', 'Утверждена', true, () => context.push('/manage/$eventId/draw')),
-              _buildChecklistItem(cs, 'Стартовый лист', 'Опубликован', true, () => context.push('/manage/$eventId/startlist')),
-              _buildChecklistItem(cs, 'BIB номера', '7 из 8 назначено', false, () => context.push('/manage/$eventId/bibs')),
-              _buildChecklistItem(cs, 'Ветконтроль', '35 из 48 прошли', false, () => context.push('/manage/$eventId/vetcheck')),
-              _buildChecklistItem(cs, 'Мандатная комиссия', '30 допущено', false, () => context.push('/manage/$eventId/mandate')),
+              _buildChecklistItem(cs, 'Жеребьёвка', 'Настроена', true, () => context.push('/manage/$eventId/draw')),
+              _buildChecklistItem(cs, 'Стартовый лист', 'Настроен', true, () => context.push('/manage/$eventId/startlist')),
+              _buildChecklistItem(cs, 'BIB номера', '$bibAssigned из $totalParticipants назначено', bibAssigned == totalParticipants && totalParticipants > 0, () => context.push('/manage/$eventId/bibs')),
+              _buildChecklistItem(cs, 'Ветконтроль', '$vetPassed из $totalParticipants прошли', vetPassed == totalParticipants && totalParticipants > 0, () => context.push('/manage/$eventId/vetcheck')),
+              _buildChecklistItem(cs, 'Мандатная комиссия', '$mandatePassed из $totalParticipants допущено', mandatePassed == totalParticipants && totalParticipants > 0, () => context.push('/manage/$eventId/mandate')),
             ],
           ),
         ),
