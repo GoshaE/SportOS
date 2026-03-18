@@ -201,7 +201,9 @@ class PreStartChecklistScreen extends ConsumerWidget {
           )),
         ]),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: 'Добавить',
+          icon: Icons.add,
           onPressed: () {
             if (titleCtrl.text.trim().isEmpty) {
               AppSnackBar.error(ctx, 'Введите название');
@@ -220,9 +222,7 @@ class PreStartChecklistScreen extends ConsumerWidget {
             );
             Navigator.pop(ctx);
           },
-          icon: const Icon(Icons.add),
-          label: const Text('Добавить'),
-        )),
+        ),
       ]),
     ));
   }
