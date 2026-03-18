@@ -1,23 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
+import '../../domain/event/config_providers.dart';
+import '../../domain/event/event_config.dart' hide TimeOfDay;
+import '../../domain/timing/models.dart';
 
-/// Screen ID: H2 — Детали мероприятия (для участника)
-class EventDetailScreen extends StatelessWidget {
+/// Screen ID: H2 — Детали мероприятия
+///
+/// Data-driven: читает из eventConfigProvider.
+/// Кнопки управления и судейства доступны всем (пока без ролей).
+class EventDetailScreen extends ConsumerWidget {
   final String? eventId;
   const EventDetailScreen({super.key, this.eventId});
 
-  // Simulate registration state: true = registered, false = not
-  bool get _isRegistered => true;
-  // Simulate event state: 'upcoming', 'live', 'finished'
-  String get _eventState => 'upcoming';
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final resolvedEventId = eventId ?? _tryGetRouterEventId(context);
     final extra = _tryGetRouterExtra(context);
     final heroTag = extra?['heroTag'] as String?;
-    final imageUrl = extra?['imageUrl'] as String? ?? 'assets/images/event1.jpeg';
+
+    final config = ref.watch(eventConfigProvider);
+    final disciplines = ref.watch(eventConfigProvider.notifier).disciplines;
+    final imageUrl = config.logoUrl ?? 'assets/images/event1.jpeg';
 
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
@@ -28,7 +33,7 @@ class EventDetailScreen extends StatelessWidget {
           CustomScrollView(
             slivers: [
               // ═══════════════════════════════════════
-              // HERO BANNER (тёмный gradient для читаемости)
+              // HERO BANNER
               // ═══════════════════════════════════════
               SliverAppBar(
                 expandedHeight: 220,
@@ -45,11 +50,10 @@ class EventDetailScreen extends StatelessWidget {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      // Backdrop / Image
-                      heroTag != null 
+                      heroTag != null
                         ? Hero(tag: heroTag, child: AppCachedImage(url: imageUrl, fit: BoxFit.cover))
                         : AppCachedImage(url: imageUrl, fit: BoxFit.cover),
-                      // Premium Dark Gradient overlay for text readability
+                      // Gradient overlay
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -73,46 +77,42 @@ class EventDetailScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.end,
                             children: [
                               StatusBadge(
-                                text: _eventState == 'finished' ? 'Завершено' : _eventState == 'live' ? 'LIVE' : 'Регистрация открыта',
-                                type: _eventState == 'finished' ? BadgeType.neutral : _eventState == 'live' ? BadgeType.error : BadgeType.success,
+                                text: _statusLabel(config.status),
+                                type: _badgeType(config.status),
                               ),
                               const SizedBox(height: 8),
-                              Text('Чемпионат Урала 2026', style: theme.textTheme.headlineSmall?.copyWith(
+                              Text(config.name, style: theme.textTheme.headlineSmall?.copyWith(
                                 color: Colors.white, fontWeight: FontWeight.bold,
                               )),
                               const SizedBox(height: 4),
                               Row(children: [
                                 Icon(Icons.calendar_today, size: 14, color: Colors.white.withValues(alpha: 0.7)),
                                 const SizedBox(width: 4),
-                                Text('15 марта 2026', style: theme.textTheme.bodyMedium?.copyWith(
+                                Text(_fmtDate(config.startDate), style: theme.textTheme.bodyMedium?.copyWith(
                                   color: Colors.white.withValues(alpha: 0.85),
                                 )),
-                                const SizedBox(width: 12),
-                                Icon(Icons.location_on, size: 14, color: Colors.white.withValues(alpha: 0.7)),
-                                const SizedBox(width: 4),
-                                Text('Екатеринбург', style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                )),
+                                if (config.location != null) ...[
+                                  const SizedBox(width: 12),
+                                  Icon(Icons.location_on, size: 14, color: Colors.white.withValues(alpha: 0.7)),
+                                  const SizedBox(width: 4),
+                                  Flexible(child: Text(config.location!, style: theme.textTheme.bodyMedium?.copyWith(
+                                    color: Colors.white.withValues(alpha: 0.85),
+                                  ), overflow: TextOverflow.ellipsis)),
+                                ],
                               ]),
-                              const SizedBox(height: 8),
-                              // Участники progress
-                              Row(children: [
-                                Icon(Icons.groups, size: 16, color: Colors.white.withValues(alpha: 0.8)),
-                                const SizedBox(width: 6),
-                                Text('48 / 60 мест', style: theme.textTheme.bodySmall?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.85),
-                                )),
-                                const SizedBox(width: 12),
-                                Expanded(child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(4),
-                                  child: LinearProgressIndicator(
-                                    value: 48 / 60,
-                                    minHeight: 4,
-                                    backgroundColor: Colors.white.withValues(alpha: 0.2),
-                                    valueColor: AlwaysStoppedAnimation(Colors.white.withValues(alpha: 0.9)),
-                                  ),
-                                )),
-                              ]),
+                              if (disciplines.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Row(children: [
+                                  Icon(Icons.sports, size: 16, color: Colors.white.withValues(alpha: 0.8)),
+                                  const SizedBox(width: 6),
+                                  Flexible(child: Text(
+                                    '${disciplines.length} ${_discWord(disciplines.length)}',
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      color: Colors.white.withValues(alpha: 0.85),
+                                    ),
+                                  )),
+                                ]),
+                              ],
                             ],
                           ),
                         ),
@@ -123,216 +123,229 @@ class EventDetailScreen extends StatelessWidget {
               ),
 
               // ═══════════════════════════════════════
-              // CONTENT (порядок: важное сверху)
+              // CONTENT
               // ═══════════════════════════════════════
               SliverPadding(
-                // Increased bottom padding to accommodate floating action bar
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                 sliver: SliverList(delegate: SliverChildListDelegate([
 
-                  // 1️⃣ Быстрые действия (Управление, Результаты, Протоколы)
+                  // 1️⃣ Action chips
                   Wrap(
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      ActionChip(
-                        avatar: Icon(Icons.settings, size: 16, color: theme.colorScheme.primary),
-                        label: Text('Управлять', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: theme.colorScheme.primary)),
-                        backgroundColor: theme.colorScheme.primaryContainer.withValues(alpha: 0.3),
-                        side: BorderSide(color: theme.colorScheme.primaryContainer),
-                        shape: const StadiumBorder(),
-                        onPressed: () => context.push('/manage/$resolvedEventId'),
-                      ),
-                      ActionChip(
-                        avatar: Icon(Icons.leaderboard, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                        label: Text('Результаты', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: theme.colorScheme.onSurfaceVariant)),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        side: BorderSide.none,
-                        shape: const StadiumBorder(),
-                        onPressed: () => context.push('/results/$resolvedEventId/live'),
-                      ),
-                      ActionChip(
-                        avatar: Icon(Icons.article, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                        label: Text('Протоколы', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: theme.colorScheme.onSurfaceVariant)),
-                        backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                        side: BorderSide.none,
-                        shape: const StadiumBorder(),
-                        onPressed: () => context.push('/results/$resolvedEventId/protocol'),
-                      ),
-                      ActionChip(
-                        avatar: Icon(Icons.timer, size: 16, color: Colors.deepOrange),
-                        label: Text('Хронометраж', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: Colors.deepOrange)),
-                        backgroundColor: Colors.deepOrange.withValues(alpha: 0.1),
-                        side: BorderSide(color: Colors.deepOrange.withValues(alpha: 0.3)),
-                        shape: const StadiumBorder(),
-                        onPressed: () => context.push('/events/$resolvedEventId/timing'),
-                      ),
-                      ActionChip(
-                        avatar: Icon(Icons.gavel, size: 16, color: theme.colorScheme.error),
-                        label: Text('Судейство', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w700, color: theme.colorScheme.error)),
-                        backgroundColor: theme.colorScheme.errorContainer.withValues(alpha: 0.25),
-                        side: BorderSide(color: theme.colorScheme.error.withValues(alpha: 0.4)),
-                        shape: const StadiumBorder(),
-                        onPressed: () => context.push('/ops/$resolvedEventId/timing'),
-                      ),
+                      _actionChip(context, Icons.settings, 'Управлять', cs.primary,
+                        cs.primaryContainer.withValues(alpha: 0.3), BorderSide(color: cs.primaryContainer),
+                        () => context.push('/manage/$resolvedEventId')),
+                      _actionChip(context, Icons.people, 'Участники', cs.secondary,
+                        cs.secondaryContainer.withValues(alpha: 0.3), BorderSide(color: cs.secondaryContainer),
+                        () => context.push('/hub/event/$resolvedEventId/participants')),
+                      _actionChip(context, Icons.leaderboard, 'Результаты', cs.onSurfaceVariant,
+                        cs.surfaceContainerHighest.withValues(alpha: 0.5), BorderSide.none,
+                        () => context.push('/results/$resolvedEventId/live')),
+                      _actionChip(context, Icons.timer, 'Хронометраж', Colors.deepOrange,
+                        Colors.deepOrange.withValues(alpha: 0.1), BorderSide(color: Colors.deepOrange.withValues(alpha: 0.3)),
+                        () => context.push('/events/$resolvedEventId/timing')),
+                      _actionChip(context, Icons.gavel, 'Судейство', cs.error,
+                        cs.errorContainer.withValues(alpha: 0.25), BorderSide(color: cs.error.withValues(alpha: 0.4)),
+                        () => context.push('/ops/$resolvedEventId/timing')),
                     ],
                   ),
                   const SizedBox(height: 16),
 
-                  // 2️⃣ Результаты Top-3 (если live/finished)
-                  if (_eventState == 'live' || _eventState == 'finished') ...[
-                    _ResultsPreview(eventId: resolvedEventId, isLive: _eventState == 'live'),
+                  // 2️⃣ Дисциплины (из провайдера)
+                  if (disciplines.isNotEmpty) ...[
+                    _DisciplineSection(disciplines: disciplines),
                     const SizedBox(height: 12),
                   ],
 
-                  // 3️⃣ Дисциплины (collapsible)
-                  const SizedBox(height: 8),
-                  _DisciplineSection(),
-                  const SizedBox(height: 12),
+                  // 3️⃣ Расписание (из days + firstStartTime)
+                  if (config.days.isNotEmpty || disciplines.isNotEmpty) ...[
+                    AppSectionHeader(title: 'Расписание', icon: Icons.schedule),
+                    AppCard(
+                      padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
+                      children: _buildSchedule(config, disciplines),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
 
-                  // 4️⃣ Информация (Interactive Bento Grid)
-                  // 4️⃣ Расписание
-                  AppSectionHeader(title: 'Расписание', icon: Icons.schedule),
-                  AppCard(
-                    padding: const EdgeInsets.fromLTRB(16, 24, 16, 0),
-                    children: const [
-                      AppTimelineRow(
-                        time: '09:00',
-                        title: 'Открытие выдачи стартовых пакетов',
-                        subtitle: 'Палатка секретариата',
-                        isPast: true,
-                        isFirst: true,
-                      ),
-                      AppTimelineRow(
-                        time: '10:30',
-                        title: 'Брифинг для участников',
-                        subtitle: 'Обязательное присутствие',
-                        isCurrent: true,
-                        icon: Icons.campaign,
-                      ),
-                      AppTimelineRow(
-                        time: '11:00',
-                        title: 'Старт первой дистанции',
-                        subtitle: 'Скиджоринг 5км',
-                      ),
-                      AppTimelineRow(
-                        time: '15:00',
-                        title: 'Церемония награждения',
-                        isLast: true,
-                        icon: Icons.emoji_events,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-
-                  // 5️⃣ Информация (Interactive Bento Grid)
+                  // 4️⃣ Информация (Bento Grid)
                   AppSectionHeader(title: 'Информация', icon: Icons.info_outline),
                   Row(children: [
                     _BentoItem(
-                      icon: Icons.location_on, title: 'Место', value: 'Парк «Лесная»', 
-                      onTap: () => _showInfoModal(context, cs, theme, 'Локация', Icons.location_on, 'Свердловская область, г. Екатеринбург\nПарк «Лесная сказка»\nКоординаты GPS: 56.8389° N, 60.6057° E\nПредусмотрена бесплатная парковка.'),
+                      icon: Icons.location_on, title: 'Место',
+                      value: config.location ?? 'Не указано',
+                      onTap: () => _showInfoModal(context, cs, theme, 'Локация', Icons.location_on, config.location ?? 'Место не указано'),
                       cs: cs, theme: theme,
                     ),
                     const SizedBox(width: 8),
                     _BentoItem(
-                      icon: Icons.payments, title: 'Взнос', value: '2 000 ₽', 
-                      onTap: () => _showInfoModal(context, cs, theme, 'Условия участия', Icons.payments, 'Скиджоринг 5км: 2000 ₽\nУпряжки 10км: 3500 ₽\n\nВозврат 100% до 1 марта\nВозврат 50% до 10 марта'),
+                      icon: Icons.payments, title: 'Взнос',
+                      value: _minPrice(disciplines),
+                      onTap: () => _showInfoModal(context, cs, theme, 'Стоимость', Icons.payments,
+                        disciplines.map((d) => '${d.name}: ${d.priceRub != null ? "${d.priceRub} ₽" : "бесплатно"}').join('\n')),
                       cs: cs, theme: theme,
                     ),
-                  ]),
-                  const SizedBox(height: 8),
-                  Row(children: [
-                    _BentoItem(
-                      icon: Icons.pin_drop, title: 'GPS', value: '56.8389° N...', 
-                      onTap: () => _showInfoModal(context, cs, theme, 'Локация', Icons.location_on, 'Свердловская область, г. Екатеринбург\nПарк «Лесная сказка»\nКоординаты GPS: 56.8389° N, 60.6057° E\nПредусмотрена бесплатная парковка.'),
-                      cs: cs, theme: theme,
-                    ),
-                    const SizedBox(width: 8),
-                    // Пустой блок для выравнивания сетки
-                    Expanded(child: const SizedBox()),
                   ]),
                   const SizedBox(height: 12),
 
-                  // 5️⃣ Организатор
-                  AppSectionHeader(title: 'Организатор', icon: Icons.business),
-                  AppCard(
-                    padding: EdgeInsets.zero,
-                    children: [
-                      ListTile(
-                        leading: AppAvatar(name: 'Быстрые лапы', size: 44),
-                        title: Text('Клуб «Быстрые лапы»', style: theme.textTheme.titleSmall),
-                        subtitle: Text('Санкт-Петербург · 25 членов', style: theme.textTheme.bodySmall),
-                        trailing: Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
-                        onTap: () => context.push('/profile/clubs'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
+                  // 5️⃣ Описание (если есть)
+                  if (config.description != null && config.description!.isNotEmpty) ...[
+                    AppSectionHeader(title: 'О мероприятии', icon: Icons.description),
+                    AppCard(
+                      padding: const EdgeInsets.all(16),
+                      children: [
+                        Text(config.description!, style: theme.textTheme.bodyMedium?.copyWith(
+                          color: cs.onSurfaceVariant, height: 1.5,
+                        )),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // 6️⃣ Контакты (если есть)
+                  if (config.contactInfo != null && config.contactInfo!.isNotEmpty) ...[
+                    AppSectionHeader(title: 'Контакты', icon: Icons.phone),
+                    AppCard(
+                      padding: EdgeInsets.zero,
+                      children: [
+                        ListTile(
+                          leading: Icon(Icons.contact_phone, color: cs.primary),
+                          title: Text(config.contactInfo!, style: theme.textTheme.bodyMedium),
+                        ),
+                      ],
+                    ),
+                  ],
 
                 ])),
               ),
             ],
           ),
-          
-          // Floating Action Bar (Glass Pill)
+
+          // Floating Action Bar
           Positioned(
-            left: 16,
-            right: 16,
-            bottom: 24,
+            left: 16, right: 16, bottom: 24,
             child: SafeArea(
-              child: _isRegistered ? _RegisteredCard(cs: cs, theme: theme) : _RegisterCard(eventId: resolvedEventId, cs: cs, theme: theme),
+              child: _RegisterCard(eventId: resolvedEventId, cs: cs, theme: theme, disciplines: disciplines),
             ),
           ),
         ],
       ),
     );
   }
-}
 
-  void _showInfoModal(BuildContext context, ColorScheme cs, ThemeData theme, String title, IconData icon, String content) {
-    AppBottomSheet.show(
-      context,
-      title: title,
-      initialHeight: 0.5,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, color: cs.primary, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  title,
-                  style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Text(
-            content,
-            style: theme.textTheme.bodyLarge?.copyWith(height: 1.5, color: cs.onSurfaceVariant),
-          ),
-          const SizedBox(height: 32),
-          AppButton.primary(
-            text: 'Понятно',
-            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-          ),
-        ],
-      ),
+  Widget _actionChip(BuildContext context, IconData icon, String label, Color color,
+      Color bg, BorderSide side, VoidCallback onPressed) {
+    final theme = Theme.of(context);
+    return ActionChip(
+      avatar: Icon(icon, size: 16, color: color),
+      label: Text(label, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: color)),
+      backgroundColor: bg,
+      side: side,
+      shape: const StadiumBorder(),
+      onPressed: onPressed,
     );
   }
 
+  String _fmtDate(DateTime d) {
+    const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+      'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
+    return '${d.day} ${months[d.month - 1]} ${d.year}';
+  }
+
+  String _statusLabel(EventStatus s) => switch (s) {
+    EventStatus.draft => 'Черновик',
+    EventStatus.registrationOpen => 'Регистрация открыта',
+    EventStatus.registrationClosed => 'Регистрация закрыта',
+    EventStatus.inProgress => 'LIVE',
+    EventStatus.completed => 'Завершено',
+    EventStatus.archived => 'Архив',
+  };
+
+  BadgeType _badgeType(EventStatus s) => switch (s) {
+    EventStatus.draft => BadgeType.neutral,
+    EventStatus.registrationOpen => BadgeType.success,
+    EventStatus.registrationClosed => BadgeType.warning,
+    EventStatus.inProgress => BadgeType.error,
+    EventStatus.completed => BadgeType.neutral,
+    EventStatus.archived => BadgeType.neutral,
+  };
+
+  String _discWord(int n) {
+    if (n == 1) return 'дисциплина';
+    if (n >= 2 && n <= 4) return 'дисциплины';
+    return 'дисциплин';
+  }
+
+  String _minPrice(List<DisciplineConfig> disciplines) {
+    final prices = disciplines.where((d) => d.priceRub != null).map((d) => d.priceRub!).toList();
+    if (prices.isEmpty) return 'Бесплатно';
+    prices.sort();
+    return 'от ${prices.first} ₽';
+  }
+
+  List<Widget> _buildSchedule(EventConfig config, List<DisciplineConfig> disciplines) {
+    final items = <Widget>[];
+    // Generate schedule from disciplines' firstStartTime
+    final sorted = [...disciplines]..sort((a, b) => a.firstStartTime.compareTo(b.firstStartTime));
+    for (var i = 0; i < sorted.length; i++) {
+      final d = sorted[i];
+      final time = '${d.firstStartTime.hour.toString().padLeft(2, '0')}:${d.firstStartTime.minute.toString().padLeft(2, '0')}';
+      items.add(AppTimelineRow(
+        time: time,
+        title: 'Старт: ${d.name}',
+        subtitle: '${d.startType.name} · ${d.distanceKm} км',
+        isFirst: i == 0,
+        isLast: i == sorted.length - 1,
+        icon: _discIcon(d.startType),
+      ));
+    }
+    if (items.isEmpty) {
+      items.add(const Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Расписание пока не настроено'),
+      ));
+    }
+    return items;
+  }
+
+  IconData _discIcon(StartType t) => switch (t) {
+    StartType.individual => Icons.person,
+    StartType.mass => Icons.groups,
+    StartType.wave => Icons.waves,
+    StartType.pursuit => Icons.speed,
+    StartType.relay => Icons.people,
+  };
+}
+
+void _showInfoModal(BuildContext context, ColorScheme cs, ThemeData theme, String title, IconData icon, String content) {
+  AppBottomSheet.show(
+    context,
+    title: title,
+    initialHeight: 0.5,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: cs.primaryContainer, shape: BoxShape.circle),
+            child: Icon(icon, color: cs.primary, size: 28),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Text(title, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold))),
+        ]),
+        const SizedBox(height: 24),
+        Text(content, style: theme.textTheme.bodyLarge?.copyWith(height: 1.5, color: cs.onSurfaceVariant)),
+        const SizedBox(height: 32),
+        AppButton.primary(text: 'Понятно', onPressed: () => Navigator.of(context, rootNavigator: true).pop()),
+      ],
+    ),
+  );
+}
+
 // ═══════════════════════════════════════
-// Interactive Bento Grid Item
+// Bento Grid Item
 // ═══════════════════════════════════════
 class _BentoItem extends StatelessWidget {
   final IconData icon;
@@ -342,14 +355,8 @@ class _BentoItem extends StatelessWidget {
   final ColorScheme cs;
   final ThemeData theme;
 
-  const _BentoItem({
-    required this.icon,
-    required this.title,
-    required this.value,
-    required this.onTap,
-    required this.cs,
-    required this.theme,
-  });
+  const _BentoItem({required this.icon, required this.title, required this.value,
+    required this.onTap, required this.cs, required this.theme});
 
   @override
   Widget build(BuildContext context) {
@@ -359,37 +366,25 @@ class _BentoItem extends StatelessWidget {
         backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(10),
             onTap: onTap,
             child: Padding(
               padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: cs.primaryContainer,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(icon, size: 16, color: cs.onPrimaryContainer),
-                      ),
-                      const Spacer(),
-                      Icon(Icons.open_in_new, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
-                    ],
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Row(children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(8)),
+                    child: Icon(icon, size: 16, color: cs.onPrimaryContainer),
                   ),
-                  const SizedBox(height: 12),
-                  Text(value, style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800, height: 1.3,
-                  ), maxLines: 1, overflow: TextOverflow.ellipsis),
-                  Text(title, style: theme.textTheme.labelSmall?.copyWith(
-                    color: cs.onSurfaceVariant, fontWeight: FontWeight.normal,
-                  )),
-                ],
-              ),
+                  const Spacer(),
+                  Icon(Icons.open_in_new, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                ]),
+                const SizedBox(height: 12),
+                Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.3),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                Text(title, style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant, fontWeight: FontWeight.normal)),
+              ]),
             ),
           ),
         ],
@@ -399,30 +394,24 @@ class _BentoItem extends StatelessWidget {
 }
 
 String _tryGetRouterEventId(BuildContext context) {
-  try {
-    return GoRouterState.of(context).pathParameters['eventId'] ?? 'evt-1';
-  } catch (_) {
-    return 'evt-1';
-  }
+  try { return GoRouterState.of(context).pathParameters['eventId'] ?? 'evt-1'; }
+  catch (_) { return 'evt-1'; }
 }
 
 Map<String, dynamic>? _tryGetRouterExtra(BuildContext context) {
-  try {
-    return GoRouterState.of(context).extra as Map<String, dynamic>?;
-  } catch (_) {
-    return null;
-  }
+  try { return GoRouterState.of(context).extra as Map<String, dynamic>?; }
+  catch (_) { return null; }
 }
 
-
 // ═══════════════════════════════════════
-// Карточка «Зарегистрироваться»
+// Register Card
 // ═══════════════════════════════════════
 class _RegisterCard extends StatelessWidget {
   final String eventId;
   final ColorScheme cs;
   final ThemeData theme;
-  const _RegisterCard({required this.eventId, required this.cs, required this.theme});
+  final List<DisciplineConfig> disciplines;
+  const _RegisterCard({required this.eventId, required this.cs, required this.theme, required this.disciplines});
 
   @override
   Widget build(BuildContext context) {
@@ -437,225 +426,73 @@ class _RegisterCard extends StatelessWidget {
           onTap: () => context.push('/hub/event/$eventId/register'),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: cs.primaryContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.how_to_reg, color: cs.primary, size: 24),
+            child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              Container(
+                width: 48, height: 48,
+                decoration: BoxDecoration(color: cs.primaryContainer, shape: BoxShape.circle),
+                child: Icon(Icons.how_to_reg, color: cs.primary, size: 24),
+              ),
+              const SizedBox(width: 14),
+              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
+                Text('Регистрация', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+                const SizedBox(height: 2),
+                Text('${disciplines.length} ${_discWord(disciplines.length)}',
+                  style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              ])),
+              const SizedBox(width: 8),
+              FilledButton(
+                onPressed: () => context.push('/hub/event/$eventId/register'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Регистрация открыта',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'От 2 000 ₽ · 6 дисциплин',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton(
-                  onPressed: () => context.push('/hub/event/$eventId/register'),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  child: Text('Выбрать', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ═══════════════════════════════════════
-// Карточка «Вы участвуете» (компактная)
-// ═══════════════════════════════════════
-class _RegisteredCard extends StatelessWidget {
-  final ColorScheme cs;
-  final ThemeData theme;
-  const _RegisteredCard({required this.cs, required this.theme});
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(24),
-      backgroundColor: cs.primaryContainer,
-      borderColor: cs.primary.withValues(alpha: 0.5),
-      children: [
-        InkWell(
-          borderRadius: BorderRadius.circular(24),
-          onTap: () => _showDetails(context),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: cs.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(Icons.check_circle, color: cs.primary, size: 28),
-                ),
-                const SizedBox(width: 14),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Вы участвуете',
-                              style: theme.textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.bold,
-                                color: cs.primary,
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          const StatusBadge(text: 'Оплачено', type: BadgeType.success),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Скиджоринг 5км',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: cs.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                FilledButton.icon(
-                  onPressed: () => _showDetails(context),
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    backgroundColor: cs.primary,
-                    foregroundColor: cs.onPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  ),
-                  icon: const Icon(Icons.qr_code, size: 18),
-                  label: Text('Билет', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
-                ),
-              ],
-            ),
+                child: Text('Выбрать', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+              ),
+            ]),
           ),
         ),
       ],
     );
   }
 
-  void _showDetails(BuildContext context) {
-    AppBottomSheet.show(
-      context,
-      title: 'Моя регистрация',
-      initialHeight: 0.45,
-      actions: [
-        AppButton.secondary(text: 'Изменить регистрацию', icon: Icons.edit, onPressed: () => Navigator.of(context, rootNavigator: true).pop()),
-      ],
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-          AppDetailRow(label: 'Дисциплина', value: 'Скиджоринг 5км', icon: Icons.sports),
-          AppDetailRow(label: 'BIB', value: '42', icon: Icons.tag),
-          AppDetailRow(label: 'Категория', value: 'M 25-34', icon: Icons.people),
-        ]),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text('Собаки', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 4),
-        AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-          AppDetailRow(label: 'Rex', value: 'Хаски · Чип: 643...456', icon: Icons.pets),
-        ]),
-        const SizedBox(height: 8),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Text('Оплата', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-        ),
-        const SizedBox(height: 4),
-        AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-          AppDetailRow(label: 'Сумма', value: '2 000 ₽', icon: Icons.payments),
-          AppDetailRow(label: 'Способ', value: 'Перевод на карту', icon: Icons.credit_card),
-          AppDetailRow(label: 'Статус', value: 'Подтверждена ✅', icon: Icons.verified),
-        ]),
-      ]),
-    );
+  String _discWord(int n) {
+    if (n == 1) return 'дисциплина';
+    if (n >= 2 && n <= 4) return 'дисциплины';
+    return 'дисциплин';
   }
 }
 
 // ═══════════════════════════════════════
-// Дисциплины (collapsible, 3 по умолчанию)
+// Disciplines Section (data-driven)
 // ═══════════════════════════════════════
 class _DisciplineSection extends StatefulWidget {
+  final List<DisciplineConfig> disciplines;
+  const _DisciplineSection({required this.disciplines});
+
   @override
   State<_DisciplineSection> createState() => _DisciplineSectionState();
 }
 
 class _DisciplineSectionState extends State<_DisciplineSection> {
   bool _expanded = false;
-
-  static const _disciplines = [
-    _Disc('Скиджоринг 5км', 18, 20, 2000, Icons.downhill_skiing),
-    _Disc('Скиджоринг 10км', 12, 15, 3000, Icons.downhill_skiing),
-    _Disc('Каникросс 3км', 8, 10, 1500, Icons.directions_run),
-    _Disc('Нарты 15км', 6, 10, 3500, Icons.sledding),
-    _Disc('Пулка 5км', 2, 5, 2500, Icons.ac_unit),
-    _Disc('Байкджоринг 10км', 2, 5, 2000, Icons.pedal_bike),
-  ];
-
   static const _initialCount = 3;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final showToggle = _disciplines.length > _initialCount;
-    final visible = _expanded ? _disciplines : _disciplines.take(_initialCount).toList();
+    final all = widget.disciplines;
+    final showToggle = all.length > _initialCount;
+    final visible = _expanded ? all : all.take(_initialCount).toList();
 
     return Column(children: [
-      // Header с кнопкой раскрытия справа
       Row(children: [
         Icon(Icons.sports, size: 20, color: cs.primary),
         const SizedBox(width: 8),
         Text('Дисциплины', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-        Text(' · ${_disciplines.length}', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+        Text(' · ${all.length}', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         const Spacer(),
         if (showToggle) InkWell(
           borderRadius: BorderRadius.circular(20),
@@ -663,10 +500,8 @@ class _DisciplineSectionState extends State<_DisciplineSection> {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
-              Text(
-                _expanded ? 'Свернуть' : 'Ещё ${_disciplines.length - _initialCount}',
-                style: theme.textTheme.labelSmall?.copyWith(color: cs.primary),
-              ),
+              Text(_expanded ? 'Свернуть' : 'Ещё ${all.length - _initialCount}',
+                style: theme.textTheme.labelSmall?.copyWith(color: cs.primary)),
               AnimatedRotation(
                 turns: _expanded ? 0.5 : 0,
                 duration: const Duration(milliseconds: 200),
@@ -677,8 +512,6 @@ class _DisciplineSectionState extends State<_DisciplineSection> {
         ),
       ]),
       const SizedBox(height: 6),
-
-      // Список с анимацией
       AnimatedSize(
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
@@ -694,19 +527,8 @@ class _DisciplineSectionState extends State<_DisciplineSection> {
   }
 }
 
-class _Disc {
-  final String name;
-  final int filled;
-  final int total;
-  final int price;
-  final IconData icon;
-  const _Disc(this.name, this.filled, this.total, this.price, this.icon);
-  double get ratio => filled / total;
-  bool get isHot => ratio >= 0.8;
-}
-
 class _DisciplineRow extends StatelessWidget {
-  final _Disc disc;
+  final DisciplineConfig disc;
   final bool isLast;
   const _DisciplineRow({required this.disc, this.isLast = false});
 
@@ -714,105 +536,40 @@ class _DisciplineRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final hot = disc.isHot;
 
     return Column(children: [
       Padding(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Row(children: [
-          // Icon
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: (hot ? cs.error : cs.primary).withValues(alpha: 0.1),
+              color: cs.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(disc.icon, size: 18, color: hot ? cs.error : cs.primary),
+            child: Icon(_icon(), size: 18, color: cs.primary),
           ),
           const SizedBox(width: 12),
-          // Name
-          Expanded(child: Text(
-            disc.name,
-            style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
-          )),
-          // Slots
-          Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Text('${disc.filled}/${disc.total}', style: theme.textTheme.bodySmall?.copyWith(
-                color: hot ? cs.error : cs.onSurfaceVariant,
-                fontWeight: hot ? FontWeight.bold : null,
-              )),
-              if (hot) ...[
-                const SizedBox(width: 2),
-                Icon(Icons.local_fire_department, size: 12, color: cs.error),
-              ],
-            ]),
-            const SizedBox(height: 2),
-            Text('${disc.price} ₽', style: theme.textTheme.labelSmall?.copyWith(
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(disc.name, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600)),
+            Text('${disc.distanceKm} км · ${disc.startType.name}',
+              style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant, fontSize: 11)),
+          ])),
+          if (disc.priceRub != null)
+            Text('${disc.priceRub} ₽', style: theme.textTheme.labelSmall?.copyWith(
               fontWeight: FontWeight.bold, color: cs.onSurface,
             )),
-          ]),
         ]),
       ),
       if (!isLast) Divider(height: 1, indent: 62, endIndent: 14, color: cs.outlineVariant.withValues(alpha: 0.3)),
     ]);
   }
-}
 
-// ═══════════════════════════════════════
-// Превью результатов (Top-3)
-// ═══════════════════════════════════════
-class _ResultsPreview extends StatelessWidget {
-  final String eventId;
-  final bool isLive;
-  const _ResultsPreview({required this.eventId, required this.isLive});
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        AppSectionHeader(title: isLive ? 'Результаты LIVE' : 'Результаты', icon: Icons.emoji_events),
-        const Spacer(),
-        if (isLive) Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: cs.error,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(mainAxisSize: MainAxisSize.min, children: [
-            Container(width: 6, height: 6, decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
-            const SizedBox(width: 4),
-            Text('LIVE', style: theme.textTheme.labelSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold)),
-          ]),
-        ),
-      ]),
-      AppCard(
-        padding: EdgeInsets.zero,
-        children: [
-          const AppResultRow(place: 1, name: 'Иванов Алексей', time: '38:12'),
-          Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant.withValues(alpha: 0.3)),
-          const AppResultRow(place: 2, name: 'Петров Сергей', time: '39:45'),
-          Divider(height: 1, indent: 16, endIndent: 16, color: cs.outlineVariant.withValues(alpha: 0.3)),
-          const AppResultRow(place: 3, name: 'Сидоров Кирилл', time: '41:20'),
-          // "Все результаты" link
-          InkWell(
-            onTap: () => context.push('/results/$eventId/live'),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              child: Row(children: [
-                Icon(Icons.leaderboard, size: 16, color: cs.primary),
-                const SizedBox(width: 8),
-                Text('Все результаты', style: theme.textTheme.labelLarge?.copyWith(color: cs.primary)),
-                const Spacer(),
-                Icon(Icons.arrow_forward_ios, size: 14, color: cs.primary),
-              ]),
-            ),
-          ),
-        ],
-      ),
-    ]);
-  }
+  IconData _icon() => switch (disc.startType) {
+    StartType.individual => Icons.person,
+    StartType.mass => Icons.groups,
+    StartType.wave => Icons.waves,
+    StartType.pursuit => Icons.speed,
+    StartType.relay => Icons.people,
+  };
 }

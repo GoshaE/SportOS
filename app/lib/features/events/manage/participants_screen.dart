@@ -1,86 +1,453 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
-import '../../../domain/event/event_config.dart';
-import '../../../domain/event/config_providers.dart';
+import 'package:sportos_app/domain/event/event_config.dart' hide TimeOfDay;
+import 'package:sportos_app/domain/event/config_providers.dart';
+import 'package:sportos_app/domain/timing/models.dart' show DisciplineConfig;
+import 'package:sportos_app/domain/timing/result_table.dart';
 
-/// Screen ID: E3 — Участники (ConsumerWidget → данные из participantsProvider)
+/// Screen ID: E3 — Участники с группировкой и импортом.
+///
+/// [isOrganizer] = true  → полный вид (статус оплаты, заявки, кнопки)
+/// [isOrganizer] = false → публичный вид (только список)
 class ParticipantsScreen extends ConsumerStatefulWidget {
-  const ParticipantsScreen({super.key});
+  final bool isOrganizer;
+  const ParticipantsScreen({super.key, this.isOrganizer = true});
 
   @override
   ConsumerState<ParticipantsScreen> createState() => _ParticipantsScreenState();
 }
 
 class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
-  bool _isTableView = false;
-  bool _initialized = false;
-  String _filter = 'all'; // 'all', discipline name
+  String _search = '';
+  String? _selectedDisciplineId; // null = «Все»
+  bool _showCards = false;
 
-  void _showApplicationCard(BuildContext context, Participant p) {
+  @override
+  Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final isPaid = p.paymentStatus == PaymentStatus.paid;
-    final isApproved = p.applicationStatus == ApplicationStatus.approved;
+    final theme = Theme.of(context);
+    final allParticipants = ref.watch(participantsProvider);
+    final disciplines = ref.watch(disciplineConfigsProvider);
+    final eventId = GoRouterState.of(context).pathParameters['eventId'] ?? 'evt-1';
 
-    final map = {
-      'name': p.name,
-      'club': '${p.dogName != null ? "Собака: ${p.dogName} • " : ""}Дисциплина: ${p.disciplineName}',
-      'role': 'competitor',
-      'bib': p.bib,
-    };
+    // Search filter
+    final filtered = _search.isEmpty
+        ? allParticipants
+        : allParticipants.where((p) => p.name.toLowerCase().contains(_search.toLowerCase())).toList();
 
-    AppUserProfileSheet.show(
-      context,
-      user: map,
-      isOrganizer: true,
-      contextActionsBuilder: (innerCtx) => [
-        ListTile(
-          leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: cs.primaryContainer, shape: BoxShape.circle), child: Icon(Icons.check_circle, size: 20, color: cs.primary)),
-          title: const Text('Статус заявки', style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(isApproved ? 'Подтверждена' : 'Ожидает подтверждения', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-          trailing: isApproved
-              ? Icon(Icons.check, color: cs.primary)
-              : FilledButton.tonal(
-                  onPressed: () {
-                    ref.read(participantsProvider.notifier).approve(p.id);
-                    Navigator.of(context, rootNavigator: true).pop();
-                    AppSnackBar.success(context, '${p.name} — заявка подтверждена');
-                  },
-                  child: const Text('Подтвердить'),
-                ),
+    final total = allParticipants.length;
+
+    return Scaffold(
+      appBar: AppAppBar(
+        title: Text(widget.isOrganizer ? 'Участники ($total)' : 'Список участников ($total)'),
+        actions: [
+          // Card/Table toggle
+          IconButton(
+            icon: Icon(_showCards ? Icons.table_rows : Icons.view_agenda, size: 20),
+            tooltip: _showCards ? 'Таблица' : 'Карточки',
+            onPressed: () => setState(() => _showCards = !_showCards),
+          ),
+          if (widget.isOrganizer) ...[
+            IconButton(icon: const Icon(Icons.upload_file, size: 20), tooltip: 'Из Excel', onPressed: () => context.push('/manage/$eventId/import')),
+            IconButton(icon: const Icon(Icons.person_add, size: 20), tooltip: 'Добавить', onPressed: () => _showAddParticipant(context)),
+          ],
+        ],
+      ),
+      body: Column(children: [
+        // ── Discipline filter chips ──
+        _DisciplineChips(
+          disciplines: disciplines,
+          selectedId: _selectedDisciplineId,
+          totalCount: total,
+          onSelected: (id) => setState(() => _selectedDisciplineId = id),
         ),
-        ListTile(
-          leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: cs.secondaryContainer, shape: BoxShape.circle), child: Icon(Icons.payment, size: 20, color: cs.secondary)),
-          title: const Text('Оплата', style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(isPaid ? 'Оплачено (${p.priceRub ?? 0} ₽)' : 'Не оплачено', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-          trailing: isPaid
-              ? Icon(Icons.check, color: cs.primary)
-              : FilledButton.tonal(
-                  onPressed: () {
-                    ref.read(participantsProvider.notifier).markPaid(p.id);
-                    Navigator.of(context, rootNavigator: true).pop();
-                    AppSnackBar.success(context, '${p.name} — оплата отмечена');
-                  },
-                  child: const Text('Оплачено'),
-                ),
+
+        // ── Search ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+          child: TextField(
+            decoration: InputDecoration(
+              hintText: 'Поиск по имени...',
+              prefixIcon: const Icon(Icons.search, size: 20),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            ),
+            onChanged: (v) => setState(() => _search = v),
+          ),
         ),
-        ListTile(
-          leading: Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: cs.tertiaryContainer, shape: BoxShape.circle), child: Icon(Icons.confirmation_number, size: 20, color: cs.tertiary)),
-          title: const Text('Стартовый номер', style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(p.bib, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-          trailing: const Icon(Icons.chevron_right),
+
+        // ── Stacked discipline tables ──
+        Expanded(
+          child: filtered.isEmpty
+              ? _buildEmptyState(cs)
+              : _buildStackedTables(filtered, disciplines, cs, theme),
         ),
+      ]),
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Build stacked AppResultTable per discipline
+  // ═══════════════════════════════════════════════════════════════
+  Widget _buildStackedTables(List<Participant> filtered, List<DisciplineConfig> disciplines, ColorScheme cs, ThemeData theme) {
+    // Group by discipline
+    final byDisc = <String, List<Participant>>{};
+    for (final p in filtered) {
+      byDisc.putIfAbsent(p.disciplineId, () => []).add(p);
+    }
+
+    // Filter by selected discipline
+    final discIds = _selectedDisciplineId != null
+        ? [_selectedDisciplineId!]
+        : byDisc.keys.toList();
+
+    final orderedDiscs = disciplines
+        .where((d) => discIds.contains(d.id) && byDisc.containsKey(d.id))
+        .toList();
+
+    if (orderedDiscs.isEmpty) return _buildEmptyState(cs);
+
+    return ListView.builder(
+      padding: const EdgeInsets.fromLTRB(0, 0, 0, 24),
+      itemCount: orderedDiscs.length,
+      itemBuilder: (context, i) {
+        final disc = orderedDiscs[i];
+        final participants = byDisc[disc.id] ?? [];
+        return _buildDisciplineBlock(disc, participants, cs, theme);
+      },
+    );
+  }
+
+  Widget _buildDisciplineBlock(DisciplineConfig disc, List<Participant> participants, ColorScheme cs, ThemeData theme) {
+    // Group by category
+    final byCategory = <String, List<Participant>>{};
+    for (final p in participants) {
+      final cat = p.category ?? 'Без категории';
+      byCategory.putIfAbsent(cat, () => []).add(p);
+    }
+    final categories = byCategory.keys.toList()..sort();
+    final showCatHeaders = categories.length > 1 || (categories.length == 1 && categories.first != 'Без категории');
+
+    // Build ResultTable for this discipline
+    final columns = _buildColumns();
+    final rows = <ResultRow>[];
+
+    for (final cat in categories) {
+      // Add category separator row
+      if (showCatHeaders) {
+        rows.add(ResultRow(
+          entryId: 'cat-$cat',
+          type: RowType.waiting,
+          cells: {
+            for (final col in columns) col.id:
+              col.id == 'name'
+                ? CellValue(display: '$cat (${byCategory[cat]!.length})', style: CellStyle.bold)
+                : const CellValue(display: ''),
+          },
+        ));
+      }
+
+      for (final p in byCategory[cat]!) {
+        rows.add(_participantToRow(p));
+      }
+    }
+
+    final table = ResultTable(columns: columns, rows: rows);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Discipline header
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          color: cs.primaryContainer.withValues(alpha: 0.12),
+          child: Row(children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(7),
+              ),
+              child: Icon(Icons.sports, size: 14, color: cs.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(child: Text(disc.name,
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold))),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: cs.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text('${participants.length} чел.',
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
+            ),
+          ]),
+        ),
+
+        // Table
+        AppResultTable(
+          table: table,
+          showCards: _showCards,
+          onRowTap: (row) {
+            if (row.entryId.startsWith('cat-')) return;
+            final p = participants.firstWhere(
+              (p) => p.id == row.entryId,
+              orElse: () => participants.first,
+            );
+            if (widget.isOrganizer) {
+              _showParticipantActions(context, p);
+            }
+          },
+        ),
+
+        const SizedBox(height: 12),
       ],
     );
   }
 
+  // ═══════════════════════════════════════════════════════════════
+  // Column definitions
+  // ═══════════════════════════════════════════════════════════════
+  List<ColumnDef> _buildColumns() {
+    return [
+      const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 45),
+      const ColumnDef(id: 'name', label: 'ФИО', type: ColumnType.text, flex: 2.0, minWidth: 120),
+      const ColumnDef(id: 'city', label: 'Город', type: ColumnType.text, flex: 1.2, minWidth: 70),
+      const ColumnDef(id: 'club', label: 'Клуб', type: ColumnType.text, flex: 1.2, minWidth: 70),
+      const ColumnDef(id: 'dog', label: 'Собака', type: ColumnType.text, flex: 1.0, minWidth: 60),
+      if (widget.isOrganizer) ...[
+        const ColumnDef(id: 'paid', label: '₽', type: ColumnType.status, align: ColumnAlign.center, flex: 0.4, minWidth: 32),
+        const ColumnDef(id: 'status', label: '✓', type: ColumnType.status, align: ColumnAlign.center, flex: 0.4, minWidth: 32),
+      ],
+    ];
+  }
+
+  ResultRow _participantToRow(Participant p) {
+    final isPaid = p.paymentStatus == PaymentStatus.paid;
+    final isApproved = p.applicationStatus == ApplicationStatus.approved;
+
+    final cells = <String, CellValue>{
+      'bib': CellValue(display: p.bib, raw: int.tryParse(p.bib) ?? 0),
+      'name': CellValue(display: p.name, style: CellStyle.bold),
+      'city': CellValue(display: p.city ?? '—', style: p.city != null ? CellStyle.normal : CellStyle.muted),
+      'club': CellValue(display: p.club ?? '—', style: p.club != null ? CellStyle.normal : CellStyle.muted),
+      'dog': CellValue(display: p.dogName ?? '—', style: p.dogName != null ? CellStyle.normal : CellStyle.muted),
+    };
+
+    if (widget.isOrganizer) {
+      cells['paid'] = CellValue(display: isPaid ? '✓' : '✗', style: isPaid ? CellStyle.success : CellStyle.error);
+      cells['status'] = CellValue(display: isApproved ? '✓' : '…', style: isApproved ? CellStyle.success : CellStyle.muted);
+    }
+
+    return ResultRow(entryId: p.id, type: RowType.finished, cells: cells);
+  }
+
+  // ═══════════════════════════════════════════════════════════════
+  // Participant actions (edit / delete) — organizer only
+  // ═══════════════════════════════════════════════════════════════
+  void _showParticipantActions(BuildContext context, Participant p) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+    final isPaid = p.paymentStatus == PaymentStatus.paid;
+    final isApproved = p.applicationStatus == ApplicationStatus.approved;
+
+    AppBottomSheet.show(context, title: p.name, child: Column(mainAxisSize: MainAxisSize.min, children: [
+      // Info card
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          _infoRow(theme, 'BIB', p.bib),
+          _infoRow(theme, 'Дисциплина', p.disciplineName),
+          if (p.gender != null) _infoRow(theme, 'Пол', p.gender == 'male' ? 'Мужской' : 'Женский'),
+          if (p.birthDate != null) _infoRow(theme, 'Дата рождения', '${p.birthDate!.day.toString().padLeft(2, '0')}.${p.birthDate!.month.toString().padLeft(2, '0')}.${p.birthDate!.year}'),
+          if (p.city != null) _infoRow(theme, 'Город', p.city!),
+          if (p.club != null) _infoRow(theme, 'Клуб', p.club!),
+          if (p.dogName != null) _infoRow(theme, 'Собака', p.dogName!),
+          if (p.category != null) _infoRow(theme, 'Категория', p.category!),
+        ]),
+      ),
+      const SizedBox(height: 16),
+
+      // Actions
+      _actionTile(cs, Icons.edit, 'Редактировать', null, () {
+        Navigator.of(context, rootNavigator: true).pop();
+        _showEditParticipant(context, p);
+      }),
+      _actionTile(cs, Icons.check_circle, isApproved ? 'Заявка подтверждена' : 'Подтвердить заявку',
+        isApproved ? cs.primary : null, () {
+        if (!isApproved) {
+          ref.read(participantsProvider.notifier).approve(p.id);
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, '${p.name} — заявка подтверждена');
+        }
+      }),
+      _actionTile(cs, Icons.payment, isPaid ? 'Оплачено (${p.priceRub ?? 0} ₽)' : 'Отметить оплату',
+        isPaid ? cs.primary : null, () {
+        if (!isPaid) {
+          ref.read(participantsProvider.notifier).markPaid(p.id);
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, '${p.name} — оплата отмечена');
+        }
+      }),
+      const Divider(),
+      _actionTile(cs, Icons.delete, 'Удалить участника', cs.error, () {
+        Navigator.of(context, rootNavigator: true).pop();
+        _confirmDelete(context, p);
+      }),
+    ]));
+  }
+
+  Widget _infoRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Row(children: [
+        SizedBox(width: 100, child: Text(label, style: TextStyle(fontSize: 12, color: theme.colorScheme.outline))),
+        Expanded(child: Text(value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: theme.colorScheme.onSurface))),
+      ]),
+    );
+  }
+
+  Widget _actionTile(ColorScheme cs, IconData icon, String label, Color? color, VoidCallback onTap) {
+    return ListTile(
+      leading: Icon(icon, color: color ?? cs.onSurfaceVariant, size: 22),
+      title: Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: color ?? cs.onSurface)),
+      onTap: onTap,
+      dense: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+    );
+  }
+
+  // ─── Delete confirmation ───
+  void _confirmDelete(BuildContext context, Participant p) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Удалить участника?'),
+      content: Text('${p.name} будет удалён из списка.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: cs.error),
+          onPressed: () {
+            ref.read(participantsProvider.notifier).remove(p.id);
+            Navigator.pop(ctx);
+            AppSnackBar.success(context, '${p.name} удалён');
+          },
+          child: const Text('Удалить'),
+        ),
+      ],
+    ));
+  }
+
+  // ─── Edit participant ───
+  void _showEditParticipant(BuildContext context, Participant p) {
+    final nameCtrl = TextEditingController(text: p.name);
+    final phoneCtrl = TextEditingController(text: p.phone ?? '');
+    final dogCtrl = TextEditingController(text: p.dogName ?? '');
+    final cityCtrl = TextEditingController(text: p.city ?? '');
+    final clubCtrl = TextEditingController(text: p.club ?? '');
+    final bibCtrl = TextEditingController(text: p.bib);
+    String? selectedGender = p.gender;
+    DateTime? birthDate = p.birthDate;
+    final cs = Theme.of(context).colorScheme;
+
+    AppBottomSheet.show(context, title: 'Редактировать', actions: [
+      SizedBox(width: double.infinity, child: FilledButton(
+        onPressed: () {
+          if (nameCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'ФИО не может быть пустым');
+            return;
+          }
+          ref.read(participantsProvider.notifier).update(p.id, (old) => old.copyWith(
+            name: nameCtrl.text.trim(),
+            phone: phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
+            dogName: dogCtrl.text.trim().isNotEmpty ? dogCtrl.text.trim() : null,
+            city: cityCtrl.text.trim().isNotEmpty ? cityCtrl.text.trim() : null,
+            club: clubCtrl.text.trim().isNotEmpty ? clubCtrl.text.trim() : null,
+            bib: bibCtrl.text.trim(),
+            gender: selectedGender,
+            birthDate: birthDate,
+          ));
+          Navigator.of(context, rootNavigator: true).pop();
+          AppSnackBar.success(context, '${nameCtrl.text.trim()} обновлён');
+        },
+        child: const Text('Сохранить', style: TextStyle(fontSize: 16)),
+      )),
+    ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
+      Row(children: [
+        Expanded(child: TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder()))),
+        const SizedBox(width: 12),
+        SizedBox(width: 80, child: TextField(controller: bibCtrl, decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder()))),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: DropdownButtonFormField<String>(
+          decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder()),
+          items: const [
+            DropdownMenuItem(value: 'male', child: Text('Мужской')),
+            DropdownMenuItem(value: 'female', child: Text('Женский')),
+          ],
+          initialValue: selectedGender,
+          onChanged: (v) => setModal(() => selectedGender = v),
+        )),
+        const SizedBox(width: 12),
+        Expanded(child: InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: ctx,
+              initialDate: birthDate ?? DateTime(2000),
+              firstDate: DateTime(1940),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) setModal(() => birthDate = picked);
+          },
+          child: InputDecorator(
+            decoration: const InputDecoration(labelText: 'Дата рождения', border: OutlineInputBorder()),
+            child: Text(
+              birthDate != null
+                  ? '${birthDate!.day.toString().padLeft(2, '0')}.${birthDate!.month.toString().padLeft(2, '0')}.${birthDate!.year}'
+                  : 'Выбрать',
+              style: TextStyle(color: birthDate != null ? cs.onSurface : cs.outline),
+            ),
+          ),
+        )),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Телефон / Email', border: OutlineInputBorder()))),
+        const SizedBox(width: 12),
+        Expanded(child: TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Собака', border: OutlineInputBorder()))),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: TextField(controller: cityCtrl, decoration: const InputDecoration(labelText: 'Город', border: OutlineInputBorder()))),
+        const SizedBox(width: 12),
+        Expanded(child: TextField(controller: clubCtrl, decoration: const InputDecoration(labelText: 'Клуб', border: OutlineInputBorder()))),
+      ]),
+    ])));
+  }
+
+  // ─── Add participant ───
   void _showAddParticipant(BuildContext context) {
     final nameCtrl = TextEditingController();
-    final contactCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
     final dogCtrl = TextEditingController();
+    final cityCtrl = TextEditingController();
+    final clubCtrl = TextEditingController();
     String? selectedDisc;
+    String? selectedGender;
+    DateTime? birthDate;
     final disciplines = ref.read(disciplineConfigsProvider);
+    final cs = Theme.of(context).colorScheme;
 
     AppBottomSheet.show(context, title: 'Добавить участника', actions: [
       SizedBox(width: double.infinity, child: FilledButton(
@@ -96,11 +463,15 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
           ref.read(participantsProvider.notifier).add(Participant(
             id: 'p-${DateTime.now().millisecondsSinceEpoch}',
             name: nameCtrl.text.trim(),
-            phone: contactCtrl.text.trim().isNotEmpty ? contactCtrl.text.trim() : null,
+            phone: phoneCtrl.text.trim().isNotEmpty ? phoneCtrl.text.trim() : null,
             disciplineId: disc.id,
             disciplineName: disc.name,
             bib: nextBib,
             dogName: dogCtrl.text.trim().isNotEmpty ? dogCtrl.text.trim() : null,
+            gender: selectedGender,
+            birthDate: birthDate,
+            city: cityCtrl.text.trim().isNotEmpty ? cityCtrl.text.trim() : null,
+            club: clubCtrl.text.trim().isNotEmpty ? clubCtrl.text.trim() : null,
             registeredAt: DateTime.now(),
           ));
 
@@ -112,227 +483,123 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
       TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: contactCtrl, decoration: const InputDecoration(labelText: 'Телефон / Email', border: OutlineInputBorder())),
+      Row(children: [
+        Expanded(child: DropdownButtonFormField<String>(
+          decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder()),
+          items: const [
+            DropdownMenuItem(value: 'male', child: Text('Мужской')),
+            DropdownMenuItem(value: 'female', child: Text('Женский')),
+          ],
+          initialValue: selectedGender,
+          onChanged: (v) => setModal(() => selectedGender = v),
+        )),
+        const SizedBox(width: 12),
+        Expanded(child: InkWell(
+          onTap: () async {
+            final picked = await showDatePicker(
+              context: ctx,
+              initialDate: DateTime(2000),
+              firstDate: DateTime(1940),
+              lastDate: DateTime.now(),
+            );
+            if (picked != null) setModal(() => birthDate = picked);
+          },
+          child: InputDecorator(
+            decoration: const InputDecoration(labelText: 'Дата рождения', border: OutlineInputBorder()),
+            child: Text(
+              birthDate != null
+                  ? '${birthDate!.day.toString().padLeft(2, '0')}.${birthDate!.month.toString().padLeft(2, '0')}.${birthDate!.year}'
+                  : 'Выбрать',
+              style: TextStyle(color: birthDate != null ? cs.onSurface : cs.outline),
+            ),
+          ),
+        )),
+      ]),
       const SizedBox(height: 12),
       DropdownButtonFormField<String>(
         decoration: const InputDecoration(labelText: 'Дисциплина *', border: OutlineInputBorder()),
         items: disciplines.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
-        value: selectedDisc,
+        initialValue: selectedDisc,
         onChanged: (v) => setModal(() => selectedDisc = v),
       ),
       const SizedBox(height: 12),
-      TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Кличка собаки', border: OutlineInputBorder())),
+      Row(children: [
+        Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Телефон / Email', border: OutlineInputBorder()))),
+        const SizedBox(width: 12),
+        Expanded(child: TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Собака', border: OutlineInputBorder()))),
+      ]),
+      const SizedBox(height: 12),
+      Row(children: [
+        Expanded(child: TextField(controller: cityCtrl, decoration: const InputDecoration(labelText: 'Город', border: OutlineInputBorder()))),
+        const SizedBox(width: 12),
+        Expanded(child: TextField(controller: clubCtrl, decoration: const InputDecoration(labelText: 'Клуб', border: OutlineInputBorder()))),
+      ]),
     ])));
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    final w = MediaQuery.of(context).size.width;
-
-    if (!_initialized) {
-      _isTableView = w > 600;
-      _initialized = true;
-    }
-
-    final allParticipants = ref.watch(participantsProvider);
-    final filtered = _filter == 'all'
-        ? allParticipants
-        : allParticipants.where((p) => p.disciplineName.contains(_filter)).toList();
-
-    // Stats
-    final total = allParticipants.length;
-    final approved = allParticipants.where((p) => p.applicationStatus == ApplicationStatus.approved).length;
-    final pending = allParticipants.where((p) => p.applicationStatus == ApplicationStatus.pending).length;
-    final unpaid = allParticipants.where((p) => p.paymentStatus == PaymentStatus.unpaid).length;
-
-    // Unique discipline names for filters
-    final discNames = allParticipants.map((p) => p.disciplineName).toSet().toList()..sort();
-
-    return Scaffold(
-      appBar: AppAppBar(
-        title: const Text('Участники'),
-        actions: [
-          IconButton(icon: Icon(_isTableView ? Icons.grid_view : Icons.table_rows), tooltip: 'Вид таблицы', onPressed: () => setState(() => _isTableView = !_isTableView)),
-          IconButton(icon: const Icon(Icons.person_add), tooltip: 'Добавить вручную', onPressed: () => _showAddParticipant(context)),
-        ],
-      ),
-      body: Column(children: [
-        AppInfoPanel(
-          backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-          children: [
-            AppInfoPanel.stat('$total', 'Всего', cs.onSurface),
-            AppInfoPanel.stat('$approved', 'Подтв.', cs.primary),
-            AppInfoPanel.stat('$pending', 'Ожидает', cs.tertiary),
-            AppInfoPanel.stat('$unpaid', 'Не опл.', cs.error),
-          ],
-        ),
-        Padding(
-          padding: const EdgeInsets.all(8),
-          child: Wrap(spacing: 8, children: [
-            FilterChip(label: const Text('Все'), selected: _filter == 'all', onSelected: (_) => setState(() => _filter = 'all')),
-            ...discNames.map((name) => FilterChip(
-              label: Text(name),
-              selected: _filter == name,
-              onSelected: (_) => setState(() => _filter = _filter == name ? 'all' : name),
-            )),
-          ]),
-        ),
-        Expanded(
-          child: AppProtocolTable(
-            forceTableView: _isTableView,
-            headerRow: const _ParticipantRow(isHeader: true, participant: null),
-            itemCount: filtered.length,
-            itemBuilder: (context, index, isCard) {
-              final p = filtered[index];
-              return _ParticipantRow(
-                isCardView: isCard,
-                participant: p,
-                onTap: () => _showApplicationCard(context, p),
-              );
-            },
-          ),
-        ),
-      ]),
-    );
+  Widget _buildEmptyState(ColorScheme cs) {
+    return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+      Icon(Icons.people_outline, size: 48, color: cs.outline),
+      const SizedBox(height: 8),
+      Text('Нет участников', style: TextStyle(color: cs.outline)),
+    ]));
   }
 }
 
-class _ParticipantRow extends StatelessWidget {
-  final Participant? participant;
-  final bool isHeader;
-  final bool isCardView;
-  final VoidCallback? onTap;
+// ═══════════════════════════════════════════════════════════════
+// Discipline Filter Chips
+// ═══════════════════════════════════════════════════════════════
+class _DisciplineChips extends StatelessWidget {
+  final List<DisciplineConfig> disciplines;
+  final String? selectedId;
+  final int totalCount;
+  final ValueChanged<String?> onSelected;
 
-  const _ParticipantRow({
-    required this.participant,
-    this.isHeader = false,
-    this.isCardView = false,
-    this.onTap,
+  const _DisciplineChips({
+    required this.disciplines,
+    required this.selectedId,
+    required this.totalCount,
+    required this.onSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
 
-    if (isHeader) {
-      if (isCardView) return const SizedBox.shrink();
-      return Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            SizedBox(width: 50, child: _headerText('BIB', theme, cs)),
-            const SizedBox(width: 16),
-            SizedBox(width: 200, child: _headerText('ФИО', theme, cs)),
-            const SizedBox(width: 16),
-            SizedBox(width: 130, child: _headerText('Дисциплина', theme, cs)),
-            const SizedBox(width: 16),
-            SizedBox(width: 130, child: _headerText('Собака', theme, cs)),
-            const SizedBox(width: 16),
-            SizedBox(width: 100, child: _headerText('Оплата', theme, cs)),
-            const SizedBox(width: 16),
-            SizedBox(width: 100, child: _headerText('Статус', theme, cs)),
-          ],
-        ),
-      );
-    }
-
-    final p = participant!;
-    final isApproved = p.applicationStatus == ApplicationStatus.approved;
-    final isPaid = p.paymentStatus == PaymentStatus.paid;
-
-    Widget content;
-    if (isCardView) {
-      content = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 36, height: 36,
-                  decoration: BoxDecoration(color: cs.surfaceContainerHighest, shape: BoxShape.circle),
-                  child: Center(child: Text(p.bib, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
-                ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(p.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
-                  child: Text(p.disciplineName, style: theme.textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.primary)),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                if (p.dogName != null) ...[
-                  Icon(Icons.pets, size: 14, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 6),
-                  Expanded(child: Text(p.dogName!, style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
-                ] else const Spacer(),
-                _statusBadge(cs, isPaid ? 'Оплачено' : 'Не оплачено', isPaid ? cs.primary : cs.error),
-                const SizedBox(width: 8),
-                _statusBadge(cs, isApproved ? 'Подтвержден' : 'Ожидает', isApproved ? cs.primary : cs.tertiary),
-              ],
-            ),
-          ],
-        ),
-      );
-    } else {
-      content = Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
-            SizedBox(width: 50, child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(6)),
-              child: Text(p.bib, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant), textAlign: TextAlign.center),
-            )),
-            const SizedBox(width: 16),
-            SizedBox(width: 200, child: Text(p.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
-            const SizedBox(width: 16),
-            SizedBox(width: 130, child: Container(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.25), borderRadius: BorderRadius.circular(4)),
-                child: Text(p.disciplineName, style: theme.textTheme.labelSmall?.copyWith(fontSize: 10, fontWeight: FontWeight.bold, color: cs.primary)),
-              ),
-            )),
-            const SizedBox(width: 16),
-            SizedBox(width: 130, child: Text(p.dogName ?? '—', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant), maxLines: 1, overflow: TextOverflow.ellipsis)),
-            const SizedBox(width: 16),
-            SizedBox(width: 100, child: Align(alignment: Alignment.centerLeft, child: _statusBadge(cs, isPaid ? 'Оплачено' : 'Не оплачено', isPaid ? cs.primary : cs.error))),
-            const SizedBox(width: 16),
-            SizedBox(width: 100, child: Align(alignment: Alignment.centerLeft, child: _statusBadge(cs, isApproved ? 'Подтвержден' : 'Ожидает', isApproved ? cs.primary : cs.tertiary))),
-          ],
-        ),
-      );
-    }
-
-    if (onTap != null) {
-      return InkWell(onTap: onTap, child: content);
-    }
-    return content;
-  }
-
-  Widget _headerText(String text, ThemeData theme, ColorScheme cs) {
-    return Text(text, style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant, letterSpacing: 0.5));
-  }
-
-  Widget _statusBadge(ColorScheme cs, String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.2)),
+    return SizedBox(
+      height: 48,
+      child: ListView(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        children: [
+          _chip(cs, 'Все ($totalCount)', selectedId == null, () => onSelected(null)),
+          ...disciplines.map((d) =>
+            _chip(cs, d.name, selectedId == d.id, () => onSelected(d.id)),
+          ),
+        ],
       ),
-      child: Text(text, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+    );
+  }
+
+  Widget _chip(ColorScheme cs, String label, bool selected, VoidCallback onTap) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(label, style: TextStyle(
+          fontSize: 13,
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          color: selected ? cs.onPrimary : cs.onSurfaceVariant,
+        )),
+        selected: selected,
+        onSelected: (_) => onTap(),
+        selectedColor: cs.primary,
+        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        side: BorderSide.none,
+        showCheckmark: false,
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+      ),
     );
   }
 }

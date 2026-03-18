@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import '../../domain/timing/result_table.dart';
 
 /// Screen ID: S1 — Управление серией/кубком
 class SeriesScreen extends StatefulWidget {
@@ -14,18 +15,13 @@ class SeriesScreen extends StatefulWidget {
 }
 
 class _SeriesScreenState extends State<SeriesScreen> {
-  bool _isTableView = false;
-  bool _initialized = false;
+  bool _showCards = false;
+
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final w = MediaQuery.of(context).size.width;
 
-    if (!_initialized) {
-      _isTableView = w > 600;
-      _initialized = true;
-    }
 
     return DefaultTabController(
       length: 3,
@@ -417,37 +413,52 @@ class _SeriesScreenState extends State<SeriesScreen> {
               child: Row(children: [
                 Expanded(child: AppInfoBanner.info(title: 'Зачёт: лучшие 4 из 5 этапов · Очки: 1 место = 100, 2 = 80, 3 = 60, 4 = 50, 5 = 45...')),
                 const SizedBox(width: 8),
-                IconButton(icon: Icon(_isTableView ? Icons.grid_view : Icons.table_rows), tooltip: 'Вид таблицы', onPressed: () => setState(() => _isTableView = !_isTableView)),
+                IconButton(icon: Icon(_showCards ? Icons.table_rows : Icons.view_agenda_outlined), tooltip: 'Вид таблицы', onPressed: () => setState(() => _showCards = !_showCards)),
               ]),
             ),
-            AppProtocolTable(
-              itemCount: 6,
-              forceTableView: _isTableView,
-              headerRow: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  children: [
-                    SizedBox(width: 40, child: Text('#', style: Theme.of(context).textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold))),
-                    SizedBox(width: 180, child: Text('Спортсмен', maxLines: 1, overflow: TextOverflow.ellipsis)),
-                    const SizedBox(width: 44, child: Text('Эт.1')), const SizedBox(width: 44, child: Text('Эт.2')),
-                    const SizedBox(width: 44, child: Text('Эт.3')), const SizedBox(width: 44, child: Text('Эт.4')),
-                    const SizedBox(width: 44, child: Text('Эт.5')),
-                    const SizedBox(width: 50, child: Text('Итого')),
-                  ],
-                ),
-              ),
-              itemBuilder: (context, index, isCard) {
-                final data = [
-                  ['🥇', 'Петров А.А.', '100', '80', '—', '—', '—', '180'],
-                  ['🥈', 'Иванов В.В.', '80', '100', '—', '—', '—', '180'],
-                  ['🥉', 'Волков Е.Е.', '60', '60', '—', '—', '—', '120'],
-                  ['4', 'Козлов Г.Г.', '50', '50', '—', '—', '—', '100'],
-                  ['5', 'Сидоров Б.Б.', '45', '45', '—', '—', '—', '90'],
-                  ['6', 'Морозов Д.Д.', '40', 'DNF', '—', '—', '—', '40'],
-                ][index];
-                return _standRow(context, cs, isCard, data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]);
-              },
-            ),
+            Builder(builder: (context) {
+              final demoData = [
+                ['🥇', 'Петров А.А.', '100', '80', '—', '—', '—', '180'],
+                ['🥈', 'Иванов В.В.', '80', '100', '—', '—', '—', '180'],
+                ['🥉', 'Волков Е.Е.', '60', '60', '—', '—', '—', '120'],
+                ['4', 'Козлов Г.Г.', '50', '50', '—', '—', '—', '100'],
+                ['5', 'Сидоров Б.Б.', '45', '45', '—', '—', '—', '90'],
+                ['6', 'Морозов Д.Д.', '40', 'DNF', '—', '—', '—', '40'],
+              ];
+
+              final columns = <ColumnDef>[
+                const ColumnDef(id: 'place', label: '#', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 40),
+                const ColumnDef(id: 'name', label: 'Спортсмен', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0, minWidth: 140),
+                const ColumnDef(id: 's1', label: 'Эт.1', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 44),
+                const ColumnDef(id: 's2', label: 'Эт.2', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 44),
+                const ColumnDef(id: 's3', label: 'Эт.3', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 44),
+                const ColumnDef(id: 's4', label: 'Эт.4', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 44),
+                const ColumnDef(id: 's5', label: 'Эт.5', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 44),
+                const ColumnDef(id: 'total', label: 'Итого', type: ColumnType.number, align: ColumnAlign.right, flex: 0.7, minWidth: 50),
+              ];
+
+              final rows = demoData.asMap().entries.map((e) {
+                final d = e.value;
+                return ResultRow(
+                  entryId: 'series-${e.key}',
+                  cells: {
+                    'place': CellValue(raw: d[0], display: d[0], style: e.key < 3 ? CellStyle.bold : CellStyle.normal),
+                    'name': CellValue(raw: d[1], display: d[1], style: CellStyle.bold),
+                    's1': CellValue(raw: d[2], display: d[2], style: d[2] == '100' ? CellStyle.highlight : CellStyle.normal),
+                    's2': CellValue(raw: d[3], display: d[3], style: d[3] == 'DNF' ? CellStyle.error : d[3] == '100' ? CellStyle.highlight : CellStyle.normal),
+                    's3': CellValue(raw: d[4], display: d[4], style: CellStyle.muted),
+                    's4': CellValue(raw: d[5], display: d[5], style: CellStyle.muted),
+                    's5': CellValue(raw: d[6], display: d[6], style: CellStyle.muted),
+                    'total': CellValue(raw: d[7], display: d[7], style: CellStyle.bold),
+                  },
+                );
+              }).toList();
+
+              return AppResultTable(
+                table: ResultTable(columns: columns, rows: rows),
+                showCards: _showCards,
+              );
+            }),
             const SizedBox(height: 12),
             _buildStandingsChart(context, cs),
           ]),
@@ -546,70 +557,6 @@ class _SeriesScreenState extends State<SeriesScreen> {
   }
 
 
-  static Widget _standRow(BuildContext context, ColorScheme cs, bool isCard, String pos, String name, String s1, String s2, String s3, String s4, String s5, String total) {
-    if (isCard) {
-      final isTop3 = pos == '🥇' || pos == '🥈' || pos == '🥉';
-      final posWidget = isTop3 
-        ? Text(pos, style: const TextStyle(fontSize: 24))
-        : Container(
-            width: 32, height: 32,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(shape: BoxShape.circle, color: cs.surfaceContainerHighest),
-            child: Text(pos, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
-          );
-
-      return Padding(
-        padding: const EdgeInsets.only(bottom: 8),
-        child: AppCard(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Row(children: [
-              SizedBox(width: 40, child: posWidget),
-              Expanded(child: Text(name, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
-                child: Text(total, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w900, color: cs.primary)),
-              ),
-            ]),
-            const SizedBox(height: 16),
-            ...[
-              {'label': 'Этап 1 (Екатеринбург)', 'val': s1, 'stl': Theme.of(context).textTheme.bodyMedium?.copyWith(color: s1 == '100' ? cs.primary : cs.onSurfaceVariant, fontWeight: s1 == '100' ? FontWeight.bold : null)},
-              {'label': 'Этап 2 (Новосибирск)', 'val': s2, 'stl': Theme.of(context).textTheme.bodyMedium?.copyWith(color: s2 == 'DNF' ? cs.error : s2 == '100' ? cs.primary : cs.onSurfaceVariant)},
-              {'label': 'Этап 3 (Красноярск)', 'val': s3, 'stl': Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.outline)},
-              {'label': 'Этап 4 (Омск)', 'val': s4, 'stl': Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.outline)},
-              {'label': 'Этап 5 (Тюмень)', 'val': s5, 'stl': Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.outline)},
-            ].map((field) => Padding(
-              padding: const EdgeInsets.only(bottom: 6),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(field['label'] as String, style: Theme.of(context).textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
-                  Text(field['val'] as String, style: field['stl'] as TextStyle),
-                ],
-              ),
-            )),
-          ],
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        children: [
-          SizedBox(width: 40, child: Text(pos, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold))),
-          SizedBox(width: 180, child: Text(name, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold), maxLines: 1, overflow: TextOverflow.ellipsis)),
-          SizedBox(width: 44, child: Text(s1, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: s1 == '100' ? cs.primary : null, fontWeight: s1 == '100' ? FontWeight.bold : null))),
-          SizedBox(width: 44, child: Text(s2, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: s2 == 'DNF' ? cs.error : s2 == '100' ? cs.primary : null))),
-          SizedBox(width: 44, child: Text(s3, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
-          SizedBox(width: 44, child: Text(s4, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
-          SizedBox(width: 44, child: Text(s5, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant))),
-          SizedBox(width: 50, child: Text(total, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
-        ],
-      ),
-    );
-  }
 
   static Widget _buildStandingsChart(BuildContext context, ColorScheme cs) {
     final names = ['Петров', 'Иванов', 'Волков', 'Козлов', 'Сидоров', 'Морозов'];

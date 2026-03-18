@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/widgets/widgets.dart';
+import '../../ui/molecules/app_placeholder.dart';
 import 'dog_detail_screen.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 
@@ -29,7 +30,7 @@ class _MyDogsScreenState extends State<MyDogsScreen> {
         label: const Text('Добавить'),
       ),
       body: _dogs.isEmpty
-          ? AppEmptyState(
+          ? AppPlaceholder.empty(
               icon: Icons.pets,
               title: 'У вас пока нет собак',
               subtitle: 'Добавьте собаку для участия в мероприятиях',

@@ -312,23 +312,26 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: Row(children: [
           const Spacer(),
-          SegmentedButton<bool?>(
-            segments: const [
-              ButtonSegment(value: null, icon: Icon(Icons.auto_awesome, size: 16), label: Text('Авто')),
-              ButtonSegment(value: true, icon: Icon(Icons.table_rows, size: 16), label: Text('Таблица')),
-              ButtonSegment(value: false, icon: Icon(Icons.view_agenda, size: 16), label: Text('Карточки')),
-            ],
-            selected: {_forceTableView},
-            onSelectionChanged: (v) => setState(() => _forceTableView = v.first),
-            style: ButtonStyle(
-              visualDensity: VisualDensity.compact,
-              textStyle: WidgetStatePropertyAll(TextStyle(fontSize: 11)),
+          GestureDetector(
+            onTap: () => setState(() => _forceTableView = !(_forceTableView ?? false)),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: (_forceTableView ?? false) ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: (_forceTableView ?? false) ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Icon(
+                (_forceTableView ?? false) ? Icons.view_agenda_outlined : Icons.table_rows_outlined,
+                size: 16,
+                color: (_forceTableView ?? false) ? cs.primary : cs.onSurfaceVariant,
+              ),
             ),
           ),
         ]),
       ),
 
-      // AppProtocolTable
+      // AppResultTable (built from inline ResultTable)
       Expanded(
         child: courseAthletes.isEmpty
             ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -336,21 +339,21 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                 const SizedBox(height: 8),
                 Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
               ]))
-            : AppProtocolTable(
-                itemCount: courseAthletes.length,
-                forceTableView: _forceTableView,
-                headerRow: AppProtocolRow(
-                  isHeader: true,
-                  bib: 'BIB',
-                  name: 'Спортсмен',
-                  cat: 'КАТ.',
-                  dog: 'КП1',
-                  time: 'Финиш',
-                  delta: 'Δ',
-                  penalty: '—',
-                ),
-                itemBuilder: (ctx, i, isCard) {
-                  final a = courseAthletes[i];
+            : Builder(builder: (context) {
+                // Build columns
+                final columns = <ColumnDef>[
+                  const ColumnDef(id: 'place', label: '№', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 40),
+                  const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 50),
+                  const ColumnDef(id: 'name', label: 'Спортсмен', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0, minWidth: 140),
+                  const ColumnDef(id: 'category', label: 'Кат.', type: ColumnType.text, align: ColumnAlign.center, flex: 0.8, minWidth: 80),
+                  const ColumnDef(id: 'split', label: 'Сплиты', type: ColumnType.text, align: ColumnAlign.left, flex: 1.5, minWidth: 110),
+                  const ColumnDef(id: 'result_time', label: 'Финиш', type: ColumnType.time, align: ColumnAlign.right, flex: 1.2, minWidth: 85),
+                ];
+
+                // Build rows
+                final rows = courseAthletes.asMap().entries.map((e) {
+                  final i = e.key;
+                  final a = e.value;
                   final isDnf = a.status == AthleteStatus.dnf;
                   final isDsq = a.status == AthleteStatus.dsq;
 
@@ -378,38 +381,43 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   }
 
                   final String finishText;
-                  final String? placeText;
+                  final CellStyle finishStyle;
+                  final RowType rowType;
                   if (isDsq) {
-                    finishText = 'DSQ';
-                    placeText = 'DSQ';
+                    finishText = 'DSQ'; finishStyle = CellStyle.error; rowType = RowType.dsq;
                   } else if (isDnf) {
-                    finishText = 'DNF';
-                    placeText = 'DNF';
+                    finishText = 'DNF'; finishStyle = CellStyle.error; rowType = RowType.dnf;
                   } else if (hasFinish) {
                     finishText = TimeFormatter.compact(_elapsedCalc.netTime(a, finishMarks.last.correctedTime));
-                    placeText = null;
+                    finishStyle = CellStyle.bold; rowType = RowType.finished;
                   } else {
                     final completedLaps = finishMarks.length;
                     finishText = session.config.laps > 1
                         ? 'Круг ${completedLaps + 1}/${session.config.laps}'
                         : '...';
-                    placeText = 'LIVE';
+                    finishStyle = CellStyle.muted; rowType = RowType.onTrack;
                   }
 
-                  return AppProtocolRow(
-                    isCardView: isCard,
-                    place: hasFinish && !isDnf && !isDsq ? i + 1 : null,
-                    placeText: placeText,
-                    bib: a.bib,
-                    name: a.name,
-                    cat: a.categoryName ?? '—',
-                    dog: splitText,
-                    time: finishText,
-                    delta: i == 0 ? '—' : '',
-                    penalty: '—',
-                  );
-                },
-              ),
+                  final cells = <String, CellValue>{
+                    'place': hasFinish && !isDnf && !isDsq
+                        ? CellValue(raw: i + 1, display: '${i + 1}', style: i == 0 ? CellStyle.highlight : CellStyle.normal)
+                        : CellValue(display: isDsq ? 'DSQ' : isDnf ? 'DNF' : 'LIVE', style: isDsq || isDnf ? CellStyle.error : CellStyle.highlight),
+                    'bib': CellValue(raw: a.bib, display: a.bib),
+                    'name': CellValue(raw: a.name, display: a.name),
+                    'category': CellValue(raw: a.categoryName, display: a.categoryName ?? '—'),
+                    'split': CellValue(display: splitText),
+                    'result_time': CellValue(display: finishText, style: finishStyle),
+                  };
+
+                  return ResultRow(entryId: a.entryId, cells: cells, type: rowType);
+                }).toList();
+
+                final table = ResultTable(columns: columns, rows: rows);
+                return AppResultTable(
+                  table: table,
+                  showCards: _forceTableView ?? false,
+                );
+              }),
       ),
     ]);
   }

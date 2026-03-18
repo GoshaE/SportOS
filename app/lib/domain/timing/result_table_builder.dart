@@ -56,6 +56,7 @@ class ResultTableBuilder {
     cols.add(const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 50));
     cols.add(const ColumnDef(id: 'name', label: 'Спортсмен', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0, minWidth: 140));
     cols.add(const ColumnDef(id: 'category', label: 'Кат.', type: ColumnType.text, align: ColumnAlign.center, flex: 0.8, minWidth: 80));
+    cols.add(const ColumnDef(id: 'cat_place', label: '№ Кат.', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 45));
 
     // ── Dog name (ездовой спорт) ──
     if (display.showDogNames) {
@@ -161,9 +162,17 @@ class ResultTableBuilder {
       cells['name'] = CellValue(raw: r.name, display: r.name);
 
       // ── Category ──
-      // Try to find from athletes list
       final athlete = athletes?.where((a) => a.bib == r.bib).firstOrNull;
-      cells['category'] = CellValue(raw: athlete?.categoryName, display: athlete?.categoryName ?? '—');
+      // Use categoryName from result (populated by ResultCalculator)
+      final catName = r.categoryName ?? athlete?.categoryName;
+      cells['category'] = CellValue(raw: catName, display: catName ?? '—');
+
+      // ── Category Place ──
+      if (r.categoryPosition > 0) {
+        cells['cat_place'] = CellValue(raw: r.categoryPosition, display: '${r.categoryPosition}');
+      } else {
+        cells['cat_place'] = CellValue.na;
+      }
 
       // ── Dog name ──
       if (display.showDogNames) {

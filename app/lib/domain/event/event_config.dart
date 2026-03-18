@@ -206,6 +206,9 @@ class EventConfig {
   // ── Хронометраж ──
   final TimingConfig timingConfig;
 
+  // ── Жеребьёвка ──
+  final DrawConfig drawConfig;
+
   // ── Библиотека штрафов ──
   final List<PenaltyTemplate> penaltyTemplates;
 
@@ -236,6 +239,7 @@ class EventConfig {
     this.registrationConfig = const RegistrationConfig(),
     this.pricingConfig = const PricingConfig(),
     this.timingConfig = const TimingConfig(),
+    this.drawConfig = const DrawConfig(),
     this.penaltyTemplates = defaultPenaltyTemplates,
     this.checklistItems = defaultChecklistItems,
   });
@@ -264,6 +268,7 @@ class EventConfig {
     RegistrationConfig? registrationConfig,
     PricingConfig? pricingConfig,
     TimingConfig? timingConfig,
+    DrawConfig? drawConfig,
     List<PenaltyTemplate>? penaltyTemplates,
     List<ChecklistItemConfig>? checklistItems,
   }) {
@@ -291,6 +296,7 @@ class EventConfig {
       registrationConfig: registrationConfig ?? this.registrationConfig,
       pricingConfig: pricingConfig ?? this.pricingConfig,
       timingConfig: timingConfig ?? this.timingConfig,
+      drawConfig: drawConfig ?? this.drawConfig,
       penaltyTemplates: penaltyTemplates ?? this.penaltyTemplates,
       checklistItems: checklistItems ?? this.checklistItems,
     );
@@ -575,6 +581,10 @@ class RegistrationConfig {
   final bool waitlistEnabled;
   final int? waitlistMax;
 
+  /// Дедлайн регистрации — после этой даты регистрация
+  /// автоматически закрывается.
+  final DateTime? registrationDeadline;
+
   // ── Публичность ──
   final bool publicStartList;
   final bool publicResults;
@@ -604,6 +614,7 @@ class RegistrationConfig {
   const RegistrationConfig({
     this.isOpen = false,
     this.maxParticipants,
+    this.registrationDeadline,
     this.waitlistEnabled = false,
     this.waitlistMax,
     this.publicStartList = true,
@@ -627,6 +638,7 @@ class RegistrationConfig {
   RegistrationConfig copyWith({
     bool? isOpen,
     int? maxParticipants,
+    DateTime? registrationDeadline,
     bool? waitlistEnabled,
     int? waitlistMax,
     bool? publicStartList,
@@ -649,6 +661,7 @@ class RegistrationConfig {
     return RegistrationConfig(
       isOpen: isOpen ?? this.isOpen,
       maxParticipants: maxParticipants ?? this.maxParticipants,
+      registrationDeadline: registrationDeadline ?? this.registrationDeadline,
       waitlistEnabled: waitlistEnabled ?? this.waitlistEnabled,
       waitlistMax: waitlistMax ?? this.waitlistMax,
       publicStartList: publicStartList ?? this.publicStartList,
@@ -810,6 +823,59 @@ class TimingConfig {
 }
 
 // ─────────────────────────────────────────────────────────────────
+// DRAW CONFIG (жеребьёвка)
+// ─────────────────────────────────────────────────────────────────
+
+/// Режим жеребьёвки.
+enum DrawMode {
+  /// Автоматический случайный порядок.
+  auto,
+  /// Организатор назначает вручную.
+  manual,
+  /// Посев + случайная жеребьёвка остальных.
+  combined,
+}
+
+/// Группировка при жеребьёвке.
+enum DrawGrouping {
+  /// Все категории вместе.
+  joint,
+  /// По категориям (CEC → OPEN → Юн...).
+  byCategory,
+}
+
+/// Настройки жеребьёвки мероприятия.
+class DrawConfig {
+  final DrawMode mode;
+  final DrawGrouping grouping;
+  /// Буфер между группами (минуты).
+  final int bufferMinutes;
+  /// Только подтверждённые участники.
+  final bool onlyApproved;
+
+  const DrawConfig({
+    this.mode = DrawMode.auto,
+    this.grouping = DrawGrouping.joint,
+    this.bufferMinutes = 5,
+    this.onlyApproved = true,
+  });
+
+  DrawConfig copyWith({
+    DrawMode? mode,
+    DrawGrouping? grouping,
+    int? bufferMinutes,
+    bool? onlyApproved,
+  }) {
+    return DrawConfig(
+      mode: mode ?? this.mode,
+      grouping: grouping ?? this.grouping,
+      bufferMinutes: bufferMinutes ?? this.bufferMinutes,
+      onlyApproved: onlyApproved ?? this.onlyApproved,
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────
 // PENALTY TEMPLATE (библиотека штрафов)
 // ─────────────────────────────────────────────────────────────────
 
@@ -925,6 +991,14 @@ class Participant {
   final int? priceRub;
   final DateTime registeredAt;
 
+  // ─── Расширенные поля ───
+  final String? gender;       // 'male' / 'female'
+  final DateTime? birthDate;  // для авто-категории по возрасту
+  final String? city;         // город
+  final String? club;         // клуб / команда
+  final String? rank;         // разряд / квалификация
+  final String? insuranceNo;  // номер страховки
+
   const Participant({
     required this.id,
     required this.name,
@@ -939,7 +1013,63 @@ class Participant {
     this.applicationStatus = ApplicationStatus.pending,
     this.priceRub,
     required this.registeredAt,
+    this.gender,
+    this.birthDate,
+    this.city,
+    this.club,
+    this.rank,
+    this.insuranceNo,
   });
+
+  /// Вычисляет возраст на указанную дату (или сегодня).
+  int? ageOn(DateTime date) {
+    if (birthDate == null) return null;
+    int age = date.year - birthDate!.year;
+    if (date.month < birthDate!.month ||
+        (date.month == birthDate!.month && date.day < birthDate!.day)) {
+      age--;
+    }
+    return age;
+  }
+
+  /// Определяет категорию автоматически по полу и возрасту.
+  /// Ищет наиболее подходящую RaceCategory из списка мероприятия.
+  String? resolveCategory(List<RaceCategory> categories, {DateTime? eventDate}) {
+    if (categories.isEmpty) return category;
+    final date = eventDate ?? DateTime.now();
+    final age = ageOn(date);
+    final g = gender == 'male'
+        ? CategoryGender.male
+        : gender == 'female'
+            ? CategoryGender.female
+            : CategoryGender.any;
+
+    // Ищем наиболее точное совпадение (с полом и возрастом)
+    RaceCategory? best;
+    int bestScore = -1;
+
+    for (final cat in categories) {
+      int score = 0;
+      // Проверка пола
+      if (cat.gender != CategoryGender.any && g != CategoryGender.any) {
+        if (cat.gender != g) continue; // не совпадает — пропуск
+        score += 2; // точное совпадение пола
+      } else if (cat.gender == CategoryGender.any) {
+        score += 0; // универсальная
+      }
+      // Проверка возраста
+      if (age != null) {
+        if (cat.ageMin != null && age < cat.ageMin!) continue;
+        if (cat.ageMax != null && age > cat.ageMax!) continue;
+        if (cat.ageMin != null || cat.ageMax != null) score += 3;
+      }
+      if (score > bestScore) {
+        bestScore = score;
+        best = cat;
+      }
+    }
+    return best?.shortName ?? category;
+  }
 
   Participant copyWith({
     String? name,
@@ -953,6 +1083,12 @@ class Participant {
     PaymentStatus? paymentStatus,
     ApplicationStatus? applicationStatus,
     int? priceRub,
+    String? gender,
+    DateTime? birthDate,
+    String? city,
+    String? club,
+    String? rank,
+    String? insuranceNo,
   }) {
     return Participant(
       id: id,
@@ -968,19 +1104,25 @@ class Participant {
       applicationStatus: applicationStatus ?? this.applicationStatus,
       priceRub: priceRub ?? this.priceRub,
       registeredAt: registeredAt,
+      gender: gender ?? this.gender,
+      birthDate: birthDate ?? this.birthDate,
+      city: city ?? this.city,
+      club: club ?? this.club,
+      rank: rank ?? this.rank,
+      insuranceNo: insuranceNo ?? this.insuranceNo,
     );
   }
 }
 
 /// Демо-участники.
 final List<Participant> demoParticipants = [
-  Participant(id: 'p-1', name: 'Петров А.А.', phone: '+7 912 111-11-11', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '07', category: 'М 25', dogName: 'Rex', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 1)),
-  Participant(id: 'p-2', name: 'Сидоров Б.Б.', phone: '+7 912 222-22-22', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '12', category: 'М 25', dogName: 'Luna', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 3)),
-  Participant(id: 'p-3', name: 'Иванов В.В.', phone: '+7 912 333-33-33', disciplineId: 'd-skijor-20', disciplineName: 'Скидж. 10км', bib: '24', category: 'М 25', dogName: 'Storm', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 3500, registeredAt: DateTime(2026, 2, 5)),
-  Participant(id: 'p-4', name: 'Козлов Г.Г.', phone: '+7 912 444-44-44', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '31', category: 'М 35', dogName: 'Wolf', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.approved, priceRub: 3000, registeredAt: DateTime(2026, 2, 7)),
-  Participant(id: 'p-5', name: 'Морозов Д.Д.', email: 'morozov@mail.ru', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '42', category: 'М 30', dogName: 'Buddy', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.pending, priceRub: 1500, registeredAt: DateTime(2026, 2, 10)),
-  Participant(id: 'p-6', name: 'Волков Е.Е.', phone: '+7 912 666-66-66', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '55', category: 'М 35', dogName: 'Alaska', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 12)),
-  Participant(id: 'p-7', name: 'Лебедев Ж.Ж.', phone: '+7 912 777-77-77', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '63', category: 'М 40', dogName: 'Max', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.pending, priceRub: 3000, registeredAt: DateTime(2026, 2, 14)),
-  Participant(id: 'p-8', name: 'Новиков З.З.', phone: '+7 912 888-88-88', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '77', category: 'Ж 25', dogName: 'Rocky', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 1500, registeredAt: DateTime(2026, 2, 16)),
+  Participant(id: 'p-1', name: 'Петров Алексей', phone: '+7 912 111-11-11', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '07', category: 'М', gender: 'male', birthDate: DateTime(2000, 3, 15), city: 'Екатеринбург', club: 'Сноу Дог', dogName: 'Rex', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 1)),
+  Participant(id: 'p-2', name: 'Сидорова Мария', phone: '+7 912 222-22-22', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '12', category: 'Ж', gender: 'female', birthDate: DateTime(1998, 7, 22), city: 'Челябинск', club: 'Хаски клуб', dogName: 'Luna', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 3)),
+  Participant(id: 'p-3', name: 'Иванов Виктор', phone: '+7 912 333-33-33', disciplineId: 'd-skijor-20', disciplineName: 'Скидж. 10км', bib: '24', category: 'М', gender: 'male', birthDate: DateTime(1995, 1, 10), city: 'Пермь', club: 'Северный ветер', dogName: 'Storm', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 3500, registeredAt: DateTime(2026, 2, 5)),
+  Participant(id: 'p-4', name: 'Козлов Григорий', phone: '+7 912 444-44-44', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '31', category: 'М', gender: 'male', birthDate: DateTime(1988, 11, 5), city: 'Тюмень', club: 'Сноу Дог', dogName: 'Wolf', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.approved, priceRub: 3000, registeredAt: DateTime(2026, 2, 7)),
+  Participant(id: 'p-5', name: 'Морозова Дарья', email: 'morozova@mail.ru', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '42', category: 'Ж', gender: 'female', birthDate: DateTime(1993, 6, 18), city: 'Екатеринбург', club: 'Хаски клуб', dogName: 'Buddy', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.pending, priceRub: 1500, registeredAt: DateTime(2026, 2, 10)),
+  Participant(id: 'p-6', name: 'Волков Евгений', phone: '+7 912 666-66-66', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '55', category: 'М', gender: 'male', birthDate: DateTime(1985, 4, 30), city: 'Курган', club: 'Северный ветер', dogName: 'Alaska', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 12)),
+  Participant(id: 'p-7', name: 'Лебедев Жан', phone: '+7 912 777-77-77', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '63', category: 'М', gender: 'male', birthDate: DateTime(1982, 9, 12), city: 'Пермь', dogName: 'Max', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.pending, priceRub: 3000, registeredAt: DateTime(2026, 2, 14)),
+  Participant(id: 'p-8', name: 'Новикова Злата', phone: '+7 912 888-88-88', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '77', category: 'Ж', gender: 'female', birthDate: DateTime(2001, 12, 3), city: 'Екатеринбург', club: 'Сноу Дог', dogName: 'Rocky', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 1500, registeredAt: DateTime(2026, 2, 16)),
 ];
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportos_app/ui/molecules/app_list_row.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -108,9 +109,9 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
         Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('Членские взносы', style: theme.textTheme.titleMedium),
           const SizedBox(height: 12),
-          AppDetailRow(label: 'Взрослый', value: '3 000 ₽/год'),
-          AppDetailRow(label: 'Ребёнок (до 14)', value: '1 500 ₽/год'),
-          AppDetailRow(label: 'Семейный', value: '5 000 ₽/год'),
+          AppListRow.detail(label: 'Взрослый', value: '3 000 ₽/год'),
+          AppListRow.detail(label: 'Ребёнок (до 14)', value: '1 500 ₽/год'),
+          AppListRow.detail(label: 'Семейный', value: '5 000 ₽/год'),
           const Divider(),
           Row(children: [
             Text('Общий сбор 2026:', style: theme.textTheme.titleSmall),
@@ -126,7 +127,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
         {'who': 'Орлов Павел', 'date': '10.02.2026', 'sum': '3 000 ₽', 'type': 'Взрослый'},
         {'who': 'Козлов Артём', 'date': '05.01.2026', 'sum': '3 000 ₽', 'type': 'Взрослый'},
         {'who': 'Петрова Мария', 'date': '12.12.2025', 'sum': '5 000 ₽', 'type': 'Семейный'},
-      ].map((p) => AppStatusRow(
+      ].map((p) => AppListRow.status(
         icon: Icons.check_circle,
         title: p['who']!,
         subtitle: '${p['date']} · ${p['type']}',

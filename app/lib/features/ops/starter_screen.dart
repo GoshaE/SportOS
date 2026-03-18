@@ -26,34 +26,12 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
   @override
   void initState() {
     super.initState();
+    // UI-only timer: updates elapsed display (countdown, clock).
+    // Auto-start logic is handled by RaceScheduler in domain layer.
     _uiTimer = Timer.periodic(const Duration(milliseconds: 500), (_) {
       final session = ref.read(raceSessionProvider);
       if (session == null || !mounted) return;
-
-      // Обновить elapsed для UI
       setState(() => _elapsed = session.clock.elapsed);
-
-      // ── Авто-старт (раздельный без ручного подтверждения) ──
-      // Если manualStart = false, атлеты уходят автоматически
-      // когда наступает их plannedStartTime.
-      if (!_isMassStart &&
-          !session.config.manualStart &&
-          session.config.startType == StartType.individual) {
-        final now = session.clock.now;
-        // Проверяем всех waiting/current — вдруг несколько опоздали
-        bool changed = false;
-        for (final a in session.startList.all) {
-          if ((a.status == AthleteStatus.waiting || a.status == AthleteStatus.current) &&
-              !a.plannedStartTime.isAfter(now)) {
-            ref.read(raceSessionProvider.notifier).markStarted(
-              a.bib,
-              actualTime: a.plannedStartTime, // точное запланированное время
-            );
-            changed = true;
-          }
-        }
-        if (changed) setState(() {});
-      }
     });
   }
 

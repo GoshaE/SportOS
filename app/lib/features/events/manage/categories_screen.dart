@@ -196,7 +196,7 @@ class CategoriesScreen extends ConsumerWidget {
     var gender = existing?.gender ?? CategoryGender.any;
     final cs = Theme.of(context).colorScheme;
 
-    AppBottomSheet.show(context, title: isNew ? 'Своя категория' : existing!.name, child: StatefulBuilder(
+    AppBottomSheet.show(context, title: isNew ? 'Своя категория' : existing.name, child: StatefulBuilder(
       builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
         TextField(
           controller: nameCtrl,
@@ -210,7 +210,7 @@ class CategoriesScreen extends ConsumerWidget {
           )),
           const SizedBox(width: 12),
           Expanded(child: DropdownButtonFormField<CategoryGender>(
-            value: gender,
+            initialValue: gender,
             decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder(), isDense: true),
             items: const [
               DropdownMenuItem(value: CategoryGender.any, child: Text('Любой')),
@@ -257,7 +257,7 @@ class CategoriesScreen extends ConsumerWidget {
             if (isNew) {
               list.add(cat);
             } else {
-              final idx = list.indexWhere((c) => c.id == existing!.id);
+              final idx = list.indexWhere((c) => c.id == existing.id);
               if (idx >= 0) list[idx] = cat;
             }
             ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(raceCategories: list));

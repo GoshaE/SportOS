@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportos_app/ui/molecules/app_list_row.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -46,9 +47,9 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
           // ── Основные данные ──
           AppSectionHeader(title: 'Основные', icon: Icons.info_outline),
           AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-            AppDetailRow(label: 'Пол', value: _sex, icon: Icons.wc),
-            AppDetailRow(label: 'Дата рождения', value: _birthday, icon: Icons.cake),
-            AppDetailRow(label: 'Чип', value: _chip, icon: Icons.memory),
+            AppListRow.detail(label: 'Пол', value: _sex, icon: Icons.wc),
+            AppListRow.detail(label: 'Дата рождения', value: _birthday, icon: Icons.cake),
+            AppListRow.detail(label: 'Чип', value: _chip, icon: Icons.memory),
           ]),
           const SizedBox(height: 12),
 
@@ -59,8 +60,8 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
               : AppInfoBanner.error(title: 'Вакцинация просрочена', subtitle: 'Обновите данные'),
           const SizedBox(height: 8),
           AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-            AppDetailRow(label: 'Бешенство', value: 'До $_vaccine', icon: Icons.medical_services),
-            AppDetailRow(label: 'Комплексная', value: 'До 20.08.2026', icon: Icons.vaccines),
+            AppListRow.detail(label: 'Бешенство', value: 'До $_vaccine', icon: Icons.medical_services),
+            AppListRow.detail(label: 'Комплексная', value: 'До 20.08.2026', icon: Icons.vaccines),
           ]),
           const SizedBox(height: 4),
           AppButton.secondary(text: 'Загрузить сертификат', icon: Icons.upload_file, onPressed: () {}),
@@ -69,9 +70,9 @@ class _DogDetailScreenState extends State<DogDetailScreen> {
           // ── Статистика ──
           AppSectionHeader(title: 'Статистика', icon: Icons.bar_chart),
           AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-            AppDetailRow(label: 'Всего стартов', value: '12', icon: Icons.flag),
-            AppDetailRow(label: 'Подиумов', value: '5', icon: Icons.emoji_events),
-            AppDetailRow(label: 'Лучшее время', value: '23:15 (Скидж. 6км)', icon: Icons.timer),
+            AppListRow.detail(label: 'Всего стартов', value: '12', icon: Icons.flag),
+            AppListRow.detail(label: 'Подиумов', value: '5', icon: Icons.emoji_events),
+            AppListRow.detail(label: 'Лучшее время', value: '23:15 (Скидж. 6км)', icon: Icons.timer),
           ]),
           const SizedBox(height: 12),
 

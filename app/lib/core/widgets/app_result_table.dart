@@ -61,30 +61,39 @@ class AppResultTable extends StatelessWidget {
       final needsScroll = totalMinWidth > availableWidth;
       final tableWidth = needsScroll ? totalMinWidth : availableWidth;
 
+      // Auto-detect unbounded height (e.g. inside SliverToBoxAdapter / SingleChildScrollView)
+      final isUnbounded = constraints.maxHeight == double.infinity;
+
+      final listView = ListView.separated(
+        shrinkWrap: isUnbounded,
+        physics: isUnbounded ? const NeverScrollableScrollPhysics() : null,
+        itemCount: table.rows.length,
+        padding: EdgeInsets.zero,
+        separatorBuilder: (context, index) => Divider(
+          height: 1,
+          color: cs.outlineVariant.withValues(alpha: 0.08),
+        ),
+        itemBuilder: (ctx, i) => _TableRow(
+          columns: table.columns,
+          row: table.rows[i],
+          index: i,
+          onTap: onRowTap != null ? () => onRowTap!(table.rows[i]) : null,
+        ),
+      );
+
       Widget tableContent = SizedBox(
         width: tableWidth,
         child: Column(
+          mainAxisSize: isUnbounded ? MainAxisSize.min : MainAxisSize.max,
           children: [
             // ── Header ──
             _TableHeader(columns: table.columns),
             Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.25)),
             // ── Body ──
-            Expanded(
-              child: ListView.separated(
-                itemCount: table.rows.length,
-                padding: EdgeInsets.zero,
-                separatorBuilder: (context, index) => Divider(
-                  height: 1,
-                  color: cs.outlineVariant.withValues(alpha: 0.08),
-                ),
-                itemBuilder: (ctx, i) => _TableRow(
-                  columns: table.columns,
-                  row: table.rows[i],
-                  index: i,
-                  onTap: onRowTap != null ? () => onRowTap!(table.rows[i]) : null,
-                ),
-              ),
-            ),
+            if (isUnbounded)
+              listView
+            else
+              Expanded(child: listView),
           ],
         ),
       );
@@ -131,18 +140,23 @@ class AppResultTable extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      itemCount: table.rows.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 4),
-      itemBuilder: (ctx, i) {
-        final row = table.rows[i];
-        return GestureDetector(
-          onTap: onRowTap != null ? () => onRowTap!(row) : null,
-          child: _CardRow(columns: table.columns, row: row, theme: theme, cs: cs),
-        );
-      },
-    );
+    return LayoutBuilder(builder: (context, constraints) {
+      final isUnbounded = constraints.maxHeight == double.infinity;
+      return ListView.separated(
+        shrinkWrap: isUnbounded,
+        physics: isUnbounded ? const NeverScrollableScrollPhysics() : null,
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        itemCount: table.rows.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 4),
+        itemBuilder: (ctx, i) {
+          final row = table.rows[i];
+          return GestureDetector(
+            onTap: onRowTap != null ? () => onRowTap!(row) : null,
+            child: _CardRow(columns: table.columns, row: row, theme: theme, cs: cs),
+          );
+        },
+      );
+    });
   }
 }
 

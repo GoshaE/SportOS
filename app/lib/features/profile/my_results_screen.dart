@@ -1,6 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import '../../core/widgets/widgets.dart';
+import '../../ui/molecules/app_chip_group.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 
 /// Screen ID: PR3 — Мои результаты (с PB-трекером)
@@ -52,10 +53,11 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
           const SizedBox(height: 8),
 
           // Фильтр
-          AppFilterChipGroup(
+          AppChipGroup(
             items: const ['Все', 'Ездовой спорт', 'Каникросс', 'Лыжные гонки'],
-            selected: {_sportFilter},
-            onChanged: (v) => setState(() => _sportFilter = v.first),
+            selected: _sportFilter,
+            onSelected: (v) => setState(() => _sportFilter = v),
+            padding: EdgeInsets.zero,
           ),
           const SizedBox(height: 8),
 

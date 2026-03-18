@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'app_cached_image.dart';
 import 'status_badge.dart';
+import '../../ui/atoms/app_gradient_overlay.dart';
+import '../../ui/atoms/app_icon_label.dart';
+import '../../ui/atoms/app_chip.dart';
 
 /// Presentation modes for Club Cards
 enum ClubCardMode {
@@ -122,23 +125,17 @@ class AppClubCard extends StatelessWidget {
                       // Location & Sport Row
                       Row(
                         children: [
-                          Icon(Icons.location_on, size: 12, color: cs.primary),
-                          const SizedBox(width: 2),
                           Flexible(
-                            child: Text(
-                              location,
-                              style: TextStyle(fontSize: 12, color: cs.onSurface),
-                              maxLines: 1,
-                              overflow: TextOverflow.clip,
+                            child: AppIconLabel(
+                              Icons.location_on, location,
+                              color: cs.primary,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Flexible(
-                            child: Text(
-                              sport,
-                              style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: AppIconLabel(
+                              Icons.sports, sport,
+                              color: cs.onSurfaceVariant,
                             ),
                           ),
                         ],
@@ -151,21 +148,9 @@ class AppClubCard extends StatelessWidget {
                         runSpacing: 4,
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          _buildChip(
-                            context, 
-                            Icons.group, 
-                            '$members участн.', 
-                            cs.surfaceContainerHighest.withValues(alpha: 0.5), 
-                            cs.onSurfaceVariant
-                          ),
+                          AppChip.icon(Icons.group, '$members участн.'),
                           if (fee != null)
-                            _buildChip(
-                              context, 
-                              Icons.payments_outlined, 
-                              fee!, 
-                              cs.surfaceContainerHighest.withValues(alpha: 0.5), 
-                              cs.onSurfaceVariant
-                            ),
+                            AppChip.icon(Icons.payments_outlined, fee!),
                         ],
                       ),
                     ],
@@ -247,19 +232,7 @@ class AppClubCard extends StatelessWidget {
                 AppCachedImage(url: safeImageUrl, fit: BoxFit.cover),
 
               // 2. Dark Gradient Overlay (Bottom to Top)
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: const Alignment(0, -0.2), // Fades out slightly above middle
-                    colors: [
-                      Colors.black.withValues(alpha: 0.85),
-                      Colors.black.withValues(alpha: 0.4),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
+              const AppGradientOverlay.bottomUp(),
 
               // 3. Top Badges
               Positioned(
@@ -314,14 +287,10 @@ class AppClubCard extends StatelessWidget {
                           const SizedBox(height: 6),
                           Row(
                             children: [
-                              const Icon(Icons.location_on, size: 12, color: Colors.white70),
-                              const SizedBox(width: 4),
                               Flexible(
-                                child: Text(
-                                  '$location · $sport',
-                                  style: const TextStyle(fontSize: 12, color: Colors.white70),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                child: AppIconLabel(
+                                  Icons.location_on, '$location · $sport',
+                                  color: Colors.white70,
                                 ),
                               ),
                             ],
@@ -378,31 +347,7 @@ class AppClubCard extends StatelessWidget {
     );
   }
 
-  Widget _buildChip(BuildContext context, IconData icon, String label, Color bgColor, Color fgColor) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: fgColor.withValues(alpha: 0.1)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: fgColor),
-          const SizedBox(width: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              color: fgColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // _buildChip replaced by AppChip.icon atom
 
   Widget _buildGlassBadge(String text, BadgeType type, ColorScheme cs, {IconData? icon}) {
     final (baseColor, iconColor) = switch (type) {

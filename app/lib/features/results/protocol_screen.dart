@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
+import '../../ui/molecules/app_chip_group.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_podium_view.dart';
 import '../../domain/timing/timing.dart';
-import '../../domain/event/config_providers.dart';
 
 /// Screen ID: RS2 — Протоколы (данные из ResultCalculator или демо)
 class ProtocolScreen extends ConsumerStatefulWidget {
@@ -19,7 +19,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
   String _disc = '';
   int _currentDay = 1;
   final int _totalDays = 2;
-  bool? _isTableView;
+  bool _showCards = false;
+
+  static const _tableBuilder = ResultTableBuilder();
 
   @override
   Widget build(BuildContext context) {
@@ -38,11 +40,10 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
       discNames = [discName];
       if (_disc.isEmpty) _disc = discName;
     } else {
-      // Fallback: демо для протоколов когда нет активной сессии
-      results = _demoResults();
-      discName = 'Скиджоринг 5км';
-      discNames = ['Скиджоринг 5км', 'Скиджоринг 10км', 'Каникросс 3км', 'Нарты 15км'];
-      if (_disc.isEmpty) _disc = discName;
+      // Нет активной сессии — протокол пуст (формируется только во время / после гонки)
+      results = [];
+      discName = '';
+      discNames = [];
     }
 
     // Stats
@@ -52,17 +53,17 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
     final total = results.length;
 
     // Podium
-    final podium = results.where((r) => r.position != null && r.position! <= 3).toList();
+    final podium = results.where((r) => r.position <= 3).toList();
 
     return Scaffold(
       appBar: AppAppBar(
         title: const Text('Протоколы'),
         actions: [
           IconButton(
-            icon: Icon(_isTableView == true ? Icons.grid_view : Icons.table_rows),
-            tooltip: _isTableView == true ? 'Плиточный вид' : 'Табличный вид',
+            icon: Icon(_showCards ? Icons.table_rows : Icons.view_agenda_outlined),
+            tooltip: _showCards ? 'Табличный вид' : 'Карточки',
             onPressed: () {
-              setState(() => _isTableView = !(_isTableView ?? true));
+              setState(() => _showCards = !_showCards);
             },
           ),
           PopupMenuButton<String>(
@@ -82,7 +83,23 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
           ),
         ],
       ),
-      body: CustomScrollView(
+      body: session == null
+          // ── Нет активной сессии ──
+          ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+              Icon(Icons.assignment_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              const SizedBox(height: 16),
+              Text('Протоколы пока не сформированы', style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
+              const SizedBox(height: 8),
+              Text('Протоколы формируются во время или после гонки', style: theme.textTheme.bodySmall?.copyWith(color: cs.outline)),
+              const SizedBox(height: 24),
+              FilledButton.tonalIcon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.arrow_back),
+                label: const Text('Назад'),
+              ),
+            ]))
+          // ── Есть сессия — полный UI ──
+          : CustomScrollView(
         slivers: [
           SliverToBoxAdapter(
             child: Column(
@@ -115,7 +132,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                       ])),
                       const SizedBox(height: 6),
                     ],
-                    AppDisciplineChips(
+                    AppChipGroup(
                       items: discNames,
                       selected: _disc,
                       onSelected: (v) => setState(() => _disc = v),
@@ -127,9 +144,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                 // ── Статус протокола ──
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: (session?.isApproved ?? false)
-                    ? _buildApprovedBanner(cs, theme, session!.approvedAt)
-                    : _buildUnapprovedBanner(cs, theme, hasSession: session != null),
+                  child: (session.isApproved)
+                    ? _buildApprovedBanner(cs, theme, session.approvedAt)
+                    : _buildUnapprovedBanner(cs, theme, hasSession: true),
                 ),
 
                 // ── Сводка (реальные данные) ──
@@ -148,22 +165,21 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                 const SizedBox(height: 8),
 
                 // ── Источник данных ──
-                if (session != null)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: cs.primaryContainer.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(children: [
-                        Icon(Icons.stream, size: 14, color: cs.primary),
-                        const SizedBox(width: 6),
-                        Text('Данные из активной сессии хронометража', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
-                      ]),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: cs.primaryContainer.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(8),
                     ),
+                    child: Row(children: [
+                      Icon(Icons.stream, size: 14, color: cs.primary),
+                      const SizedBox(width: 6),
+                      Text('Данные из активной сессии хронометража', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
+                    ]),
                   ),
+                ),
               ],
             ),
           ),
@@ -173,7 +189,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
             SliverToBoxAdapter(
               child: AppPodiumView(
                 athletes: podium.map((r) => PodiumAthlete(
-                  place: r.position!,
+                  place: r.position,
                   name: r.name,
                   bib: r.bib,
                   time: TimeFormatter.compact(r.netTime),
@@ -184,47 +200,36 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
             ),
 
           // ── Таблица результатов ──
-          SliverPadding(
-            padding: const EdgeInsets.only(bottom: 24),
-            sliver: SliverToBoxAdapter(
-              child: AppProtocolTable(
-                forceTableView: _isTableView,
-                headerRow: const AppProtocolRow(
-                  isHeader: true,
-                  bib: '', name: '', cat: '', dog: '', time: '', delta: '', penalty: '',
-                ),
-                itemCount: results.length,
-                itemBuilder: (context, index, isCardView) {
-                  final r = results[index];
-                  final timeStr = r.status == AthleteStatus.finished
-                      ? TimeFormatter.compact(r.resultTime)
-                      : r.status == AthleteStatus.dns ? 'DNS'
-                      : r.status == AthleteStatus.dsq ? 'DSQ'
-                      : r.status == AthleteStatus.dnf ? 'DNF'
-                      : '—';
-                  final deltaStr = r.gapToLeader != null
-                      ? '+${TimeFormatter.compact(r.gapToLeader!)}'
-                      : '—';
-                  final penaltyStr = r.penaltyTime > Duration.zero
-                      ? '+${TimeFormatter.compact(r.penaltyTime)}'
-                      : '—';
-
-                  return AppProtocolRow(
-                    isCardView: isCardView,
-                    place: r.position,
-                    bib: r.bib,
-                    name: r.name,
-                    cat: '',
-                    dog: '',
-                    time: timeStr,
-                    delta: deltaStr,
-                    penalty: penaltyStr,
-                    onTap: () => _showAthleteCard(context, r),
-                  );
-                },
-              ),
+          if (results.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Builder(builder: (context) {
+                final table = _tableBuilder.build(
+                  results: results,
+                  config: session.config,
+                  display: session.config.displaySettings,
+                  athletes: session.startList.all,
+                  marks: session.marking.officialMarks,
+                );
+                return AppResultTable(
+                  table: table,
+                  showCards: _showCards,
+                  onRowTap: (row) {
+                    final r = results.where((r) => r.entryId == row.entryId).firstOrNull;
+                    if (r != null) _showAthleteCard(context, r);
+                  },
+                );
+              }),
+            )
+          else
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                const SizedBox(height: 8),
+                Text('Ожидание результатов...', style: TextStyle(color: cs.onSurfaceVariant)),
+              ])),
             ),
-          ),
+          const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
           // ── Подписи ──
           SliverToBoxAdapter(
@@ -241,8 +246,8 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                   Text('Подписи', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
                   const SizedBox(height: 8),
                   Row(children: [
-                    Expanded(child: AppSignatureRow(role: 'Главный судья', name: 'Иванов П.', signed: session?.isApproved ?? false)),
-                    Expanded(child: AppSignatureRow(role: 'Секретарь', name: 'Смирнова А.', signed: session?.isApproved ?? false)),
+                    Expanded(child: AppSignatureRow(role: 'Главный судья', name: 'Иванов П.', signed: session.isApproved)),
+                    Expanded(child: AppSignatureRow(role: 'Секретарь', name: 'Смирнова А.', signed: session.isApproved)),
                   ]),
                 ]),
               ),
@@ -254,20 +259,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
     );
   }
 
-  // ─────────────────────────────────────
-  // ДЕМО РЕЗУЛЬТАТЫ (когда нет сессии)
-  // ─────────────────────────────────────
 
-  List<RaceResult> _demoResults() {
-    return [
-      RaceResult(entryId: 'p-1', bib: '07', name: 'Петров А.', grossTime: const Duration(minutes: 38, seconds: 12), netTime: const Duration(minutes: 38, seconds: 12), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 38, seconds: 12), position: 1, status: AthleteStatus.finished, speedKmh: 9.4),
-      RaceResult(entryId: 'p-3', bib: '24', name: 'Иванов В.', grossTime: const Duration(minutes: 39, seconds: 45), netTime: const Duration(minutes: 39, seconds: 45), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 39, seconds: 45), position: 2, gapToLeader: const Duration(minutes: 1, seconds: 33), status: AthleteStatus.finished, speedKmh: 9.1),
-      RaceResult(entryId: 'p-6', bib: '55', name: 'Волков Е.', grossTime: const Duration(minutes: 41, seconds: 2), netTime: const Duration(minutes: 41, seconds: 2), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 41, seconds: 2), position: 3, gapToLeader: const Duration(minutes: 2, seconds: 50), status: AthleteStatus.finished, speedKmh: 8.8),
-      RaceResult(entryId: 'p-2', bib: '12', name: 'Сидоров Б.', grossTime: const Duration(minutes: 41, seconds: 33), netTime: const Duration(minutes: 41, seconds: 28), penaltyTime: const Duration(seconds: 5), resultTime: const Duration(minutes: 41, seconds: 33), position: 4, gapToLeader: const Duration(minutes: 3, seconds: 21), status: AthleteStatus.finished, speedKmh: 8.7),
-      RaceResult(entryId: 'p-8', bib: '77', name: 'Новиков З.', grossTime: const Duration(minutes: 42, seconds: 15), netTime: const Duration(minutes: 42, seconds: 15), penaltyTime: Duration.zero, resultTime: const Duration(minutes: 42, seconds: 15), position: 5, gapToLeader: const Duration(minutes: 4, seconds: 3), status: AthleteStatus.finished, speedKmh: 8.5),
-      RaceResult(entryId: 'p-7', bib: '63', name: 'Лебедев Ж.', grossTime: Duration.zero, netTime: Duration.zero, penaltyTime: Duration.zero, resultTime: Duration.zero, status: AthleteStatus.dnf),
-    ];
-  }
 
   // ─────────────────────────────────────
   // ВИДЖЕТЫ
@@ -384,7 +376,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(r.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                    if (r.position != null) Text('Место: ${r.position}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                    Text('Место: ${r.position}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
                   ],
                 ),
               ),

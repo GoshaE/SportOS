@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
-import '../../../domain/event/event_config.dart';
+import '../../../domain/event/event_config.dart' hide TimeOfDay;
 
 /// Screen: Основная информация мероприятия
 ///
@@ -50,23 +50,105 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
     return Scaffold(
       appBar: AppAppBar(title: const Text('Основное')),
       body: ListView(padding: const EdgeInsets.all(16), children: [
-        // ─── Статус ───
-        _sectionTitle(cs, 'Статус мероприятия', Icons.flag),
+        // ─── Жизненный цикл ───
+        _sectionTitle(cs, 'Жизненный цикл', Icons.flag),
+        _LifecycleStepper(status: config.status, cs: cs),
+        const SizedBox(height: 12),
+        // Current status card
         AppCard(padding: EdgeInsets.zero, children: [
-          ListTile(
-            leading: Container(
-              width: 36, height: 36,
-              decoration: BoxDecoration(
-                color: _statusColor(config.status, cs).withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(_statusIcon(config.status), size: 18, color: _statusColor(config.status, cs)),
-            ),
-            title: Text(_statusLabel(config.status), style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(_statusHint(config.status), style: TextStyle(fontSize: 12, color: cs.outline)),
-            trailing: _nextStatusButton(config.status, cs),
+          Padding(
+            padding: const EdgeInsets.all(14),
+            child: Column(children: [
+              Row(children: [
+                Container(
+                  width: 40, height: 40,
+                  decoration: BoxDecoration(
+                    color: _statusColor(config.status, cs).withValues(alpha: 0.15),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(_statusIcon(config.status), size: 20, color: _statusColor(config.status, cs)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(_statusLabel(config.status), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  Text(_statusHint(config.status), style: TextStyle(fontSize: 12, color: cs.outline)),
+                ])),
+              ]),
+              const SizedBox(height: 14),
+              // Deadline (only for draft/registrationOpen)
+              if (config.status == EventStatus.draft || config.status == EventStatus.registrationOpen) ...[
+                _DeadlineRow(
+                  deadline: config.registrationConfig.registrationDeadline,
+                  onTap: () => _pickDeadline(context, config),
+                  cs: cs,
+                ),
+                const SizedBox(height: 12),
+              ],
+              // Transition buttons
+              Row(children: [
+                // Back button
+                if (_prevStatus(config.status) != null)
+                  Expanded(child: OutlinedButton.icon(
+                    onPressed: () => _confirmTransition(
+                      context, config.status, _prevStatus(config.status)!, isBack: true,
+                    ),
+                    icon: const Icon(Icons.arrow_back, size: 16),
+                    label: Text(_prevLabel(config.status)!, style: const TextStyle(fontSize: 12)),
+                  )),
+                if (_prevStatus(config.status) != null && _nextStatus(config.status) != null)
+                  const SizedBox(width: 8),
+                // Forward button
+                if (_nextStatus(config.status) != null)
+                  Expanded(child: FilledButton.icon(
+                    onPressed: () => _confirmTransition(
+                      context, config.status, _nextStatus(config.status)!,
+                    ),
+                    icon: const Icon(Icons.arrow_forward, size: 16),
+                    label: Text(_nextLabel(config.status)!, style: const TextStyle(fontSize: 12)),
+                  )),
+              ]),
+            ]),
           ),
         ]),
+        const SizedBox(height: 20),
+
+        // ─── Обложка ───
+        _sectionTitle(cs, 'Обложка мероприятия', Icons.image),
+        InkWell(
+          onTap: () => _pickImage(context),
+          borderRadius: BorderRadius.circular(10),
+          child: Container(
+            height: 140,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              image: config.logoUrl != null
+                  ? DecorationImage(image: AssetImage(config.logoUrl!), fit: BoxFit.cover)
+                  : null,
+              color: config.logoUrl == null ? cs.surfaceContainerLow : null,
+            ),
+            child: config.logoUrl == null
+                ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.add_photo_alternate, size: 36, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                    const SizedBox(height: 6),
+                    Text('Выбрать обложку', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+                  ]))
+                : Align(
+                    alignment: Alignment.bottomRight,
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text('Изменить', style: TextStyle(color: Colors.white, fontSize: 12)),
+                      ),
+                    ),
+                  ),
+          ),
+        ),
         const SizedBox(height: 20),
 
         // ─── Название ───
@@ -152,6 +234,79 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
     );
   }
 
+  static const _eventImages = [
+    'assets/images/event1.jpeg',
+    'assets/images/event2.jpg',
+    'assets/images/event3.jpeg',
+    'assets/images/event4.jpg',
+    'assets/images/event5.jpg',
+    'assets/images/event6.jpg',
+  ];
+
+  void _pickImage(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final current = ref.read(eventConfigProvider).logoUrl;
+
+    AppBottomSheet.show(context, title: 'Обложка мероприятия', child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GridView.count(
+          crossAxisCount: 3,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          mainAxisSpacing: 8,
+          crossAxisSpacing: 8,
+          childAspectRatio: 1.5,
+          children: _eventImages.map((path) {
+            final selected = current == path;
+            return GestureDetector(
+              onTap: () {
+                ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(logoUrl: path));
+                Navigator.pop(context);
+              },
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: selected ? cs.primary : Colors.transparent,
+                    width: selected ? 2.5 : 0,
+                  ),
+                  image: DecorationImage(image: AssetImage(path), fit: BoxFit.cover),
+                ),
+                child: selected
+                    ? Align(alignment: Alignment.topRight, child: Container(
+                        margin: const EdgeInsets.all(4),
+                        padding: const EdgeInsets.all(2),
+                        decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle),
+                        child: const Icon(Icons.check, size: 14, color: Colors.white),
+                      ))
+                    : null,
+              ),
+            );
+          }).toList(),
+        ),
+        if (current != null) ...[
+          const SizedBox(height: 12),
+          TextButton.icon(
+            onPressed: () {
+              ref.read(eventConfigProvider.notifier).update((c) => EventConfig(
+                id: c.id, name: c.name, startDate: c.startDate,
+                endDate: c.endDate, location: c.location, description: c.description,
+                contactInfo: c.contactInfo, logoUrl: null, status: c.status,
+                isMultiDay: c.isMultiDay, days: c.days, scoringMode: c.scoringMode,
+                courses: c.courses, timingConfig: c.timingConfig, drawConfig: c.drawConfig,
+                penaltyTemplates: c.penaltyTemplates, checklistItems: c.checklistItems,
+              ));
+              Navigator.pop(context);
+            },
+            icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
+            label: Text('Удалить обложку', style: TextStyle(color: cs.error)),
+          ),
+        ],
+      ],
+    ));
+  }
+
   void _save() {
     ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(
       name: _nameCtrl.text.trim(),
@@ -172,23 +327,117 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
     if (picked != null) onPicked(picked);
   }
 
-  Widget? _nextStatusButton(EventStatus status, ColorScheme cs) {
-    final (nextLabel, nextStatus) = switch (status) {
-      EventStatus.draft => ('Открыть регистрацию', EventStatus.registrationOpen),
-      EventStatus.registrationOpen => ('Закрыть регистрацию', EventStatus.registrationClosed),
-      EventStatus.registrationClosed => ('Начать гонку', EventStatus.inProgress),
-      EventStatus.inProgress => ('Завершить', EventStatus.completed),
-      EventStatus.completed => ('Архивировать', EventStatus.archived),
-      EventStatus.archived => (null, null),
-    };
-    if (nextLabel == null) return null;
-    return FilledButton.tonal(
-      onPressed: () {
-        ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(status: nextStatus));
-      },
-      child: Text(nextLabel, style: const TextStyle(fontSize: 12)),
+  // ─── Lifecycle transitions ───
+
+  EventStatus? _nextStatus(EventStatus s) => switch (s) {
+    EventStatus.draft => EventStatus.registrationOpen,
+    EventStatus.registrationOpen => EventStatus.registrationClosed,
+    EventStatus.registrationClosed => EventStatus.inProgress,
+    EventStatus.inProgress => EventStatus.completed,
+    EventStatus.completed => EventStatus.archived,
+    EventStatus.archived => null,
+  };
+
+  String? _nextLabel(EventStatus s) => switch (s) {
+    EventStatus.draft => 'Открыть регистрацию',
+    EventStatus.registrationOpen => 'Закрыть регистрацию',
+    EventStatus.registrationClosed => 'Начать гонку',
+    EventStatus.inProgress => 'Завершить',
+    EventStatus.completed => 'В архив',
+    EventStatus.archived => null,
+  };
+
+  EventStatus? _prevStatus(EventStatus s) => switch (s) {
+    EventStatus.draft => null,
+    EventStatus.registrationOpen => EventStatus.draft,
+    EventStatus.registrationClosed => EventStatus.registrationOpen,
+    EventStatus.inProgress => EventStatus.registrationClosed,
+    EventStatus.completed => EventStatus.inProgress,
+    EventStatus.archived => null, // irreversible
+  };
+
+  String? _prevLabel(EventStatus s) => switch (s) {
+    EventStatus.draft => null,
+    EventStatus.registrationOpen => 'В черновик',
+    EventStatus.registrationClosed => 'Открыть регистрацию',
+    EventStatus.inProgress => 'Вернуть',
+    EventStatus.completed => 'Вернуть в гонку',
+    EventStatus.archived => null,
+  };
+
+  Future<void> _confirmTransition(BuildContext context, EventStatus from, EventStatus to, {bool isBack = false}) async {
+    final cs = Theme.of(context).colorScheme;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isBack ? 'Вернуть этап?' : 'Перейти на следующий этап?'),
+        content: Text(_transitionWarning(from, to, isBack)),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: isBack ? cs.error : cs.primary,
+            ),
+            child: Text(isBack ? 'Вернуть' : 'Подтвердить'),
+          ),
+        ],
+      ),
     );
+    if (confirmed == true) {
+      ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(status: to));
+      if (!context.mounted) return;
+      AppSnackBar.success(context, 'Статус: ${_statusLabel(to)}');
+    }
   }
+
+  String _transitionWarning(EventStatus from, EventStatus to, bool isBack) {
+    if (isBack) {
+      return switch (to) {
+        EventStatus.draft => 'Мероприятие вернётся в черновик. Регистрация будет недоступна.',
+        EventStatus.registrationOpen => 'Регистрация снова откроется для участников.',
+        EventStatus.registrationClosed => 'Гонка будет остановлена. Вернуться к подготовке?',
+        EventStatus.inProgress => 'Результаты будут сброшены. Гонка продолжится.',
+        _ => 'Вы уверены?',
+      };
+    }
+    return switch (to) {
+      EventStatus.registrationOpen => 'Участники смогут подавать заявки.',
+      EventStatus.registrationClosed => 'Регистрация закроется. Новые заявки не принимаются.',
+      EventStatus.inProgress => 'Гонка начнётся. Хронометраж станет активным.',
+      EventStatus.completed => 'Гонка будет завершена. Протоколы будут опубликованы.',
+      EventStatus.archived => 'Мероприятие будет заархивировано. Это действие необратимо!',
+      _ => 'Вы уверены?',
+    };
+  }
+
+  Future<void> _pickDeadline(BuildContext context, EventConfig config) async {
+    final now = DateTime.now();
+    final initial = config.registrationConfig.registrationDeadline ?? config.startDate;
+    final date = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: now,
+      lastDate: DateTime(2030),
+    );
+    if (date == null) return;
+    if (!context.mounted) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+    );
+    if (time == null) return;
+    if (!context.mounted) return;
+    final deadline = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+    ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(
+      registrationConfig: c.registrationConfig.copyWith(registrationDeadline: deadline),
+    ));
+    if (!context.mounted) return;
+    AppSnackBar.success(context, 'Дедлайн: ${_fmtDateTime(deadline)}');
+  }
+
+  String _fmtDateTime(DateTime d) =>
+    '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year} ${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
   // ─── Labels ───
 
@@ -277,3 +526,143 @@ class _DateCard extends StatelessWidget {
     ]);
   }
 }
+
+// ─── Lifecycle Stepper Widget ───
+
+class _LifecycleStepper extends StatelessWidget {
+  final EventStatus status;
+  final ColorScheme cs;
+
+  const _LifecycleStepper({required this.status, required this.cs});
+
+  static const _stages = [
+    (EventStatus.draft, 'Черновик', Icons.edit_note),
+    (EventStatus.registrationOpen, 'Регистрация', Icons.how_to_reg),
+    (EventStatus.registrationClosed, 'Закрыта', Icons.lock_outline),
+    (EventStatus.inProgress, 'Гонка', Icons.play_circle_outline),
+    (EventStatus.completed, 'Завершено', Icons.check_circle_outline),
+    (EventStatus.archived, 'Архив', Icons.archive),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final currentIdx = _stages.indexWhere((s) => s.$1 == status);
+
+    return SizedBox(
+      height: 60,
+      child: Row(
+        children: List.generate(_stages.length * 2 - 1, (i) {
+          if (i.isOdd) {
+            // Connector line
+            final stageIdx = i ~/ 2;
+            final done = stageIdx < currentIdx;
+            return Expanded(child: Container(
+              height: 2,
+              color: done ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3),
+            ));
+          }
+          final stageIdx = i ~/ 2;
+          final (_, label, icon) = _stages[stageIdx];
+          final isDone = stageIdx < currentIdx;
+          final isCurrent = stageIdx == currentIdx;
+
+          return Column(mainAxisSize: MainAxisSize.min, children: [
+            Container(
+              width: 28, height: 28,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCurrent
+                    ? cs.primary
+                    : isDone
+                        ? cs.primary.withValues(alpha: 0.2)
+                        : cs.surfaceContainerHigh,
+                border: Border.all(
+                  color: isCurrent || isDone ? cs.primary : cs.outlineVariant.withValues(alpha: 0.4),
+                  width: isCurrent ? 2 : 1,
+                ),
+              ),
+              child: Icon(
+                isDone ? Icons.check : icon,
+                size: 14,
+                color: isCurrent ? cs.onPrimary : isDone ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: theme.textTheme.labelSmall?.copyWith(
+                fontSize: 9,
+                fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+                color: isCurrent ? cs.primary : isDone ? cs.onSurface : cs.onSurfaceVariant.withValues(alpha: 0.5),
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ]);
+        }),
+      ),
+    );
+  }
+}
+
+// ─── Deadline Row Widget ───
+
+class _DeadlineRow extends StatelessWidget {
+  final DateTime? deadline;
+  final VoidCallback onTap;
+  final ColorScheme cs;
+
+  const _DeadlineRow({required this.deadline, required this.onTap, required this.cs});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isExpired = deadline != null && deadline!.isBefore(DateTime.now());
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: isExpired
+              ? cs.error.withValues(alpha: 0.08)
+              : cs.primaryContainer.withValues(alpha: 0.15),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isExpired
+                ? cs.error.withValues(alpha: 0.3)
+                : cs.primary.withValues(alpha: 0.2),
+          ),
+        ),
+        child: Row(children: [
+          Icon(
+            isExpired ? Icons.warning_amber : Icons.schedule,
+            size: 18,
+            color: isExpired ? cs.error : cs.primary,
+          ),
+          const SizedBox(width: 10),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              'Дедлайн регистрации',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant, fontSize: 11,
+              ),
+            ),
+            Text(
+              deadline != null
+                  ? '${deadline!.day.toString().padLeft(2, '0')}.${deadline!.month.toString().padLeft(2, '0')}.${deadline!.year} в ${deadline!.hour.toString().padLeft(2, '0')}:${deadline!.minute.toString().padLeft(2, '0')}${isExpired ? ' (истёк)' : ''}'
+                  : 'Не установлен — нажмите для настройки',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: deadline != null ? FontWeight.w600 : FontWeight.normal,
+                color: isExpired ? cs.error : (deadline != null ? cs.onSurface : cs.onSurfaceVariant),
+              ),
+            ),
+          ])),
+          Icon(Icons.chevron_right, size: 18, color: cs.onSurfaceVariant),
+        ]),
+      ),
+    );
+  }
+}
+

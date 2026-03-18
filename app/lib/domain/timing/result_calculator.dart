@@ -71,6 +71,7 @@ class ResultCalculator {
         entryId: athlete.entryId,
         bib: athlete.bib,
         name: athlete.name,
+        categoryName: athlete.categoryName,
         grossTime: gross,
         netTime: net,
         penaltyTime: penaltyTime,
@@ -103,7 +104,7 @@ class ResultCalculator {
     // Сортировка finished по resultTime
     finished.sort((a, b) => a.resultTime.compareTo(b.resultTime));
 
-    // Расстановка мест
+    // Расстановка абсолютных мест
     for (var i = 0; i < finished.length; i++) {
       if (i > 0 &&
           tieBreakMode == 'shared' &&
@@ -113,6 +114,9 @@ class ResultCalculator {
         finished[i].position = i + 1;
       }
     }
+
+    // ── Категорийное ранжирование ──
+    _rankByCategory(finished, tieBreakMode);
 
     // Gaps
     final ranked = <RaceResult>[];
@@ -128,6 +132,7 @@ class ResultCalculator {
         entryId: finished[i].entryId,
         bib: finished[i].bib,
         name: finished[i].name,
+        categoryName: finished[i].categoryName,
         grossTime: finished[i].grossTime,
         netTime: finished[i].netTime,
         penaltyTime: finished[i].penaltyTime,
@@ -140,6 +145,8 @@ class ResultCalculator {
         gapToLeader: leaderGap,
         gapToPrev: prevGap,
         status: finished[i].status,
+        categoryPosition: finished[i].categoryPosition,
+        categoryGapToLeader: finished[i].categoryGapToLeader,
       ));
     }
 
@@ -147,18 +154,50 @@ class ResultCalculator {
     return [...ranked, ...onCourse, ...dnf, ...dns, ...dsq];
   }
 
+  // ─── Category Ranking ───────────────────────────────────────
+
+  /// Расстановка мест по категориям (М, Ж, Юниоры...).
+  ///
+  /// Работает по уже отсортированному списку finished.
+  /// Каждая категория получает свою нумерацию мест и gap к лидеру категории.
+  void _rankByCategory(List<RaceResult> finished, String tieBreakMode) {
+    // Группировка по categoryName
+    final byCategory = <String?, List<RaceResult>>{};
+    for (final r in finished) {
+      byCategory.putIfAbsent(r.categoryName, () => []).add(r);
+    }
+
+    for (final entry in byCategory.entries) {
+      final group = entry.value; // уже отсортированы по resultTime
+      if (group.isEmpty) continue;
+
+      for (var i = 0; i < group.length; i++) {
+        if (i > 0 &&
+            tieBreakMode == 'shared' &&
+            group[i].resultTime == group[i - 1].resultTime) {
+          group[i].categoryPosition = group[i - 1].categoryPosition;
+        } else {
+          group[i].categoryPosition = i + 1;
+        }
+      }
+    }
+  }
+
   // ─── Helpers ─────────────────────────────────────────────────
 
   /// Найти финишную отсечку (последний круг).
+  ///
+  /// Использует только finish marks (not checkpoint) — consistent
+  /// с ElapsedCalculator: finish = прохождение финишной черты.
   TimeMark? _findFinishMark(String bib, List<TimeMark> marks, int totalLaps) {
-    final bibMarks = marks
-        .where((m) => m.bib == bib && (m.type == MarkType.finish || m.type == MarkType.checkpoint))
+    final finishMarks = marks
+        .where((m) => m.bib == bib && m.type == MarkType.finish)
         .toList()
       ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
 
-    // Финиш — это отсечка на последнем кругу
-    if (bibMarks.length >= totalLaps) {
-      return bibMarks[totalLaps - 1];
+    // Финиш — это финишная отсечка на последнем кругу
+    if (finishMarks.length >= totalLaps) {
+      return finishMarks[totalLaps - 1];
     }
     return null;
   }
@@ -180,6 +219,7 @@ class ResultCalculator {
       entryId: athlete.entryId,
       bib: athlete.bib,
       name: athlete.name,
+      categoryName: athlete.categoryName,
       grossTime: Duration.zero,
       netTime: Duration.zero,
       penaltyTime: Duration.zero,
@@ -203,6 +243,7 @@ class ResultCalculator {
       entryId: athlete.entryId,
       bib: athlete.bib,
       name: athlete.name,
+      categoryName: athlete.categoryName,
       grossTime: splits.isNotEmpty ? splits.last : Duration.zero,
       netTime: splits.isNotEmpty ? splits.last : Duration.zero,
       penaltyTime: penaltyTime,

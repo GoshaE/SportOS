@@ -5,9 +5,10 @@
 ///
 /// ```dart
 /// TimeFormatter.full(dur);    // "01:23:45.678"
-/// TimeFormatter.compact(dur); // "23:45"
+/// TimeFormatter.compact(dur); // "23:45" or "1:05:30" (>60 min)
 /// TimeFormatter.hms(dur);     // "01:23:45"
 /// TimeFormatter.gap(dur);     // "+1:23.4"
+/// TimeFormatter.result(dur, precision); // respects TimingPrecision
 /// ```
 class TimeFormatter {
   const TimeFormatter._();
@@ -27,14 +28,20 @@ class TimeFormatter {
     return '${neg ? '-' : ''}$h:$m:$s.$ms';
   }
 
-  /// Compact minutes:seconds: `"23:45"`
+  /// Compact time — auto-selects format based on duration:
+  ///  - <1 hour: `"23:45"` (mm:ss)
+  ///  - ≥1 hour: `"1:05:30"` (h:mm:ss)
   ///
-  /// Used in: Marshal checkpoint marks, compact UI.
+  /// Used in: Marshal checkpoint marks, compact UI, result times.
   static String compact(Duration d) {
     final neg = d.isNegative;
     final abs = d.abs();
+    final h = abs.inHours;
     final m = abs.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = abs.inSeconds.remainder(60).toString().padLeft(2, '0');
+    if (h > 0) {
+      return '${neg ? '-' : ''}$h:$m:$s';
+    }
     return '${neg ? '-' : ''}$m:$s';
   }
 
@@ -48,6 +55,45 @@ class TimeFormatter {
     final m = abs.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = abs.inSeconds.remainder(60).toString().padLeft(2, '0');
     return '${neg ? '-' : ''}$h:$m:$s';
+  }
+
+  // ─── Precision-aware result format ────────────────────────────
+
+  /// Result time formatted to the specified precision.
+  ///
+  /// - `seconds`:    `"23:45"` or `"1:05:30"`
+  /// - `tenths`:     `"23:45.6"` or `"1:05:30.6"`
+  /// - `hundredths`: `"23:45.67"` or `"1:05:30.67"`
+  /// - `milliseconds`: `"23:45.678"` or `"1:05:30.678"`
+  ///
+  /// Used in: ResultTableBuilder for official result times.
+  static String result(Duration d, {String precision = 'tenths'}) {
+    final neg = d.isNegative;
+    final abs = d.abs();
+    final h = abs.inHours;
+    final m = abs.inMinutes.remainder(60).toString().padLeft(2, '0');
+    final s = abs.inSeconds.remainder(60).toString().padLeft(2, '0');
+
+    final base = h > 0
+        ? '${neg ? '-' : ''}$h:$m:$s'
+        : '${neg ? '-' : ''}$m:$s';
+
+    switch (precision) {
+      case 'seconds':
+        return base;
+      case 'tenths':
+        final t = abs.inMilliseconds.remainder(1000) ~/ 100;
+        return '$base.$t';
+      case 'hundredths':
+        final c = (abs.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
+        return '$base.$c';
+      case 'milliseconds':
+        final ms = abs.inMilliseconds.remainder(1000).toString().padLeft(3, '0');
+        return '$base.$ms';
+      default:
+        final t = abs.inMilliseconds.remainder(1000) ~/ 100;
+        return '$base.$t';
+    }
   }
 
   // ─── Gap / Delta Formats ──────────────────────────────────────

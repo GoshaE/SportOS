@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'models.dart';
 import 'race_clock.dart';
+import 'race_scheduler.dart';
 import 'start_list_service.dart';
 import 'marking_service.dart';
 import 'elapsed_calculator.dart';
@@ -153,6 +154,7 @@ class RaceSessionState {
 /// 4. `endSession()` — при выходе из Ops Mode
 class RaceSessionNotifier extends Notifier<RaceSessionState?> {
   int _version = 0;
+  RaceScheduler? _scheduler;
 
   @override
   RaceSessionState? build() => null;
@@ -182,6 +184,7 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
     startList.buildStartList(athletes, pursuitGaps: pursuitGaps);
 
     final marking = MarkingService(
+      clock: clock,
       minLapTime: config.minLapTime,
       totalLaps: config.laps,
     );
@@ -195,10 +198,28 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
 
     _version++;
     state = RaceSessionState(session, _version);
+
+    // Start domain-level scheduler for auto-starts + cutoff
+    _scheduler?.dispose();
+    _scheduler = RaceScheduler(
+      clock: clock,
+      startList: startList,
+      config: config,
+      onAutoStart: (bib, actualTime) {
+        session.startList.markStarted(bib, actualTime: actualTime);
+        _notify();
+      },
+      onCutoffDnf: (bib) {
+        session.startList.markDnf(bib);
+        _notify();
+      },
+    )..start();
   }
 
   /// Завершить сессию.
   void endSession() {
+    _scheduler?.dispose();
+    _scheduler = null;
     _session?.clock.dispose();
     state = null;
   }
@@ -206,12 +227,16 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
   // ─── StartList Actions ────────────────────────────────────────
 
   void markStarted(String bib, {DateTime? actualTime}) {
-    _session?.startList.markStarted(bib, actualTime: actualTime);
+    final s = _session;
+    if (s == null) return;
+    s.startList.markStarted(bib, actualTime: actualTime ?? s.clock.stamp());
     _notify();
   }
 
   void markStartedAll({DateTime? gunTime}) {
-    _session?.startList.markStartedAll(gunTime: gunTime);
+    final s = _session;
+    if (s == null) return;
+    s.startList.markStartedAll(gunTime: gunTime ?? s.clock.stamp());
     _notify();
   }
 
@@ -226,7 +251,9 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
   }
 
   void forceStart(String bib, {DateTime? actualTime}) {
-    _session?.startList.forceStart(bib, actualTime: actualTime);
+    final s = _session;
+    if (s == null) return;
+    s.startList.forceStart(bib, actualTime: actualTime ?? s.clock.stamp());
     _notify();
   }
 

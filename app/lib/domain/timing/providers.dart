@@ -98,6 +98,7 @@ class RaceClockNotifier extends Notifier<RaceClockState> {
   RaceClock get clock => _clock;
 }
 
+@Deprecated('Use raceSessionProvider instead. Legacy provider — will be removed.')
 final raceClockProvider = NotifierProvider<RaceClockNotifier, RaceClockState>(
   RaceClockNotifier.new,
 );
@@ -106,6 +107,7 @@ final raceClockProvider = NotifierProvider<RaceClockNotifier, RaceClockState>(
 // START LIST
 // ─────────────────────────────────────────────────────────────────
 
+@Deprecated('Use raceSessionProvider instead. Legacy provider — will be removed.')
 class StartListNotifier extends Notifier<List<StartEntry>> {
   StartListService? _service;
 
@@ -126,12 +128,12 @@ class StartListNotifier extends Notifier<List<StartEntry>> {
     state = _service?.all ?? [];
   }
 
-  void markStarted(String bib, {DateTime? actualTime}) {
+  void markStarted(String bib, {required DateTime actualTime}) {
     _service?.markStarted(bib, actualTime: actualTime);
     state = _service?.all ?? [];
   }
 
-  void markStartedAll({DateTime? gunTime}) {
+  void markStartedAll({required DateTime gunTime}) {
     _service?.markStartedAll(gunTime: gunTime);
     state = _service?.all ?? [];
   }
@@ -146,7 +148,7 @@ class StartListNotifier extends Notifier<List<StartEntry>> {
     state = _service?.all ?? [];
   }
 
-  void forceStart(String bib, {DateTime? actualTime}) {
+  void forceStart(String bib, {required DateTime actualTime}) {
     _service?.forceStart(bib, actualTime: actualTime);
     state = _service?.all ?? [];
   }
@@ -163,6 +165,7 @@ class StartListNotifier extends Notifier<List<StartEntry>> {
   StartEntry? findByBib(String bib) => _service?.findByBib(bib);
 }
 
+@Deprecated('Use raceSessionProvider instead. Legacy provider — will be removed.')
 final startListProvider = NotifierProvider<StartListNotifier, List<StartEntry>>(
   StartListNotifier.new,
 );
@@ -171,6 +174,7 @@ final startListProvider = NotifierProvider<StartListNotifier, List<StartEntry>>(
 // MARKING SERVICE
 // ─────────────────────────────────────────────────────────────────
 
+@Deprecated('Use raceSessionProvider instead. Legacy provider — will be removed.')
 class MarkingNotifier extends Notifier<List<TimeMark>> {
   MarkingService? _service;
 
@@ -179,12 +183,10 @@ class MarkingNotifier extends Notifier<List<TimeMark>> {
 
   /// Initialize the marking service.
   void initialize({
-    Duration clockOffset = Duration.zero,
     Duration minLapTime = const Duration(seconds: 20),
     int totalLaps = 1,
   }) {
     _service = MarkingService(
-      clockOffset: clockOffset,
       minLapTime: minLapTime,
       totalLaps: totalLaps,
     );
@@ -238,6 +240,7 @@ class MarkingNotifier extends Notifier<List<TimeMark>> {
   int get totalMarks => _service?.totalMarks ?? 0;
 }
 
+@Deprecated('Use raceSessionProvider instead. Legacy provider — will be removed.')
 final markingProvider = NotifierProvider<MarkingNotifier, List<TimeMark>>(
   MarkingNotifier.new,
 );
@@ -247,6 +250,7 @@ final markingProvider = NotifierProvider<MarkingNotifier, List<TimeMark>>(
 // ─────────────────────────────────────────────────────────────────
 
 /// Computed results provider (updates when marks or start list change).
+@Deprecated('Use raceSessionProvider + ResultCalculator instead. Legacy provider — will be removed.')
 final resultsProvider = Provider<List<RaceResult>>((ref) {
   final startList = ref.watch(startListProvider);
   final marks = ref.watch(markingProvider);

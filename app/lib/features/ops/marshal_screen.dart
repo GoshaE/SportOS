@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,14 +18,31 @@ class MarshalScreen extends ConsumerStatefulWidget {
 class _MarshalScreenState extends ConsumerState<MarshalScreen> {
   bool _isSynced = false;
   final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
+  Timer? _uiTimer;
+  Duration _elapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final session = ref.read(raceSessionProvider);
+      if (session != null && session.clock.isRunning) {
+        setState(() => _elapsed = session.clock.elapsed);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _uiTimer?.cancel();
+    super.dispose();
+  }
 
   // ═══════════════════════════════════════
   // Marking actions
   // ═══════════════════════════════════════
 
-  bool _isMarked(String bib) {
-    final session = ref.read(raceSessionProvider);
-    if (session == null) return false;
+  bool _isMarked(String bib, RaceSessionState session) {
     final checkpointMarks = session.marking.marksForBib(bib)
         .where((m) => m.type == MarkType.checkpoint && m.owner == MarkOwner.marshal).length;
     if (checkpointMarks == 0) return false;
@@ -34,9 +52,9 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
     return checkpointMarks > finishMarks;
   }
 
-  void _tryTogglePassed(String bib) {
+  void _tryTogglePassed(String bib, RaceSessionState session) {
     if (!mounted) return;
-    if (_isMarked(bib)) {
+    if (_isMarked(bib, session)) {
       _togglePassed(bib);
     } else if (!_isSynced) {
       AppDialog.confirm(
@@ -60,7 +78,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
     if (session == null) return;
     final notifier = ref.read(raceSessionProvider.notifier);
 
-    if (_isMarked(bib)) {
+    if (_isMarked(bib, session)) {
       AppDialog.confirm(context, title: 'Отменить отметку BIB $bib?', message: 'Последняя отсечка маршала будет удалена.').then((ok) {
         if (ok == true) {
           final bibMarks = session.marking.marksForBib(bib)
@@ -250,7 +268,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         int priority(StartEntry e) {
           if (e.status == AthleteStatus.dnf || e.status == AthleteStatus.dsq) return 3;
           if (e.status == AthleteStatus.finished) return 2;
-          if (_isMarked(e.bib)) return 1;
+          if (_isMarked(e.bib, session)) return 1;
           return 0;
         }
         return priority(a).compareTo(priority(b));
@@ -297,10 +315,23 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
                   Row(children: [
                     Icon(Icons.location_on, size: 18, color: cs.primary),
                     const SizedBox(width: 6),
-                    Text('Checkpoint: 3 км', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
+                    Text('Checkpoint: ${session.config.distanceKm} км', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
                   ]),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            AppCard(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              children: [
+                Row(children: [
+                  Icon(Icons.timer, size: 14, color: cs.primary),
+                  const SizedBox(width: 6),
+                  Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: cs.primary)),
+                ]),
+              ],
             ),
             const SizedBox(width: 8),
             AppCard(
@@ -331,7 +362,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
               final isDsq = a.status == AthleteStatus.dsq;
               final isFinished = a.status == AthleteStatus.finished;
               final isInactive = isDnf || isDsq || isFinished;
-              final passed = _isMarked(a.bib);
+              final passed = _isMarked(a.bib, session);
 
               String? lapInfo;
               BibState bibState;
@@ -374,7 +405,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
                   name: a.name,
                   lapInfo: lapInfo,
                   state: bibState,
-                  onTap: isInactive ? null : () => _tryTogglePassed(a.bib),
+                  onTap: isInactive ? null : () => _tryTogglePassed(a.bib, session),
                 ),
               );
             }).toList(),

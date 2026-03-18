@@ -6,6 +6,10 @@ import 'models.dart';
 /// - Финиш: NetTime для протокола
 /// - Тренер: elapsed от старта каждого спортсмена
 /// - Диктор: split-times для ТОП-5
+///
+/// Разделение отсечек:
+/// - **Finish marks** → используются для lap counting (splitTimes, lapTimes)
+/// - **Checkpoint marks** → промежуточные точки внутри круга (checkpointSplits)
 class ElapsedCalculator {
   const ElapsedCalculator();
 
@@ -24,40 +28,40 @@ class ElapsedCalculator {
     return markTime.difference(zeroTime);
   }
 
-  // ─── Split-times ─────────────────────────────────────────────
+  // ─── Split-times (lap boundaries) ────────────────────────────
 
   /// Split-times: elapsed от старта атлета на каждом кругу.
   ///
+  /// Использует только **finish** marks (= прохождение финишной черты).
   /// Возвращает список длиной = количество завершённых кругов.
-  /// split[0] = время первого круга от старта
-  /// split[n] = время n-го круга от старта
+  /// split[0] = elapsed первого круга от старта
+  /// split[n] = elapsed n-го круга от старта (cumulative)
   List<Duration> splitTimes(String bib, List<TimeMark> marks, StartEntry athlete) {
-    final athleteMarks = _marksForBib(bib, marks)
-      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+    final finishMarks = _finishMarksForBib(bib, marks);
 
-    return athleteMarks.map((m) {
+    return finishMarks.map((m) {
       return m.correctedTime.difference(athlete.effectiveStartTime);
     }).toList();
   }
 
   /// Длительность каждого круга отдельно.
   ///
-  /// lap[0] = время первого круга (от старта до первой отсечки)
-  /// lap[n] = время (n+1)-го круга (от предыдущей отсечки до текущей)
+  /// Использует только **finish** marks (= прохождение финишной черты).
+  /// lap[0] = время первого круга (от старта до первого прохождения финиша)
+  /// lap[n] = время n-го круга (от предыдущего прохождения до текущего)
   List<Duration> lapTimes(String bib, List<TimeMark> marks, StartEntry athlete) {
-    final athleteMarks = _marksForBib(bib, marks)
-      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+    final finishMarks = _finishMarksForBib(bib, marks);
 
-    if (athleteMarks.isEmpty) return [];
+    if (finishMarks.isEmpty) return [];
 
     final laps = <Duration>[];
 
-    // Первый круг: от старта до первой отсечки
-    laps.add(athleteMarks[0].correctedTime.difference(athlete.effectiveStartTime));
+    // Первый круг: от старта до первого прохождения финиша
+    laps.add(finishMarks[0].correctedTime.difference(athlete.effectiveStartTime));
 
     // Последующие круги
-    for (var i = 1; i < athleteMarks.length; i++) {
-      laps.add(athleteMarks[i].correctedTime.difference(athleteMarks[i - 1].correctedTime));
+    for (var i = 1; i < finishMarks.length; i++) {
+      laps.add(finishMarks[i].correctedTime.difference(finishMarks[i - 1].correctedTime));
     }
 
     return laps;
@@ -69,6 +73,25 @@ class ElapsedCalculator {
     final splits = splitTimes(bib, marks, athlete);
     if (lap < 1 || lap > splits.length) return null;
     return splits[lap - 1];
+  }
+
+  // ─── Checkpoint splits (intermediate) ────────────────────────
+
+  /// Промежуточные сплиты от маршальских checkpoint'ов.
+  ///
+  /// Возвращает список elapsed-времён от старта для каждого checkpoint.
+  /// Используется для отображения в протоколе (КП1, КП2...).
+  List<Duration> checkpointSplits(String bib, List<TimeMark> marks, StartEntry athlete) {
+    final cpMarks = _checkpointMarksForBib(bib, marks);
+
+    return cpMarks.map((m) {
+      return m.correctedTime.difference(athlete.effectiveStartTime);
+    }).toList();
+  }
+
+  /// Сырые checkpoint marks для BIB (для отображения в UI).
+  List<TimeMark> checkpointMarksForBib(String bib, List<TimeMark> marks) {
+    return _checkpointMarksForBib(bib, marks);
   }
 
   // ─── Speed ───────────────────────────────────────────────────
@@ -89,12 +112,22 @@ class ElapsedCalculator {
 
   // ─── Helpers ─────────────────────────────────────────────────
 
-  /// Отфильтровать отсечки для конкретного BIB (checkpoint + finish).
-  List<TimeMark> _marksForBib(String bib, List<TimeMark> marks) {
+  /// Finish marks для BIB — используются для lap counting.
+  ///
+  /// Включает только marks с type == finish (прохождение финишной черты).
+  /// Checkpoint marks (маршальские промежуточные) исключены.
+  List<TimeMark> _finishMarksForBib(String bib, List<TimeMark> marks) {
     return marks
-        .where((m) =>
-            m.bib == bib &&
-            (m.type == MarkType.checkpoint || m.type == MarkType.finish))
-        .toList();
+        .where((m) => m.bib == bib && m.type == MarkType.finish)
+        .toList()
+      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
+  }
+
+  /// Checkpoint marks для BIB — промежуточные точки.
+  List<TimeMark> _checkpointMarksForBib(String bib, List<TimeMark> marks) {
+    return marks
+        .where((m) => m.bib == bib && m.type == MarkType.checkpoint)
+        .toList()
+      ..sort((a, b) => a.correctedTime.compareTo(b.correctedTime));
   }
 }

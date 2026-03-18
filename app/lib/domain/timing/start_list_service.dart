@@ -151,12 +151,13 @@ class StartListService {
   ///
   /// Для Individual: `actualStartTime` может отличаться от planned.
   /// Для Mass: используется `markStartedAll()`.
-  void markStarted(String bib, {DateTime? actualTime}) {
+  /// [actualTime] must be provided by the caller via [RaceClock.stamp()].
+  void markStarted(String bib, {required DateTime actualTime}) {
     final entry = _find(bib);
     if (entry == null) return;
 
     entry.status = AthleteStatus.started;
-    entry.actualStartTime = actualTime ?? DateTime.now();
+    entry.actualStartTime = actualTime;
 
     // Перейти к следующему (Individual)
     if (_config.startType == StartType.individual || _config.startType == StartType.wave) {
@@ -165,13 +166,13 @@ class StartListService {
   }
 
   /// GUN START — все стартуют одновременно.
-  void markStartedAll({DateTime? gunTime}) {
-    final gun = gunTime ?? DateTime.now();
+  /// [gunTime] must be provided by the caller via [RaceClock.stamp()].
+  void markStartedAll({required DateTime gunTime}) {
     for (final e in _entries) {
       if (e.status == AthleteStatus.waiting || e.status == AthleteStatus.current) {
         e.status = AthleteStatus.started;
-        e.actualStartTime = gun;
-        e.plannedStartTime = gun; // для mass — planned = actual
+        e.actualStartTime = gunTime;
+        e.plannedStartTime = gunTime; // для mass — planned = actual
       }
     }
     _currentIndex = _entries.length; // все стартовали
@@ -199,12 +200,13 @@ class StartListService {
   }
 
   /// Принудительный ранний старт.
-  void forceStart(String bib, {DateTime? actualTime}) {
+  /// [actualTime] must be provided by the caller via [RaceClock.stamp()].
+  void forceStart(String bib, {required DateTime actualTime}) {
     final entry = _find(bib);
     if (entry == null) return;
 
     entry.status = AthleteStatus.started;
-    entry.actualStartTime = actualTime ?? DateTime.now();
+    entry.actualStartTime = actualTime;
   }
 
   /// DNF — сход с дистанции (только для started атлетов).

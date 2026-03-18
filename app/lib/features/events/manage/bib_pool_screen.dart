@@ -264,7 +264,7 @@ class BibPoolScreen extends ConsumerWidget {
           ]),
           const SizedBox(height: 12),
           DropdownButtonFormField<String?>(
-            value: selectedDisciplineId,
+            initialValue: selectedDisciplineId,
             decoration: const InputDecoration(labelText: 'Дисциплина', border: OutlineInputBorder(), prefixIcon: Icon(Icons.sports)),
             items: [
               const DropdownMenuItem(value: null, child: Text('Общий пул')),

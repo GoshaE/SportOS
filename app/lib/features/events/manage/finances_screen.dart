@@ -42,7 +42,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> with SingleTick
     // Dashboard stats from disciplines
     final totalRevenue = disciplines.fold<int>(0, (sum, d) => sum + (d.priceRub ?? 0));
     final dashboardData = {
-      'income': totalRevenue > 0 ? '${totalRevenue}' : '0',
+      'income': totalRevenue > 0 ? '$totalRevenue' : '0',
       'ticketsSold': 0,
       'avgTicket': totalRevenue > 0 ? (totalRevenue ~/ disciplines.length) : 0,
     };
@@ -59,6 +59,7 @@ class _FinancesScreenState extends ConsumerState<FinancesScreen> with SingleTick
             'Транзакции',
             'Сверки',
           ],
+          isScrollable: true,
         ),
       ),
       body: TabBarView(

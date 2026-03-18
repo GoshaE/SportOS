@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportos_app/ui/molecules/app_list_row.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 
@@ -54,7 +55,7 @@ class _ProfileDocumentsScreenState extends State<ProfileDocumentsScreen> {
         title: Text(doc['title'], style: theme.textTheme.titleSmall),
         subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           const SizedBox(height: 4),
-          AppDetailRow(label: 'Действует до', value: doc['expiry'], icon: Icons.event),
+          AppListRow.detail(label: 'Действует до', value: doc['expiry'], icon: Icons.event),
           const SizedBox(height: 2),
           StatusBadge(
             text: doc['status'],

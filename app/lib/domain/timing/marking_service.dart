@@ -1,4 +1,5 @@
 import 'models.dart';
+import 'race_clock.dart';
 
 /// Сервис очереди отсечек.
 ///
@@ -8,16 +9,16 @@ import 'models.dart';
 /// 3. Поддерживает: удаление, вставку, коррекцию, swap BIB
 class MarkingService {
   final List<TimeMark> _marks = [];
-  final Duration _clockOffset;
+  final RaceClock? _clock;
   final Duration _minLapTime;
   final int _totalLaps;
   int _nextId = 1;
 
   MarkingService({
-    Duration clockOffset = Duration.zero,
+    RaceClock? clock,
     Duration minLapTime = const Duration(seconds: 20),
     int totalLaps = 1,
-  })  : _clockOffset = clockOffset,
+  })  : _clock = clock,
         _minLapTime = minLapTime,
         _totalLaps = totalLaps;
 
@@ -25,11 +26,12 @@ class MarkingService {
 
   /// Добавить отсечку (tap).
   ///
-  /// Фиксирует текущее скорректированное время.
+  /// Фиксирует текущее скорректированное время через [RaceClock].
   /// BIB назначается отдельно через [assignBib].
   TimeMark addMark({MarkType type = MarkType.finish, MarkOwner owner = MarkOwner.finishJudge}) {
     final raw = DateTime.now();
-    final corrected = raw.add(_clockOffset);
+    // Use RaceClock for corrected time (always has latest offset)
+    final corrected = _clock?.now ?? raw;
 
     final mark = TimeMark(
       id: 'mark-${_nextId++}',

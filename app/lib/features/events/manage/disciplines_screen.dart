@@ -6,6 +6,7 @@ import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../../domain/timing/models.dart';
+import '../../../domain/event/discipline_catalog.dart';
 
 /// Screen ID: E2 — Дисциплины и классы
 ///
@@ -30,7 +31,7 @@ class DisciplinesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppAppBar(
         title: const Text('Дисциплины'),
-        actions: [IconButton(icon: const Icon(Icons.add), tooltip: 'Добавить дисциплину', onPressed: () {})],
+        actions: [IconButton(icon: const Icon(Icons.add), tooltip: 'Добавить дисциплину', onPressed: () => _showAddDiscipline(context, ref, courses, eventConfig))],
       ),
       body: ListView(padding: const EdgeInsets.all(12), children: [
         // Summary chips
@@ -79,7 +80,7 @@ class DisciplinesScreen extends ConsumerWidget {
     final lapCtrl = TextEditingController(text: '${d.lapLengthM ?? (d.distanceKm * 1000).toInt()}');
     final lapsCtrl = TextEditingController(text: '${d.laps}');
     final cutoffHCtrl = TextEditingController(text: '${d.cutoffTime?.inHours ?? 2}');
-    final cutoffMCtrl = TextEditingController(text: '${(d.cutoffTime?.inMinutes.remainder(60) ?? 0).toString().padLeft(2, '0')}');
+    final cutoffMCtrl = TextEditingController(text: (d.cutoffTime?.inMinutes.remainder(60) ?? 0).toString().padLeft(2, '0'));
     final priceCtrl = TextEditingController(text: '${d.priceRub ?? 0}');
     final intervalCtrl = TextEditingController(text: '${d.interval.inSeconds}');
     String startTypeStr = d.startType.name;
@@ -186,16 +187,14 @@ class DisciplinesScreen extends ConsumerWidget {
 
           // ─── 3. Старт ───
           _editSection(cs, 'Тип старта', Icons.flag),
-          SegmentedButton<String>(
-            segments: const [
-              ButtonSegment(value: 'individual', label: Text('Раздельный'), icon: Icon(Icons.person, size: 16)),
-              ButtonSegment(value: 'mass', label: Text('Масс-старт'), icon: Icon(Icons.groups, size: 16)),
-              ButtonSegment(value: 'wave', label: Text('Волна'), icon: Icon(Icons.waves, size: 16)),
-            ],
-            selected: {startTypeStr},
-            onSelectionChanged: (s) => setModal(() => startTypeStr = s.first),
-          ),
-          if (startTypeStr == 'individual') ...[
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            _startChip('individual', 'Раздельный', Icons.person, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+            _startChip('mass', 'Масс-старт', Icons.groups, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+            _startChip('wave', 'Волна', Icons.waves, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+            _startChip('pursuit', 'Преследование', Icons.trending_up, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+            _startChip('relay', 'Эстафета', Icons.sync_alt, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+          ]),
+          if (startTypeStr == 'individual' || startTypeStr == 'pursuit') ...[
             const SizedBox(height: 8),
             Row(children: [
               SizedBox(width: 120, child: TextField(
@@ -204,8 +203,41 @@ class DisciplinesScreen extends ConsumerWidget {
                 keyboardType: TextInputType.number,
               )),
               const SizedBox(width: 12),
-              Expanded(child: Text('Между стартами участников', style: TextStyle(fontSize: 12, color: cs.outline))),
+              Expanded(child: Text(
+                startTypeStr == 'pursuit' ? 'Базовый интервал (Гундерсен)' : 'Между стартами участников',
+                style: TextStyle(fontSize: 12, color: cs.outline),
+              )),
             ]),
+          ],
+          if (startTypeStr == 'wave') ...[
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: cs.primaryContainer.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Row(children: [
+                  Icon(Icons.waves, size: 14, color: cs.primary),
+                  const SizedBox(width: 6),
+                  Text('Настройки волн', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: cs.primary)),
+                ]),
+                const SizedBox(height: 8),
+                Row(children: [
+                  SizedBox(width: 120, child: TextField(
+                    controller: intervalCtrl,
+                    decoration: const InputDecoration(labelText: 'Буфер (сек)', border: OutlineInputBorder(), isDense: true),
+                    keyboardType: TextInputType.number,
+                  )),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Пауза между волнами', style: TextStyle(fontSize: 12, color: cs.outline))),
+                ]),
+                const SizedBox(height: 6),
+                Text('Волны назначаются по категориям при жеребьёвке', style: TextStyle(fontSize: 11, color: cs.outline, fontStyle: FontStyle.italic)),
+              ]),
+            ),
           ],
           const SizedBox(height: 12),
           // First start time
@@ -346,8 +378,282 @@ class DisciplinesScreen extends ConsumerWidget {
             icon: const Icon(Icons.save),
             label: const Text('Сохранить'),
           )),
+          const SizedBox(height: 12),
+          // ─── Delete ───
+          SizedBox(width: double.infinity, child: OutlinedButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _confirmDeleteDiscipline(context, ref, d);
+            },
+            icon: Icon(Icons.delete, color: cs.error),
+            label: Text('Удалить дисциплину', style: TextStyle(color: cs.error)),
+            style: OutlinedButton.styleFrom(side: BorderSide(color: cs.error.withValues(alpha: 0.3))),
+          )),
         ]);
       },
+    ));
+  }
+
+  // ─── Add New Discipline (2-step: catalog → customize) ───
+
+  void _showAddDiscipline(BuildContext context, WidgetRef ref, List<Course> courses, EventConfig eventConfig) {
+    final cs = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
+
+    AppBottomSheet.show(context, title: 'Выберите дисциплину', initialHeight: 0.85, child: StatefulBuilder(
+      builder: (ctx, setModal) {
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Catalog grouped by sport
+          ...disciplineCatalog.expand((sport) => [
+            // Sport header
+            Padding(
+              padding: const EdgeInsets.only(top: 12, bottom: 6),
+              child: Row(children: [
+                Text(sport.icon, style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 8),
+                Text(sport.name, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                const Spacer(),
+                Text('${sport.disciplines.length}', style: TextStyle(fontSize: 12, color: cs.outline)),
+              ]),
+            ),
+            const Divider(height: 1),
+            // Discipline items
+            ...sport.disciplines.map((tmpl) => InkWell(
+              onTap: () {
+                Navigator.of(ctx, rootNavigator: true).pop();
+                _showCustomizeDiscipline(context, ref, tmpl, courses, eventConfig);
+              },
+              borderRadius: BorderRadius.circular(10),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+                child: Row(children: [
+                  SizedBox(width: 32, child: Text(tmpl.emoji ?? '🏁', style: const TextStyle(fontSize: 16), textAlign: TextAlign.center)),
+                  const SizedBox(width: 8),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(tmpl.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${tmpl.distanceKm.toStringAsFixed(1)} км · ${tmpl.laps} кр. · ${tmpl.startType == 'mass' ? 'масс-старт' : tmpl.startType == 'wave' ? 'волна' : 'разд. ${tmpl.intervalSec}с'}',
+                      style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant),
+                    ),
+                  ])),
+                  if (tmpl.defaultPriceRub != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                      child: Text('${tmpl.defaultPriceRub}₽', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
+                    ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right, size: 18, color: cs.outline),
+                ]),
+              ),
+            )),
+          ]),
+        ]);
+      },
+    ));
+  }
+
+  // ─── Step 2: Customize selected template ───
+
+  void _showCustomizeDiscipline(BuildContext context, WidgetRef ref, DisciplineTemplate tmpl, List<Course> courses, EventConfig eventConfig) {
+    final nameCtrl = TextEditingController(text: tmpl.name);
+    final lapCtrl = TextEditingController(text: '${tmpl.lapLengthM}');
+    final lapsCtrl = TextEditingController(text: '${tmpl.laps}');
+    final priceCtrl = TextEditingController(text: '${tmpl.defaultPriceRub ?? 0}');
+    final intervalCtrl = TextEditingController(text: '${tmpl.intervalSec}');
+    String startTypeStr = tmpl.startType;
+    Set<String> cats = Set<String>.from(tmpl.defaultCategories);
+    String? selectedCourseId = courses.isNotEmpty ? courses.first.id : null;
+    int selectedDay = 1;
+    final cs = Theme.of(context).colorScheme;
+
+    AppBottomSheet.show(context, title: 'Настроить: ${tmpl.name}', initialHeight: 0.9, child: StatefulBuilder(
+      builder: (ctx, setModal) {
+        final lapM = int.tryParse(lapCtrl.text) ?? 0;
+        final laps = int.tryParse(lapsCtrl.text) ?? 0;
+        final totalKm = (lapM * laps / 1000.0).toStringAsFixed(1);
+
+        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          // Template badge
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Text(tmpl.emoji ?? '🏁', style: const TextStyle(fontSize: 16)),
+              const SizedBox(width: 6),
+              Text('Шаблон: ${tmpl.name}', style: TextStyle(fontSize: 12, color: cs.primary, fontWeight: FontWeight.w600)),
+            ]),
+          ),
+          const SizedBox(height: 12),
+
+          // Name
+          TextField(
+            controller: nameCtrl,
+            decoration: const InputDecoration(labelText: 'Название *', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 16),
+
+          // Distance
+          _editSection(cs, 'Дистанция', Icons.straighten),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+            child: Column(children: [
+              Row(children: [
+                Expanded(child: TextField(
+                  controller: lapCtrl,
+                  decoration: const InputDecoration(labelText: 'Круг (м)', border: OutlineInputBorder(), isDense: true),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setModal(() {}),
+                )),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('×', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
+                SizedBox(width: 80, child: TextField(
+                  controller: lapsCtrl,
+                  decoration: const InputDecoration(labelText: 'Кругов', border: OutlineInputBorder(), isDense: true),
+                  keyboardType: TextInputType.number,
+                  onChanged: (_) => setModal(() {}),
+                )),
+              ]),
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                child: Text('= $totalKm км', textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: cs.primary)),
+              ),
+            ]),
+          ),
+          const SizedBox(height: 16),
+
+          // Start type
+          _editSection(cs, 'Тип старта', Icons.flag),
+          Wrap(spacing: 6, runSpacing: 6, children: [
+            _startChip('individual', 'Раздельный', Icons.person, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+            _startChip('mass', 'Масс-старт', Icons.groups, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+            _startChip('wave', 'Волна', Icons.waves, startTypeStr, (v) => setModal(() => startTypeStr = v)),
+          ]),
+          if (startTypeStr == 'individual') ...[
+            const SizedBox(height: 8),
+            SizedBox(width: 140, child: TextField(
+              controller: intervalCtrl,
+              decoration: const InputDecoration(labelText: 'Интервал (сек)', border: OutlineInputBorder(), isDense: true),
+              keyboardType: TextInputType.number,
+            )),
+          ],
+          const SizedBox(height: 16),
+
+          // Course + Day
+          if (courses.isNotEmpty) ...[
+            _editSection(cs, 'Трасса', Icons.route),
+            Wrap(spacing: 6, runSpacing: 6, children: courses.map((c) => ChoiceChip(
+              label: Text('${c.name} (${c.distanceKm} км)', style: const TextStyle(fontSize: 12)),
+              selected: selectedCourseId == c.id,
+              onSelected: (_) => setModal(() => selectedCourseId = c.id),
+              visualDensity: VisualDensity.compact,
+            )).toList()),
+          ],
+          if (eventConfig.isMultiDay) ...[
+            const SizedBox(height: 8),
+            Wrap(spacing: 6, children: eventConfig.days.map((d) => ChoiceChip(
+              label: Text('День ${d.dayNumber}', style: const TextStyle(fontSize: 12)),
+              selected: selectedDay == d.dayNumber,
+              onSelected: (_) => setModal(() => selectedDay = d.dayNumber),
+              visualDensity: VisualDensity.compact,
+            )).toList()),
+          ],
+          const SizedBox(height: 16),
+
+          // Categories
+          _editSection(cs, 'Категории', Icons.category),
+          Row(children: [
+            TextButton.icon(
+              onPressed: () => setModal(() { cats = {'М', 'Ж', 'Юн', 'Юнк', 'Дети', 'M35', 'M40', 'F35', 'F40', 'Вет'}; }),
+              icon: const Icon(Icons.select_all, size: 14), label: const Text('Все', style: TextStyle(fontSize: 11)),
+            ),
+            TextButton.icon(
+              onPressed: () => setModal(() => cats.clear()),
+              icon: const Icon(Icons.deselect, size: 14), label: const Text('Убрать', style: TextStyle(fontSize: 11)),
+            ),
+          ]),
+          Wrap(spacing: 4, runSpacing: 2, children: ['М', 'Ж', 'Юн', 'Юнк', 'Дети', 'M35', 'M40', 'M45', 'M50', 'F35', 'F40', 'F45', 'Вет'].map((c) => FilterChip(
+            label: Text(c, style: const TextStyle(fontSize: 12)),
+            selected: cats.contains(c),
+            onSelected: (v) => setModal(() { if (v) { cats.add(c); } else { cats.remove(c); } }),
+            visualDensity: VisualDensity.compact,
+          )).toList()),
+          const SizedBox(height: 16),
+
+          // Price
+          SizedBox(width: 140, child: TextField(
+            controller: priceCtrl,
+            decoration: const InputDecoration(labelText: 'Цена ₽', border: OutlineInputBorder(), isDense: true),
+            keyboardType: TextInputType.number,
+          )),
+          const SizedBox(height: 20),
+
+          // Create button
+          SizedBox(width: double.infinity, child: FilledButton.icon(
+            onPressed: () {
+              if (nameCtrl.text.trim().isEmpty) {
+                AppSnackBar.error(context, 'Введите название дисциплины');
+                return;
+              }
+              final newLapM = int.tryParse(lapCtrl.text) ?? tmpl.lapLengthM;
+              final newLaps = int.tryParse(lapsCtrl.text) ?? tmpl.laps;
+              final interval = int.tryParse(intervalCtrl.text) ?? tmpl.intervalSec;
+              final price = int.tryParse(priceCtrl.text);
+              final st = StartType.values.firstWhere((e) => e.name == startTypeStr, orElse: () => StartType.individual);
+              final dayDate = eventConfig.days.where((d) => d.dayNumber == selectedDay).firstOrNull?.date ?? eventConfig.startDate;
+
+              final newDisc = DisciplineConfig(
+                id: 'd-${DateTime.now().millisecondsSinceEpoch}',
+                name: nameCtrl.text.trim(),
+                distanceKm: newLapM * newLaps / 1000.0,
+                lapLengthM: newLapM,
+                laps: newLaps,
+                startType: st,
+                interval: Duration(seconds: interval),
+                firstStartTime: DateTime(dayDate.year, dayDate.month, dayDate.day, 10, 0),
+                cutoffTime: const Duration(hours: 2),
+                categories: cats.toList(),
+                priceRub: price,
+                courseId: selectedCourseId,
+                dayNumber: eventConfig.isMultiDay ? selectedDay : null,
+              );
+
+              ref.read(eventConfigProvider.notifier).addDiscipline(newDisc);
+              Navigator.of(ctx, rootNavigator: true).pop();
+              AppSnackBar.success(context, '${nameCtrl.text.trim()} добавлена');
+            },
+            icon: const Icon(Icons.add),
+            label: const Text('Создать дисциплину'),
+          )),
+        ]);
+      },
+    ));
+  }
+
+  // ─── Delete Discipline ───
+
+  void _confirmDeleteDiscipline(BuildContext context, WidgetRef ref, DisciplineConfig d) {
+    final cs = Theme.of(context).colorScheme;
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      title: const Text('Удалить дисциплину?'),
+      content: Text('${d.name} (${d.totalDistanceKm.toStringAsFixed(1)} км) будет удалена.'),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
+        FilledButton(
+          style: FilledButton.styleFrom(backgroundColor: cs.error),
+          onPressed: () {
+            ref.read(eventConfigProvider.notifier).removeDiscipline(d.id);
+            Navigator.pop(ctx);
+            AppSnackBar.success(context, '${d.name} удалена');
+          },
+          child: const Text('Удалить'),
+        ),
+      ],
     ));
   }
 
@@ -382,6 +688,17 @@ class DisciplinesScreen extends ConsumerWidget {
       'cycle'     => const _SportInfo('🚴', 'Велоспорт', Color(0xFF6A1B9A)),
       _           => const _SportInfo('🏁', 'Другое', Color(0xFF616161)),
     };
+  }
+
+  Widget _startChip(String value, String label, IconData icon, String current, ValueChanged<String> onSelected) {
+    final selected = current == value;
+    return ChoiceChip(
+      label: Text(label, style: const TextStyle(fontSize: 12)),
+      avatar: Icon(icon, size: 14),
+      selected: selected,
+      onSelected: (_) => onSelected(value),
+      visualDensity: VisualDensity.compact,
+    );
   }
 }
 
@@ -503,7 +820,7 @@ class _DisciplineCard extends StatelessWidget {
   String _formatDuration(Duration d) {
     final h = d.inHours;
     final m = d.inMinutes.remainder(60).toString().padLeft(2, '0');
-    return '${h}ч ${m}м';
+    return '$hч $mм';
   }
 }
 

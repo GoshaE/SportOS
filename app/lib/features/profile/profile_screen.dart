@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
+import '../../ui/molecules/app_placeholder.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 
@@ -240,7 +241,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: EdgeInsets.zero,
               ),
               if (_ranks.isEmpty)
-                AppEmptyState(
+                AppPlaceholder.empty(
                   icon: Icons.military_tech,
                   title: 'Нет разрядов',
                   subtitle: 'Нажмите «Добавить»',
@@ -315,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 padding: EdgeInsets.zero,
               ),
               if (_family.isEmpty)
-                AppEmptyState(
+                AppPlaceholder.empty(
                   icon: Icons.family_restroom,
                   title: 'Нет привязанных',
                   subtitle: 'Привяжите профили детей для быстрой регистрации',

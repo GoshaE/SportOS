@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'app_cached_image.dart';
+import '../../ui/atoms/app_gradient_overlay.dart';
+import '../../ui/atoms/app_icon_label.dart';
+import '../../ui/atoms/app_chip.dart';
 
 /// Event status for card display
 enum EventCardStatus {
@@ -93,6 +96,13 @@ class AppEventCard extends StatelessWidget {
     EventCardStatus.draft     => 'Черновик',
   };
 
+  ChipType _chipType() => switch (status) {
+    EventCardStatus.upcoming  => ChipType.primary,
+    EventCardStatus.live      => ChipType.error,
+    EventCardStatus.completed => ChipType.success,
+    EventCardStatus.draft     => ChipType.neutral,
+  };
+
   @override
   Widget build(BuildContext context) {
     switch (mode) {
@@ -109,9 +119,7 @@ class AppEventCard extends StatelessWidget {
   Widget _buildBentoMode(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final fgBg = _statusColors(cs);
-    final solidBg = fgBg.$1;
-    final solidFg = fgBg.$2;
+    final solidBg = _statusColors(cs).$1;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -162,16 +170,9 @@ class AppEventCard extends StatelessWidget {
                          Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: solidBg,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                _statusLabel(),
-                                style: theme.textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.bold, color: solidFg),
-                              ),
+                            AppChip.status(
+                              _statusLabel(),
+                              type: _chipType(),
                             ),
                             if (badge != null) ...[
                               const SizedBox(height: 4),
@@ -189,7 +190,7 @@ class AppEventCard extends StatelessWidget {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          if (sport != null) _buildInfoChip(context, Icons.directions_run, sport!),
+                          if (sport != null) AppChip.icon(Icons.directions_run, sport!, type: ChipType.neutral, variant: ChipVariant.outlined),
                           if (slotsText != null) _buildSlotsChip(context),
                         ],
                       ),
@@ -202,25 +203,7 @@ class AppEventCard extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoChip(BuildContext context, IconData icon, String label) {
-    final cs = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: cs.onSurfaceVariant.withValues(alpha: 0.2)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: cs.onSurfaceVariant),
-          const SizedBox(width: 4),
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(fontSize: 12, color: cs.onSurfaceVariant)),
-        ],
-      ),
-    );
-  }
+  // _buildInfoChip replaced by AppChip.icon atom
 
   Widget _buildSlotsChip(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -296,22 +279,8 @@ class AppEventCard extends StatelessWidget {
               else
                 Container(color: cs.surfaceContainerHighest), // Fallback
 
-              // 2. Dark Gradient for text readability (no blur to keep image crisp)
-              Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.transparent,
-                      Colors.black.withValues(alpha: 0.1),
-                      Colors.black.withValues(alpha: 0.7),
-                      Colors.black.withValues(alpha: 0.95),
-                    ],
-                    stops: const [0.0, 0.4, 0.75, 1.0],
-                  ),
-                ),
-              ),
+              // 2. Gradient overlay atom
+              const AppGradientOverlay(),
 
               // 3. Content
               Padding(
@@ -361,24 +330,18 @@ class AppEventCard extends StatelessWidget {
                     Row(
                       children: [
                         if (subtitle != null) ...[
-                          Icon(Icons.calendar_today, size: 12, color: Colors.white.withValues(alpha: 0.8)),
-                          const SizedBox(width: 4),
                           Expanded(
-                            child: Text(
-                              subtitle!, 
-                              style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            child: AppIconLabel(
+                              Icons.calendar_today, subtitle!,
+                              color: Colors.white.withValues(alpha: 0.9),
                             ),
                           ),
                         ],
                         if (sport != null) ...[
                           const SizedBox(width: 12),
-                          Icon(Icons.directions_run, size: 12, color: Colors.white.withValues(alpha: 0.8)),
-                          const SizedBox(width: 4),
-                          Text(
-                            sport!, 
-                            style: theme.textTheme.bodySmall?.copyWith(color: Colors.white.withValues(alpha: 0.9)),
+                          AppIconLabel(
+                            Icons.directions_run, sport!,
+                            color: Colors.white.withValues(alpha: 0.9),
                           ),
                         ]
                       ],

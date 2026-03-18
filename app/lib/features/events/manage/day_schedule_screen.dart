@@ -37,7 +37,7 @@ class DayScheduleScreen extends ConsumerWidget {
         appBar: AppAppBar(
           title: const Text('Расписание'),
           bottom: dayNumbers.length > 1
-              ? AppPillTabBar(tabs: dayNumbers.map((d) => 'День $d').toList())
+               ? AppPillTabBar(tabs: dayNumbers.map((d) => 'День $d').toList(), isScrollable: true)
               : null,
         ),
         body: dayNumbers.length > 1
@@ -100,23 +100,24 @@ class _DayTimeline extends StatelessWidget {
       children: [
         // ─── Day header ───
         if (raceDay != null) ...[
-          Row(children: [
-            Icon(Icons.calendar_today, size: 14, color: cs.primary),
-            const SizedBox(width: 6),
-            Text(
-              _formatDate(raceDay!.date),
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.primary),
-            ),
-            if (raceDay!.startTime != null) ...[
+          Builder(builder: (_) {
+            final rd = raceDay!;
+            return Row(children: [
+              Icon(Icons.calendar_today, size: 14, color: cs.primary),
+              const SizedBox(width: 6),
+              Text(
+                _formatDate(rd.date),
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.primary),
+              ),
               const SizedBox(width: 12),
               Icon(Icons.schedule, size: 14, color: cs.outline),
               const SizedBox(width: 4),
               Text(
-                'Старт дня с ${raceDay!.startTime!.hour.toString().padLeft(2, '0')}:${raceDay!.startTime!.minute.toString().padLeft(2, '0')}',
+                'Старт дня с ${rd.startTime.hour.toString().padLeft(2, '0')}:${rd.startTime.minute.toString().padLeft(2, '0')}',
                 style: TextStyle(fontSize: 12, color: cs.outline),
               ),
-            ],
-          ]),
+            ]);
+          }),
           const SizedBox(height: 4),
           Text('Нажмите на дисциплину чтобы изменить время старта',
             style: TextStyle(fontSize: 11, color: cs.outline, fontStyle: FontStyle.italic)),
@@ -225,7 +226,7 @@ class _DayTimeline extends StatelessWidget {
             ),
             Chip(
               avatar: const Icon(Icons.timer, size: 14),
-              label: Text('Cutoff ${cutoffH}ч ${cutoffM.toString().padLeft(2, '0')}м'),
+              label: Text('Cutoff $cutoffHч ${cutoffM.toString().padLeft(2, '0')}м'),
             ),
             Chip(
               avatar: const Icon(Icons.groups, size: 14),
@@ -423,7 +424,7 @@ class _SummarySection extends StatelessWidget {
     return AppCard(padding: const EdgeInsets.all(14), children: [
       Row(mainAxisAlignment: MainAxisAlignment.spaceAround, children: [
         _statCol(Icons.sports, '${disciplines.length}', 'Дисциплин'),
-        _statCol(Icons.schedule, '${totalH}ч ${totalM}м', 'Окно'),
+        _statCol(Icons.schedule, '$totalHч $totalMм', 'Окно'),
         _statCol(
           Icons.play_arrow,
           '${earliest.hour.toString().padLeft(2, '0')}:${earliest.minute.toString().padLeft(2, '0')}',

@@ -34,14 +34,41 @@ void main() {
       expect(TimeFormatter.compact(d), '05:30');
     });
 
-    test('ignores hours', () {
+    test('includes hours when >=1h', () {
       const d = Duration(hours: 1, minutes: 5, seconds: 30);
-      expect(TimeFormatter.compact(d), '05:30');
+      expect(TimeFormatter.compact(d), '1:05:30');
     });
 
     test('pads with zeros', () {
       const d = Duration(seconds: 3);
       expect(TimeFormatter.compact(d), '00:03');
+    });
+  });
+
+  group('TimeFormatter.result', () {
+    test('seconds precision', () {
+      const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
+      expect(TimeFormatter.result(d, precision: 'seconds'), '05:30');
+    });
+
+    test('tenths precision', () {
+      const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
+      expect(TimeFormatter.result(d, precision: 'tenths'), '05:30.4');
+    });
+
+    test('hundredths precision', () {
+      const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
+      expect(TimeFormatter.result(d, precision: 'hundredths'), '05:30.45');
+    });
+
+    test('milliseconds precision', () {
+      const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
+      expect(TimeFormatter.result(d, precision: 'milliseconds'), '05:30.456');
+    });
+
+    test('includes hours when >=1h', () {
+      const d = Duration(hours: 1, minutes: 5, seconds: 30, milliseconds: 100);
+      expect(TimeFormatter.result(d, precision: 'tenths'), '1:05:30.1');
     });
   });
 

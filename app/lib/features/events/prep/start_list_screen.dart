@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../../domain/timing/models.dart';
+import '../../../domain/timing/result_table.dart';
 
-/// P2 — Стартовый лист, подключён к Config Engine.
+/// P2 — Стартовый лист, подключён к реальным участникам.
 ///
-/// Берёт дисциплины из провайдера, формирует стартовый лист
-/// по BIB-пулам и интервалам, позволяет добавлять/редактировать,
-/// показывает таблицу (card/table) с фильтрацией по дисциплине.
+/// Берёт дисциплины и участников из провайдеров,
+/// формирует стартовый лист по BIB-пулам и интервалам.
 class StartListScreen extends ConsumerStatefulWidget {
   const StartListScreen({super.key});
 
@@ -23,19 +22,8 @@ class StartListScreen extends ConsumerStatefulWidget {
 class _StartListScreenState extends ConsumerState<StartListScreen> {
   final Map<String, List<Map<String, dynamic>>> _lists = {};
   String? _selectedDiscId;
-  bool _isTableView = false;
-  bool _initialized = false;
+  bool _showCards = false;
   bool _published = false;
-
-  // Demo names for generation
-  static const _demoAthletes = [
-    ('Петров А.А.', 'М', 'Rex'),    ('Иванов В.В.', 'М', 'Storm'),
-    ('Волкова Е.Е.', 'Ж', 'Alaska'),('Сидоров Б.Б.', 'М', 'Luna'),
-    ('Козлов Г.Г.', 'М', 'Wolf'),   ('Новикова З.З.', 'Ж', 'Rocky'),
-    ('Белов Д.Д.', 'М', 'Husky'),   ('Орлова М.М.', 'Ж', 'Sky'),
-    ('Фролов К.К.', 'М', 'Flash'),  ('Морозова С.С.', 'Ж', 'Nina'),
-    ('Тихонов Л.Л.', 'М', 'King'),  ('Зайцева Ю.Ю.', 'Ж', 'Maya'),
-  ];
 
   @override
   void initState() {
@@ -45,31 +33,37 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
 
   void _generate() {
     final disciplines = ref.read(disciplineConfigsProvider);
+    final participants = ref.read(participantsProvider);
     final config = ref.read(eventConfigProvider);
 
     for (final d in disciplines) {
       if (_lists.containsKey(d.id)) continue;
 
+      // Get real participants for this discipline
+      final discParticipants = participants.where((p) => p.disciplineId == d.id).toList();
       final pool = config.bibPools.where((p) => p.disciplineId == d.id).firstOrNull
           ?? config.bibPools.firstOrNull;
-      final count = d.maxParticipants?.clamp(4, 12) ?? 8;
       final bibStart = pool?.rangeStart ?? 1;
       final intervalSec = d.interval.inSeconds;
       final hour = d.firstStartTime.hour;
       final minute = d.firstStartTime.minute;
 
       final list = <Map<String, dynamic>>[];
-      for (var i = 0; i < count; i++) {
-        final name = _demoAthletes[i % _demoAthletes.length];
+      for (var i = 0; i < discParticipants.length; i++) {
+        final p = discParticipants[i];
         final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
+        // Use BIB from participant if already assigned (after draw), otherwise sequential
+        final bib = p.bib.isNotEmpty ? p.bib : '${bibStart + i}';
         list.add({
           'pos': i + 1,
-          'bib': '${bibStart + i}',
-          'name': name.$1,
-          'gender': name.$2,
-          'dog': name.$3,
+          'bib': bib,
+          'name': p.name,
+          'gender': p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?',
+          'dog': p.dogName ?? '',
+          'city': p.city ?? '',
           'time': '${(totalSec ~/ 3600).toString().padLeft(2, '0')}:${((totalSec % 3600) ~/ 60).toString().padLeft(2, '0')}:${(totalSec % 60).toString().padLeft(2, '0')}',
           'status': 'confirmed',
+          'participantId': p.id,
         });
       }
       _lists[d.id] = list;
@@ -89,17 +83,14 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
   void _showAddLateAthlete() {
     final nameCtrl = TextEditingController();
     final dogCtrl = TextEditingController();
-    final cs = Theme.of(context).colorScheme;
     final list = _currentList;
     final disc = _currentDisc;
     if (disc == null) return;
 
     AppBottomSheet.show(context, title: 'Добавить спортсмена', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      Text('Будет добавлен в конец стартового листа', style: TextStyle(color: cs.outline, fontSize: 12)),
-      const SizedBox(height: 12),
       TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder())),
       const SizedBox(height: 12),
-      TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Кличка собаки *', border: OutlineInputBorder())),
+      TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Кличка собаки', border: OutlineInputBorder())),
       const SizedBox(height: 16),
       SizedBox(width: double.infinity, child: FilledButton.icon(
         onPressed: () {
@@ -111,6 +102,18 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
           final totalSec = h * 3600 + m * 60 + lastPos * intervalSec;
           final nextBib = list.isEmpty ? 1 : (int.tryParse(list.last['bib'] ?? '0') ?? 0) + 1;
 
+          // Also add to participants provider
+          final p = Participant(
+            id: 'p-late-${DateTime.now().millisecondsSinceEpoch}',
+            name: nameCtrl.text,
+            disciplineId: disc.id,
+            disciplineName: disc.name,
+            bib: '$nextBib',
+            dogName: dogCtrl.text.isEmpty ? null : dogCtrl.text,
+            registeredAt: DateTime.now(),
+          );
+          ref.read(participantsProvider.notifier).add(p);
+
           setState(() {
             list.add({
               'pos': lastPos + 1,
@@ -118,8 +121,10 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
               'name': nameCtrl.text,
               'gender': '?',
               'dog': dogCtrl.text,
+              'city': '',
               'time': '${(totalSec ~/ 3600).toString().padLeft(2, '0')}:${((totalSec % 3600) ~/ 60).toString().padLeft(2, '0')}:${(totalSec % 60).toString().padLeft(2, '0')}',
               'status': 'late_add',
+              'participantId': p.id,
             });
           });
           Navigator.pop(context);
@@ -169,16 +174,17 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
     AppSnackBar.success(context, 'Стартовый лист опубликован! 🎉');
   }
 
+  void _refresh() {
+    _lists.clear();
+    _generate();
+    AppSnackBar.info(context, 'Стартовый лист обновлён из участников');
+  }
+
   @override
   Widget build(BuildContext context) {
     final disciplines = ref.watch(disciplineConfigsProvider);
     final cs = Theme.of(context).colorScheme;
-    final w = MediaQuery.of(context).size.width;
 
-    if (!_initialized) {
-      _isTableView = w > 600;
-      _initialized = true;
-    }
     final list = _currentList;
     final disc = _currentDisc;
 
@@ -187,9 +193,14 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
         title: const Text('Стартовый лист'),
         actions: [
           IconButton(
-            icon: Icon(_isTableView ? Icons.grid_view : Icons.table_rows),
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Обновить из участников',
+            onPressed: _refresh,
+          ),
+          IconButton(
+            icon: Icon(_showCards ? Icons.table_rows : Icons.view_agenda_outlined),
             tooltip: 'Вид',
-            onPressed: () => setState(() => _isTableView = !_isTableView),
+            onPressed: () => setState(() => _showCards = !_showCards),
           ),
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
@@ -232,12 +243,13 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             itemCount: disciplines.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 6),
+            separatorBuilder: (context, index) => const SizedBox(width: 6),
             itemBuilder: (context, i) {
               final d = disciplines[i];
               final isSelected = d.id == _selectedDiscId;
+              final count = (_lists[d.id] ?? []).length;
               return ChoiceChip(
-                label: Text(d.name, style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : null)),
+                label: Text('${d.name} ($count)', style: TextStyle(fontSize: 12, fontWeight: isSelected ? FontWeight.bold : null)),
                 selected: isSelected,
                 onSelected: (_) => setState(() => _selectedDiscId = d.id),
               );
@@ -268,40 +280,51 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
         // Table
         Expanded(
           child: list.isEmpty
-              ? Center(child: Text('Нет участников', style: TextStyle(color: cs.outline)))
-              : SingleChildScrollView(
-                  child: AppProtocolTable(
-                    forceTableView: _isTableView,
-                    headerRow: AppProtocolRow(
-                      isHeader: true,
-                      bib: 'BIB',
-                      name: 'ФИО',
-                      cat: '',
-                      dog: 'Собака',
-                      time: 'Старт',
-                      delta: '—',
-                      penalty: '—',
-                    ),
-                    itemCount: list.length,
-                    itemBuilder: (context, index, isCard) {
-                      final a = list[index];
-                      final isLate = a['status'] == 'late_add';
+              ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  Icon(Icons.people_outline, size: 48, color: cs.outline),
+                  const SizedBox(height: 12),
+                  Text('Нет участников в этой дисциплине', style: TextStyle(color: cs.outline, fontSize: 14)),
+                  const SizedBox(height: 4),
+                  Text('Добавьте участников через Управлять → Участники', style: TextStyle(color: cs.outline, fontSize: 12)),
+                ]))
+              : Builder(builder: (context) {
+                  final columns = <ColumnDef>[
+                    const ColumnDef(id: 'pos', label: '№', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 40),
+                    const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 50),
+                    const ColumnDef(id: 'name', label: 'ФИО', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0, minWidth: 140),
+                    const ColumnDef(id: 'dog', label: 'Собака', type: ColumnType.text, align: ColumnAlign.left, flex: 1.2, minWidth: 100),
+                    const ColumnDef(id: 'time', label: 'Старт', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0, minWidth: 75),
+                    const ColumnDef(id: 'status', label: 'Статус', type: ColumnType.text, align: ColumnAlign.center, flex: 0.8, minWidth: 60),
+                  ];
 
-                      return AppProtocolRow(
-                        isCardView: isCard,
-                        place: a['pos'] as int,
-                        bib: a['bib'] as String,
-                        name: a['name'] as String,
-                        cat: isLate ? 'ДОП.' : '',
-                        dog: a['dog'] as String,
-                        time: a['time'] as String,
-                        delta: '—',
-                        penalty: '—',
-                        onTap: () => _showEditRow(index),
-                      );
+                  final rows = list.asMap().entries.map((e) {
+                    final a = e.value;
+                    final isLate = a['status'] == 'late_add';
+                    return ResultRow(
+                      entryId: 'sl-${e.key}',
+                      cells: {
+                        'pos': CellValue(raw: a['pos'], display: '${a['pos']}'),
+                        'bib': CellValue(raw: a['bib'], display: a['bib'] as String),
+                        'name': CellValue(raw: a['name'], display: a['name'] as String),
+                        'dog': CellValue(raw: a['dog'], display: a['dog'] as String),
+                        'time': CellValue(raw: a['time'], display: a['time'] as String),
+                        'status': CellValue(
+                          display: isLate ? 'ДОП.' : 'Подтв.',
+                          style: isLate ? CellStyle.highlight : CellStyle.normal,
+                        ),
+                      },
+                    );
+                  }).toList();
+
+                  return AppResultTable(
+                    table: ResultTable(columns: columns, rows: rows),
+                    showCards: _showCards,
+                    onRowTap: (row) {
+                      final idx = list.indexWhere((a) => 'sl-${list.indexOf(a)}' == row.entryId);
+                      if (idx >= 0) _showEditRow(idx);
                     },
-                  ),
-                ),
+                  );
+                }),
         ),
 
         // Footer stats

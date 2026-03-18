@@ -264,7 +264,7 @@ class RegistrationSettingsScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: DropdownButtonFormField<CustomFieldType>(
-            value: type,
+            initialValue: type,
             decoration: const InputDecoration(labelText: 'Тип', border: OutlineInputBorder(), isDense: true),
             items: const [
               DropdownMenuItem(value: CustomFieldType.text, child: Text('Текст')),
@@ -275,7 +275,7 @@ class RegistrationSettingsScreen extends ConsumerWidget {
           )),
           const SizedBox(width: 12),
           Expanded(child: DropdownButtonFormField<FieldVisibility>(
-            value: vis,
+            initialValue: vis,
             decoration: const InputDecoration(labelText: 'Режим', border: OutlineInputBorder(), isDense: true),
             items: const [
               DropdownMenuItem(value: FieldVisibility.required, child: Text('Обязательное')),

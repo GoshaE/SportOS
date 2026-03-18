@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/widgets.dart';
 import '../../core/widgets/app_app_bar.dart'; // Added import
@@ -11,11 +12,13 @@ class OpsDashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
+    final eventId = GoRouterState.of(context).pathParameters['eventId'] ?? 'evt-1';
 
     return Scaffold(
-      appBar: const AppAppBar(
+      appBar: AppAppBar(
         forceBackButton: true,
-        title: Text('Дашборд Судьи'),
+        title: const Text('Дашборд Судьи'),
+        onBackButtonPressed: () => context.go('/hub/event/$eventId'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),

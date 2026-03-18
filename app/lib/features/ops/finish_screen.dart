@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'package:sportos_app/ui/molecules/app_list_row.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +18,25 @@ class FinishScreen extends ConsumerStatefulWidget {
 
 class _FinishScreenState extends ConsumerState<FinishScreen> {
   final ElapsedCalculator _elapsedCalc = const ElapsedCalculator();
+  Timer? _uiTimer;
+  Duration _elapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final session = ref.read(raceSessionProvider);
+      if (session != null && session.clock.isRunning) {
+        setState(() => _elapsed = session.clock.elapsed);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _uiTimer?.cancel();
+    super.dispose();
+  }
 
   // ═══════════════════════════════════════
   // Actions
@@ -218,7 +239,10 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
           text: 'Добавить',
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
-            ref.read(raceSessionProvider.notifier).insertMark(DateTime.now(), reason: 'Ручная вставка');
+            ref.read(raceSessionProvider.notifier).insertMark(
+              ref.read(raceSessionProvider.notifier).stamp(),
+              reason: 'Ручная вставка',
+            );
             AppSnackBar.info(context, 'Метка добавлена → Audit Log');
           },
         ),
@@ -257,8 +281,8 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             children: [
               const ListTile(leading: SizedBox(width: 24, height: 24, child: CircularProgressIndicator(strokeWidth: 2)), title: Text('Ожидание подключений...')),
               const Divider(),
-              AppStatusRow(icon: Icons.smartphone, title: 'Стартёр (Samsung S21)', subtitle: 'Синхронизировано (Δ = -0.012 с)', trailing: Icon(Icons.check_circle, color: cs.primary)),
-              AppStatusRow(icon: Icons.smartphone, title: 'Маршал КП1 (iPhone 12)', subtitle: 'Синхронизировано (Δ = +0.034 с)', trailing: Icon(Icons.check_circle, color: cs.primary)),
+              AppListRow.status(icon: Icons.smartphone, title: 'Стартёр (Samsung S21)', subtitle: 'Синхронизировано (Δ = -0.012 с)', trailing: Icon(Icons.check_circle, color: cs.primary)),
+              AppListRow.status(icon: Icons.smartphone, title: 'Маршал КП1 (iPhone 12)', subtitle: 'Синхронизировано (Δ = +0.034 с)', trailing: Icon(Icons.check_circle, color: cs.primary)),
             ]
           ),
         ],
@@ -331,6 +355,19 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                   ]),
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            AppCard(
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
+              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(12),
+              children: [
+                Row(children: [
+                  Icon(Icons.timer, size: 14, color: cs.primary),
+                  const SizedBox(width: 6),
+                  Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: cs.primary)),
+                ]),
+              ],
             ),
             const SizedBox(width: 8),
             AppCard(

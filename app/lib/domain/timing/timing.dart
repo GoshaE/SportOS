@@ -9,6 +9,7 @@ library;
 
 export 'models.dart';
 export 'race_clock.dart';
+export 'race_scheduler.dart';
 export 'start_list_service.dart';
 export 'marking_service.dart';
 export 'elapsed_calculator.dart';

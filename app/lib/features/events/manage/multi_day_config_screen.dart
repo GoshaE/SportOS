@@ -171,20 +171,23 @@ class MultiDayConfigScreen extends ConsumerWidget {
           // ─── Стартовый порядок ───
           Text('Стартовый порядок', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: cs.primary)),
           const SizedBox(height: 8),
-          ...StartOrder.values.map((order) {
-            final isFirst = day.dayNumber == 1;
-            final disabledForDay1 = isFirst && (order == StartOrder.reverse || order == StartOrder.pursuit || order == StartOrder.same);
-            return RadioListTile<StartOrder>(
-              dense: true,
-              value: order,
-              groupValue: currentDay.startOrder,
-              title: Text(_startOrderLabel(order), style: TextStyle(fontSize: 14, color: disabledForDay1 ? cs.onSurface.withValues(alpha: 0.3) : null)),
-              subtitle: Text(_startOrderDesc(order), style: TextStyle(fontSize: 11, color: cs.outline)),
-              onChanged: disabledForDay1 ? null : (v) {
-                if (v != null) ref.read(eventConfigProvider.notifier).updateDay(day.dayNumber, (d) => d.copyWith(startOrder: v));
-              },
-            );
-          }),
+          RadioGroup<StartOrder>(
+            groupValue: currentDay.startOrder,
+            onChanged: (v) {
+              ref.read(eventConfigProvider.notifier).updateDay(day.dayNumber, (d) => d.copyWith(startOrder: v));
+            },
+            child: Column(children: StartOrder.values.map((order) {
+              final isFirst = day.dayNumber == 1;
+              final disabledForDay1 = isFirst && (order == StartOrder.reverse || order == StartOrder.pursuit || order == StartOrder.same);
+              return RadioListTile<StartOrder>(
+                dense: true,
+                value: order,
+                title: Text(_startOrderLabel(order), style: TextStyle(fontSize: 14, color: disabledForDay1 ? cs.onSurface.withValues(alpha: 0.3) : null)),
+                subtitle: Text(_startOrderDesc(order), style: TextStyle(fontSize: 11, color: cs.outline)),
+                toggleable: !disabledForDay1,
+              );
+            }).toList()),
+          ),
           const SizedBox(height: 16),
 
           // ─── Доп. настройки ───
@@ -250,46 +253,52 @@ class MultiDayConfigScreen extends ConsumerWidget {
   // ─── Scoring, DNF, BIB Pickers ───
 
   void _showScoringPicker(BuildContext context, WidgetRef ref, EventConfig config) {
-    AppBottomSheet.show(context, title: 'Итоговый зачёт', child: Column(children: [
-      ...ScoringMode.values.map((mode) => RadioListTile<ScoringMode>(
-        value: mode,
-        groupValue: config.scoringMode,
-        title: Text(_scoringLabel(mode)),
-        onChanged: (v) {
-          if (v != null) ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(scoringMode: v));
-          Navigator.of(context).pop();
-        },
-      )),
-    ]));
+    AppBottomSheet.show(context, title: 'Итоговый зачёт', child: RadioGroup<ScoringMode>(
+      groupValue: config.scoringMode,
+      onChanged: (v) {
+        ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(scoringMode: v));
+        Navigator.of(context).pop();
+      },
+      child: Column(children: [
+        ...ScoringMode.values.map((mode) => RadioListTile<ScoringMode>(
+          value: mode,
+          title: Text(_scoringLabel(mode)),
+        )),
+      ]),
+    ));
   }
 
   void _showDnfPicker(BuildContext context, WidgetRef ref, EventConfig config) {
-    AppBottomSheet.show(context, title: 'DNF в один из дней', child: Column(children: [
-      ...DayPolicy.values.map((policy) => RadioListTile<DayPolicy>(
-        value: policy,
-        groupValue: config.dnfDayPolicy,
-        title: Text(_dayPolicyLabel(policy)),
-        subtitle: Text(_dayPolicyDesc(policy), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
-        onChanged: (v) {
-          if (v != null) ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(dnfDayPolicy: v));
-          Navigator.of(context).pop();
-        },
-      )),
-    ]));
+    AppBottomSheet.show(context, title: 'DNF в один из дней', child: RadioGroup<DayPolicy>(
+      groupValue: config.dnfDayPolicy,
+      onChanged: (v) {
+        ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(dnfDayPolicy: v));
+        Navigator.of(context).pop();
+      },
+      child: Column(children: [
+        ...DayPolicy.values.map((policy) => RadioListTile<DayPolicy>(
+          value: policy,
+          title: Text(_dayPolicyLabel(policy)),
+          subtitle: Text(_dayPolicyDesc(policy), style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.outline)),
+        )),
+      ]),
+    ));
   }
 
   void _showBibPicker(BuildContext context, WidgetRef ref, EventConfig config) {
-    AppBottomSheet.show(context, title: 'BIB номера', child: Column(children: [
-      ...BibDayPolicy.values.map((policy) => RadioListTile<BibDayPolicy>(
-        value: policy,
-        groupValue: config.bibDayPolicy,
-        title: Text(_bibPolicyLabel(policy)),
-        onChanged: (v) {
-          if (v != null) ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(bibDayPolicy: v));
-          Navigator.of(context).pop();
-        },
-      )),
-    ]));
+    AppBottomSheet.show(context, title: 'BIB номера', child: RadioGroup<BibDayPolicy>(
+      groupValue: config.bibDayPolicy,
+      onChanged: (v) {
+        ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(bibDayPolicy: v));
+        Navigator.of(context).pop();
+      },
+      child: Column(children: [
+        ...BibDayPolicy.values.map((policy) => RadioListTile<BibDayPolicy>(
+          value: policy,
+          title: Text(_bibPolicyLabel(policy)),
+        )),
+      ]),
+    ));
   }
 
   // ─── Labels ───

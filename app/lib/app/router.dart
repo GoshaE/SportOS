@@ -42,6 +42,7 @@ import '../features/events/manage/registration_settings_screen.dart';
 import '../features/events/manage/draw_settings_screen.dart';
 import '../features/events/manage/categories_screen.dart';
 import '../features/events/manage/prestart_checklist_screen.dart';
+import '../features/events/manage/excel_import_screen.dart';
 import '../features/events/series_screen.dart';
 
 // Race Preparation
@@ -150,6 +151,12 @@ final GoRouter router = GoRouter(
                       path: 'register',
                       name: 'event-register',
                       builder: (context, state) => const RegisterWizardScreen(),
+                    ),
+                    GoRoute(
+                      parentNavigatorKey: _rootNavigatorKey,
+                      path: 'participants',
+                      name: 'event-participants',
+                      builder: (context, state) => const ParticipantsScreen(isOrganizer: false),
                     ),
                   ],
                 ),
@@ -426,6 +433,11 @@ final GoRouter router = GoRouter(
           path: 'checklist',
           name: 'manage-checklist',
           builder: (context, state) => const PreStartChecklistScreen(),
+        ),
+        GoRoute(
+          path: 'import',
+          name: 'manage-import',
+          builder: (context, state) => const ExcelImportScreen(),
         ),
       ],
     ),

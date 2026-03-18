@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportos_app/ui/molecules/app_list_row.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
 
@@ -192,9 +193,9 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
       // Контакты
       AppSectionHeader(title: 'Контакты', icon: Icons.contact_mail),
       AppCard(padding: const EdgeInsets.symmetric(horizontal: 16), children: [
-        AppDetailRow(label: 'Telegram', value: '@bystryelapy', icon: Icons.telegram),
-        AppDetailRow(label: 'VK', value: 'vk.com/bystryelapy', icon: Icons.language),
-        AppDetailRow(label: 'Email', value: 'club@bystryelapy.ru', icon: Icons.email),
+        AppListRow.detail(label: 'Telegram', value: '@bystryelapy', icon: Icons.telegram),
+        AppListRow.detail(label: 'VK', value: 'vk.com/bystryelapy', icon: Icons.language),
+        AppListRow.detail(label: 'Email', value: 'club@bystryelapy.ru', icon: Icons.email),
       ]),
 
       const SizedBox(height: 16),
@@ -555,8 +556,8 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
           AppCard(padding: const EdgeInsets.all(16), children: [Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text('Членский взнос', style: theme.textTheme.titleSmall),
             const SizedBox(height: 8),
-            AppDetailRow(label: 'Тариф', value: 'Взрослый'),
-            AppDetailRow(label: 'Сумма', value: '3 000 ₽/год'),
+            AppListRow.detail(label: 'Тариф', value: 'Взрослый'),
+            AppListRow.detail(label: 'Сумма', value: '3 000 ₽/год'),
             const SizedBox(height: 12),
             SizedBox(width: double.infinity, child: FilledButton.icon(
               onPressed: () { setState(() => _membershipStatus = 'active'); AppSnackBar.success(context, 'Взнос оплачен! 🎉'); },
@@ -633,9 +634,9 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
             padding: const EdgeInsets.all(12),
             child: Column(
               children: [
-                AppDetailRow(label: 'Членский взнос', value: '3 000 ₽/год'),
-                AppDetailRow(label: 'Тариф «Ребёнок»', value: '1 500 ₽/год'),
-                AppDetailRow(label: 'Тариф «Семейный»', value: '5 000 ₽/год'),
+                AppListRow.detail(label: 'Членский взнос', value: '3 000 ₽/год'),
+                AppListRow.detail(label: 'Тариф «Ребёнок»', value: '1 500 ₽/год'),
+                AppListRow.detail(label: 'Тариф «Семейный»', value: '5 000 ₽/год'),
               ],
             ),
           ),

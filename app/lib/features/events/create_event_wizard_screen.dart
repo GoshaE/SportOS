@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../domain/event/config_providers.dart';
-import '../../domain/event/event_config.dart' as ec show EventConfig, EventStatus, RaceDay, StartOrder;
+import '../../domain/event/event_config.dart' as ec show RaceDay, StartOrder;
 import '../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../domain/timing/models.dart';
 
@@ -295,7 +295,7 @@ class _CreateEventWizardScreenState extends ConsumerState<CreateEventWizardScree
     for (final sportKey in _selectedSports) {
       final sportName = (_sports[sportKey]!['name'] as String);
       disciplines.add(DisciplineConfig(
-        id: 'd-${sportKey}-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'd-$sportKey-${DateTime.now().millisecondsSinceEpoch}',
         name: sportName,
         distanceKm: 5.0,
         startType: StartType.individual,

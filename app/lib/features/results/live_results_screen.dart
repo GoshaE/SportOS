@@ -232,7 +232,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
           Icon(Icons.sync, size: 12, color: cs.onSurfaceVariant),
           const SizedBox(width: 4),
           Text(
-            '${TimeFormatter.clockTime(DateTime.now())} · Timing Engine',
+            '${TimeFormatter.clockTime(session.clock.now)} · Timing Engine',
             style: theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant, fontSize: 10),
           ),
         ]),

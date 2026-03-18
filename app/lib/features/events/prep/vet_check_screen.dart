@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sportos_app/ui/molecules/app_list_row.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -38,9 +39,9 @@ class VetCheckScreen extends StatelessWidget {
         ]),
       ]),
       Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
-      AppStatusRow(icon: valid ? Icons.check_circle : Icons.warning, title: 'Вакцинация', subtitle: 'До: $vaccDate'),
-      AppStatusRow(icon: Icons.medical_services, title: 'Осмотр', subtitle: 'Общее состояние: хорошее'),
-      AppStatusRow(icon: Icons.thermostat, iconColor: cs.tertiary, title: 'Температура', subtitle: '38.5°C (норма)'),
+      AppListRow.status(icon: valid ? Icons.check_circle : Icons.warning, title: 'Вакцинация', subtitle: 'До: $vaccDate'),
+      AppListRow.status(icon: Icons.medical_services, title: 'Осмотр', subtitle: 'Общее состояние: хорошее'),
+      AppListRow.status(icon: Icons.thermostat, iconColor: cs.tertiary, title: 'Температура', subtitle: '38.5°C (норма)'),
     ]));
   }
 
@@ -109,7 +110,7 @@ class VetCheckScreen extends StatelessWidget {
   Widget _vetRow(BuildContext context, ColorScheme cs, String animal, String chip, String owner, String vaccDate, bool valid, String state) {
     final color = state == 'passed' ? cs.primary : state == 'warning' ? cs.tertiary : state == 'failed' ? cs.error : cs.onSurfaceVariant;
     final icon = state == 'passed' ? Icons.check_circle : state == 'warning' ? Icons.warning : state == 'failed' ? Icons.cancel : Icons.hourglass_empty;
-    return Card(child: AppStatusRow(
+    return Card(child: AppListRow.status(
       icon: icon,
       iconColor: color,
       title: animal,

@@ -172,7 +172,7 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
               ]),
               const SizedBox(height: 12),
               DropdownButtonFormField<int>(
-                value: config.registrationConfig.refundDeadlineHours,
+                initialValue: config.registrationConfig.refundDeadlineHours,
                 decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
                 items: [12, 24, 48, 72].map((h) => DropdownMenuItem(value: h, child: Text('$h ч.'))).toList(),
                 onChanged: (v) {

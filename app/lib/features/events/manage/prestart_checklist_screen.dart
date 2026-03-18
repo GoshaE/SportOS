@@ -189,7 +189,7 @@ class PreStartChecklistScreen extends ConsumerWidget {
         const SizedBox(height: 12),
         Row(children: [
           Expanded(child: DropdownButtonFormField<String>(
-            value: selectedRole,
+            initialValue: selectedRole,
             decoration: const InputDecoration(labelText: 'Роль', border: OutlineInputBorder(), isDense: true),
             items: _roleLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
             onChanged: (v) => setModal(() => selectedRole = v!),

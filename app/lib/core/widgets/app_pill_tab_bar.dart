@@ -29,7 +29,7 @@ class AppPillTabBar extends StatelessWidget implements PreferredSizeWidget {
     this.icons,
     this.isScrollable = false,
     this.padding = const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-    this.height = 52,
+    this.height = 48,
   });
 
   @override
@@ -46,18 +46,18 @@ class AppPillTabBar extends StatelessWidget implements PreferredSizeWidget {
       child: Padding(
         padding: padding,
         child: Container(
-          clipBehavior: Clip.antiAlias,
+          clipBehavior: Clip.none, // Don't clip — pill handles its own radius
           decoration: BoxDecoration(
             color: cs.surfaceContainerHighest,
-            borderRadius: BorderRadius.circular(999), // Pill shape
-            border: Border.all(
-              color: cs.outlineVariant,
-              width: 1,
-            ),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: cs.outlineVariant, width: 1),
           ),
-          child: isScrollable
-              ? _ScrollablePillTabs(controller: ctrl, tabs: tabs, icons: icons, cs: cs, theme: theme)
-              : _FixedPillTabs(controller: ctrl, tabs: tabs, icons: icons, cs: cs, theme: theme),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(999),
+            child: isScrollable
+                ? _ScrollablePillTabs(controller: ctrl, tabs: tabs, icons: icons, cs: cs, theme: theme)
+                : _FixedPillTabs(controller: ctrl, tabs: tabs, icons: icons, cs: cs, theme: theme),
+          ),
         ),
       ),
     );
@@ -84,7 +84,7 @@ class _FixedPillTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const inset = 3.0;
+    const inset = 4.0;
     return Padding(
       padding: const EdgeInsets.all(inset),
       child: LayoutBuilder(builder: (context, constraints) {
@@ -106,7 +106,7 @@ class _FixedPillTabs extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       color: cs.primary,
-                      borderRadius: BorderRadius.circular(999), // TRUE PILL
+                      borderRadius: BorderRadius.circular(999),
                       boxShadow: [
                         BoxShadow(
                           color: cs.primary.withValues(alpha: 0.25),
@@ -127,28 +127,27 @@ class _FixedPillTabs extends StatelessWidget {
                       child: GestureDetector(
                         behavior: HitTestBehavior.opaque,
                         onTap: () => controller.animateTo(i),
-                        child: Center(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              if (icons != null && i < icons!.length) ...[
-                                Icon(icons![i], size: 15, color: color),
-                                const SizedBox(width: 5),
-                              ],
-                              Flexible(
-                                child: Text(
+                        child: SizedBox.expand(
+                          child: Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (icons != null && i < icons!.length) ...[
+                                  Icon(icons![i], size: 15, color: color),
+                                  const SizedBox(width: 5),
+                                ],
+                                Text(
                                   tabs[i],
-                                  style: theme.textTheme.labelMedium?.copyWith(
+                                  style: theme.textTheme.labelLarge?.copyWith(
                                     color: color,
                                     fontWeight: selectedness > 0.5 ? FontWeight.w700 : FontWeight.w500,
                                     height: 1.0,
                                   ),
-                                  overflow: TextOverflow.ellipsis,
                                   maxLines: 1,
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -168,6 +167,7 @@ class _FixedPillTabs extends StatelessWidget {
 // Scrollable tabs with smooth sliding pill
 // Uses GlobalKeys to measure tab widths and animate
 // the pill position using controller.animation.
+// Auto-scrolls to keep active tab visible.
 // ═══════════════════════════════════════════════
 class _ScrollablePillTabs extends StatefulWidget {
   final TabController controller;
@@ -192,28 +192,72 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
   final List<GlobalKey> _keys = [];
   final ScrollController _scroll = ScrollController();
   bool _measured = false;
+  int _lastScrolledTo = -1;
 
   @override
   void initState() {
     super.initState();
     _keys.addAll(List.generate(widget.tabs.length, (_) => GlobalKey()));
-    // Schedule a rebuild after layout so pill can measure tab positions
+    widget.controller.addListener(_onTabChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted && !_measured) {
         setState(() => _measured = true);
+        _scrollToTab(widget.controller.index, animate: false);
       }
     });
   }
 
   @override
   void dispose() {
+    widget.controller.removeListener(_onTabChanged);
     _scroll.dispose();
     super.dispose();
   }
 
+  void _onTabChanged() {
+    if (!widget.controller.indexIsChanging) return;
+    _scrollToTab(widget.controller.index);
+  }
+
+  /// Auto-scroll so the active tab is visible with comfortable padding.
+  void _scrollToTab(int index, {bool animate = true}) {
+    if (!_scroll.hasClients || !mounted) return;
+    if (index == _lastScrolledTo && animate) return;
+    _lastScrolledTo = index;
+
+    final tabRect = _getTabRect(index);
+    if (tabRect == null) return;
+
+    final viewportWidth = _scroll.position.viewportDimension;
+    final scrollOffset = _scroll.offset;
+    const edgePadding = 24.0;
+
+    // Check if tab is fully visible
+    final tabLeft = tabRect.left + scrollOffset;
+    final tabRight = tabLeft + tabRect.width;
+
+    double? targetScroll;
+
+    if (tabLeft - scrollOffset < edgePadding) {
+      // Tab is off-screen to the left
+      targetScroll = (tabLeft - edgePadding).clamp(0.0, _scroll.position.maxScrollExtent);
+    } else if (tabRight - scrollOffset > viewportWidth - edgePadding) {
+      // Tab is off-screen to the right
+      targetScroll = (tabRight - viewportWidth + edgePadding).clamp(0.0, _scroll.position.maxScrollExtent);
+    }
+
+    if (targetScroll != null) {
+      if (animate) {
+        _scroll.animateTo(targetScroll, duration: const Duration(milliseconds: 300), curve: Curves.easeOutCubic);
+      } else {
+        _scroll.jumpTo(targetScroll);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    const inset = 3.0;
+    const inset = 4.0;
     return AnimatedBuilder(
       animation: widget.controller.animation ?? widget.controller,
       builder: (context, _) {
@@ -223,6 +267,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
           controller: _scroll,
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.all(inset),
+          physics: const BouncingScrollPhysics(),
           child: _buildRow(animVal),
         );
       },
@@ -238,7 +283,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
           children: List.generate(widget.tabs.length, (i) {
             return Container(
               key: _keys[i],
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -248,7 +293,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
                   ],
                   Text(
                     widget.tabs[i],
-                    style: widget.theme.textTheme.labelMedium?.copyWith(
+                    style: widget.theme.textTheme.labelLarge?.copyWith(
                       color: Colors.transparent,
                       height: 1.0,
                     ),
@@ -271,7 +316,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
               behavior: HitTestBehavior.opaque,
               onTap: () => widget.controller.animateTo(i),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -281,7 +326,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
                     ],
                     Text(
                       widget.tabs[i],
-                      style: widget.theme.textTheme.labelMedium?.copyWith(
+                      style: widget.theme.textTheme.labelLarge?.copyWith(
                         color: color,
                         fontWeight: selectedness > 0.5 ? FontWeight.w700 : FontWeight.w500,
                         height: 1.0,
@@ -298,15 +343,10 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
   }
 
   Widget _buildPill(double animVal) {
-    // Measure tab positions using RenderBox
-    final parentBox = context.findRenderObject() as RenderBox?;
-    if (parentBox == null || !parentBox.hasSize) {
-      // Schedule a rebuild after layout
-      if (!_measured) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _measured = true);
-        });
-      }
+    if (!_measured) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) setState(() => _measured = true);
+      });
       return const SizedBox.shrink();
     }
 
@@ -317,12 +357,6 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
     final floorRect = _getTabRect(floor);
     final ceilRect = _getTabRect(ceil);
     if (floorRect == null || ceilRect == null) {
-      // Schedule a rebuild if measurement failed
-      if (!_measured) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) setState(() => _measured = true);
-        });
-      }
       return const SizedBox.shrink();
     }
 
@@ -339,7 +373,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
         child: Container(
           decoration: BoxDecoration(
             color: widget.cs.primary,
-            borderRadius: BorderRadius.circular(999), // TRUE PILL
+            borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
                 color: widget.cs.primary.withValues(alpha: 0.25),
@@ -359,11 +393,11 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
     final box = key.currentContext?.findRenderObject() as RenderBox?;
     if (box == null || !box.hasSize) return null;
 
-    // Get the position relative to the Stack (the Row parent)
-    final rowBox = context.findRenderObject() as RenderBox?;
-    if (rowBox == null) return null;
+    // Find the Stack ancestor (the row parent in the scrollable content)
+    final stackBox = context.findRenderObject() as RenderBox?;
+    if (stackBox == null) return null;
 
-    final pos = box.localToGlobal(Offset.zero, ancestor: rowBox);
+    final pos = box.localToGlobal(Offset.zero, ancestor: stackBox);
     return Rect.fromLTWH(pos.dx, pos.dy, box.size.width, box.size.height);
   }
 }

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'event_config.dart';
 import '../timing/models.dart';
+import '../../data/config_storage.dart';
 
 // ─────────────────────────────────────────────────────────────────
 // EVENT CONFIG PROVIDER
@@ -12,11 +13,29 @@ import '../timing/models.dart';
 /// Все экраны читают из этого провайдера. Settings UI пишет сюда.
 class EventConfigNotifier extends Notifier<EventConfig> {
   @override
-  EventConfig build() => _demoEvent();
+  EventConfig build() {
+    // Start with demo, then load saved config asynchronously
+    _loadSaved();
+    return _demoEvent();
+  }
+
+  Future<void> _loadSaved() async {
+    final saved = await ConfigStorage.load();
+    if (saved != null) {
+      state = saved.config;
+      _disciplines = saved.disciplines;
+    }
+  }
+
+  /// Auto-save after any mutation.
+  void _save() {
+    ConfigStorage.save(state, _disciplines);
+  }
 
   /// Обновить конфигурацию мероприятия.
   void update(EventConfig Function(EventConfig current) updater) {
     state = updater(state);
+    _save();
   }
 
   /// Обновить конкретную дисциплину в конфиге.
@@ -28,6 +47,7 @@ class EventConfigNotifier extends Notifier<EventConfig> {
     _disciplines = updated;
     // Trigger rebuild by touching state
     state = state.copyWith();
+    _save();
   }
 
   /// Добавить день из шаблона (копия предыдущего дня).
@@ -48,6 +68,7 @@ class EventConfigNotifier extends Notifier<EventConfig> {
       days: [...state.days, newDay],
       endDate: newDate,
     );
+    _save();
   }
 
   /// Обновить конкретный день.
@@ -55,6 +76,7 @@ class EventConfigNotifier extends Notifier<EventConfig> {
     state = state.copyWith(
       days: state.days.map((d) => d.dayNumber == dayNumber ? updater(d) : d).toList(),
     );
+    _save();
   }
 
   /// Удалить день.
@@ -64,6 +86,7 @@ class EventConfigNotifier extends Notifier<EventConfig> {
       days: updated,
       isMultiDay: updated.length > 1,
     );
+    _save();
   }
 
   /// Переключить многодневность.
@@ -82,6 +105,7 @@ class EventConfigNotifier extends Notifier<EventConfig> {
     } else if (!value) {
       state = state.copyWith(isMultiDay: false);
     }
+    _save();
   }
 
   // ── Internal disciplines storage ──
@@ -94,6 +118,21 @@ class EventConfigNotifier extends Notifier<EventConfig> {
   void setDisciplines(List<DisciplineConfig> list) {
     _disciplines = list;
     state = state.copyWith(); // trigger rebuild
+    _save();
+  }
+
+  /// Добавить новую дисциплину.
+  void addDiscipline(DisciplineConfig disc) {
+    _disciplines = [..._disciplines, disc];
+    state = state.copyWith(); // trigger rebuild
+    _save();
+  }
+
+  /// Удалить дисциплину по ID.
+  void removeDiscipline(String disciplineId) {
+    _disciplines = _disciplines.where((d) => d.id != disciplineId).toList();
+    state = state.copyWith(); // trigger rebuild
+    _save();
   }
 }
 

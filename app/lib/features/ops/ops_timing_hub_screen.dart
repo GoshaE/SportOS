@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/core/widgets/widgets.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
+import 'package:sportos_app/domain/event/config_providers.dart';
 
 /// Посты хронометража — выбор роли.
 ///
@@ -32,18 +33,14 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
     final session = ref.read(raceSessionProvider);
     if (session != null) return;
 
-    // Пустая сессия — спортсмены добавляются через UI
-    final raceStart = DateTime.now().add(const Duration(minutes: 2));
+    // Берём конфиг дисциплины из Event Config Engine
+    final disciplines = ref.read(disciplineConfigsProvider);
+    if (disciplines.isEmpty) return;
 
-    final config = DisciplineConfig(
-      id: 'disc-${widget.eventId}',
-      name: 'Скиджоринг 6 км',
-      distanceKm: 6.0,
-      startType: StartType.individual,
-      interval: const Duration(seconds: 30),
-      firstStartTime: raceStart,
-      laps: 2,
-      minLapTime: const Duration(seconds: 20),
+    // Ищем дисциплину для этого eventId, иначе берём первую
+    final config = disciplines.firstWhere(
+      (d) => d.id.contains(widget.eventId),
+      orElse: () => disciplines.first,
     );
 
     // Стартуем сессию без спортсменов
@@ -134,6 +131,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
       appBar: AppAppBar(
         forceBackButton: true,
         title: const Text('Посты Хронометража'),
+        onBackButtonPressed: () => context.go('/hub/event/$eventId'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -278,7 +276,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () => context.go(route),
+        onTap: () => context.push(route),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(

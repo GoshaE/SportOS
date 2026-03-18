@@ -360,6 +360,7 @@ class RaceResult {
   final String entryId;
   final String bib;
   final String name;
+  final String? categoryName;
   final Duration grossTime;
   final Duration netTime;
   final Duration penaltyTime;
@@ -373,10 +374,17 @@ class RaceResult {
   final Duration? gapToPrev;
   final AthleteStatus status;
 
+  /// Место внутри категории (М, Ж, Юниоры...).
+  int categoryPosition;
+
+  /// Отставание от лидера категории.
+  final Duration? categoryGapToLeader;
+
   RaceResult({
     required this.entryId,
     required this.bib,
     required this.name,
+    this.categoryName,
     required this.grossTime,
     required this.netTime,
     required this.penaltyTime,
@@ -389,6 +397,8 @@ class RaceResult {
     this.gapToLeader,
     this.gapToPrev,
     this.status = AthleteStatus.finished,
+    this.categoryPosition = 0,
+    this.categoryGapToLeader,
   });
 }
 

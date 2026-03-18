@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
+import '../../ui/molecules/app_list_row.dart';
+import '../../ui/molecules/app_chip_group.dart';
 
 /// Screen ID: R4 — Диктор (с тап на атлета → карточка)
 class DictatorScreen extends ConsumerStatefulWidget {
@@ -14,7 +17,26 @@ class DictatorScreen extends ConsumerStatefulWidget {
 }
 
 class _DictatorScreenState extends ConsumerState<DictatorScreen> {
-  String _disc = 'Sprint 5km';
+  String? _disc;
+  Timer? _uiTimer;
+  Duration _elapsed = Duration.zero;
+
+  @override
+  void initState() {
+    super.initState();
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      final session = ref.read(raceSessionProvider);
+      if (session != null && session.clock.isRunning) {
+        setState(() => _elapsed = session.clock.elapsed);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _uiTimer?.cancel();
+    super.dispose();
+  }
 
   // ═══════════════════════════════════════
   // Athlete card
@@ -41,7 +63,6 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(result.name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             Text('$position · $netStr', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
-            Text('Клуб: Хаски Урал · Екатеринбург', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
           ])),
         ]),
         const SizedBox(height: 24),
@@ -53,11 +74,10 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           borderRadius: BorderRadius.circular(12),
           children: [
-            AppStatusRow(
-              icon: Icons.pets,
+            AppListRow.status(
               title: 'Rex',
               subtitle: 'Сибирский хаски · 4 года',
-              contentPadding: EdgeInsets.zero,
+              semantic: RowSemantic.success,
             ),
           ],
         ),
@@ -179,6 +199,10 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
                 Icon(Icons.directions_run, size: 16, color: cs.onSurfaceVariant),
                 const SizedBox(width: 4),
                 Text('$finishedCount/$totalAthletes финишировали', style: theme.textTheme.labelMedium?.copyWith(color: cs.onSurfaceVariant)),
+                const SizedBox(width: 12),
+                Icon(Icons.timer, size: 16, color: cs.primary),
+                const SizedBox(width: 4),
+                Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.bold, color: cs.primary)),
               ]),
             ],
           ),
@@ -186,10 +210,11 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
 
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          child: AppDisciplineChips(
-            items: [session.config.name, 'Каникросс', 'Нарты', 'Пулка'],
-            selected: _disc,
+          child: AppChipGroup(
+            items: [session.config.name],
+            selected: _disc ?? session.config.name,
             onSelected: (v) => setState(() => _disc = v),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
           ),
         ),
 
