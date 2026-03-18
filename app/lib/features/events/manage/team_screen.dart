@@ -90,62 +90,7 @@ class _TeamScreenState extends State<TeamScreen>
     },
   ];
 
-  final List<Map<String, dynamic>> _team = [
-    {
-      'name': 'Иванов А.А.',
-      'role': 'head_judge',
-      'checkpoint': null,
-      'status': 'online',
-    },
-    {
-      'name': 'Смирнова Е.В.',
-      'role': 'secretary',
-      'checkpoint': null,
-      'status': 'online',
-    },
-    {
-      'name': 'Петров Б.Б.',
-      'role': 'starter',
-      'checkpoint': null,
-      'status': 'online',
-    },
-    {
-      'name': 'Козлов В.В.',
-      'role': 'finish_judge',
-      'checkpoint': null,
-      'status': 'offline',
-    },
-    {
-      'name': 'Морозов Г.Г.',
-      'role': 'vet',
-      'checkpoint': null,
-      'status': 'online',
-    },
-    {
-      'name': 'Волков Д.Д.',
-      'role': 'announcer',
-      'checkpoint': null,
-      'status': 'offline',
-    },
-    {
-      'name': 'Сидоров Е.Е.',
-      'role': 'marshal',
-      'checkpoint': 'CP1 — 3км',
-      'status': 'online',
-    },
-    {
-      'name': 'Лебедев Ж.Ж.',
-      'role': 'marshal',
-      'checkpoint': 'CP2 — 6км',
-      'status': 'online',
-    },
-    {
-      'name': 'Орлова Н.Н.',
-      'role': 'volunteer',
-      'checkpoint': 'Зона регистрации',
-      'status': 'offline',
-    },
-  ];
+  final List<Map<String, dynamic>> _team = [];
 
   static const _screenNames = [
     'Стартёр',

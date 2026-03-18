@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../domain/event/config_providers.dart';
 
 /// Screen ID: E6 — Документы
-class DocumentsScreen extends StatelessWidget {
+class DocumentsScreen extends ConsumerWidget {
   const DocumentsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final cs = Theme.of(context).colorScheme;
+    final config = ref.watch(eventConfigProvider);
 
     return Scaffold(
       appBar: AppAppBar(title: const Text('Документы')),
@@ -59,7 +62,7 @@ class DocumentsScreen extends StatelessWidget {
                               Icon(Icons.workspace_premium, size: 48, color: cs.primary),
                               const SizedBox(height: 12),
                               Text('ДИПЛОМ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 2, color: cs.onSurface)),
-                              Text('Чемпионат Урала 2026', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
+                              Text(config.name, style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
                               const SizedBox(height: 8),
                               Text('{ФИО} · {Дисциплина} · {Место}', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
                             ]
