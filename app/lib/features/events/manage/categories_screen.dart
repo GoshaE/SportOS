@@ -71,10 +71,11 @@ class CategoriesScreen extends ConsumerWidget {
         title: const Text('Категории'),
         actions: [
           if (count > 0)
-            TextButton(
+            AppButton.text(
+              text: 'Очистить',
+              isDanger: true,
               onPressed: () => ref.read(eventConfigProvider.notifier).update(
                   (c) => c.copyWith(raceCategories: [])),
-              child: Text('Очистить', style: TextStyle(color: cs.error, fontSize: 12)),
             ),
           IconButton(
             icon: const Icon(Icons.add),
@@ -242,7 +243,9 @@ class CategoriesScreen extends ConsumerWidget {
           )),
         ]),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: isNew ? 'Добавить' : 'Сохранить',
+          icon: Icons.save,
           onPressed: () {
             if (nameCtrl.text.trim().isEmpty) { AppSnackBar.error(context, 'Введите название'); return; }
             final cat = RaceCategory(
@@ -265,9 +268,7 @@ class CategoriesScreen extends ConsumerWidget {
             ref.read(eventConfigProvider.notifier).update((c) => c.copyWith(raceCategories: list));
             Navigator.pop(ctx);
           },
-          icon: const Icon(Icons.save),
-          label: Text(isNew ? 'Добавить' : 'Сохранить'),
-        )),
+        ),
         const SizedBox(height: 8),
       ]),
     ));

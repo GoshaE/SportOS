@@ -24,23 +24,11 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(32),
         child: Column(children: [
-          SizedBox(width: double.infinity, height: 48, child: OutlinedButton.icon(
-            onPressed: () => context.go('/hub'),
-            icon: Icon(Icons.g_mobiledata, color: cs.error, size: 24),
-            label: const Text('Войти через Google'),
-          )),
+          AppButton.secondary(text: 'Войти через Google', icon: Icons.g_mobiledata, onPressed: () => context.go('/hub')),
           const SizedBox(height: 10),
-          SizedBox(width: double.infinity, height: 48, child: OutlinedButton.icon(
-            onPressed: () => context.go('/hub'),
-            icon: const Icon(Icons.apple, size: 22),
-            label: const Text('Войти через Apple'),
-          )),
+          AppButton.secondary(text: 'Войти через Apple', icon: Icons.apple, onPressed: () => context.go('/hub')),
           const SizedBox(height: 10),
-          SizedBox(width: double.infinity, height: 48, child: OutlinedButton.icon(
-            onPressed: () => context.go('/hub'),
-            icon: Text('VK', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary, fontSize: 16)),
-            label: const Text('Войти через VK ID'),
-          )),
+          AppButton.secondary(text: 'Войти через VK ID', onPressed: () => context.go('/hub')),
           const SizedBox(height: 20),
           Row(children: [
             Expanded(child: Divider(color: cs.outlineVariant)),
@@ -57,27 +45,21 @@ class _LoginScreenState extends State<LoginScreen> {
             const SizedBox(height: 12),
             AppTextField(label: 'Повторите пароль', hintText: '••••••••', prefixIcon: Icons.lock_outline, obscureText: true),
             const SizedBox(height: 12),
-            Row(children: [
-              Checkbox(value: true, onChanged: (_) {}),
-              const Expanded(child: Text('Я согласен с обработкой персональных данных и условиями использования', style: TextStyle(fontSize: 12))),
-            ]),
+            AppCheckbox(label: 'Я согласен с обработкой персональных данных и условиями использования', value: true, onChanged: (_) {}),
           ],
-          if (_isLogin) Align(alignment: Alignment.centerRight, child: TextButton(
+          if (_isLogin) Align(alignment: Alignment.centerRight, child: AppButton.text(
+            text: 'Забыли пароль?',
             onPressed: () => context.go('/forgot-password'),
-            child: const Text('Забыли пароль?', style: TextStyle(fontSize: 13)),
           )),
           const SizedBox(height: 12),
-          SizedBox(width: double.infinity, height: 52, child: FilledButton(
-            onPressed: () => _isLogin ? context.go('/hub') : _showSuccess(),
-            child: Text(_isLogin ? 'Войти' : 'Создать аккаунт'),
-          )),
+          AppButton.primary(text: _isLogin ? 'Войти' : 'Создать аккаунт', onPressed: () => _isLogin ? context.go('/hub') : _showSuccess()),
           const SizedBox(height: 16),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Text(_isLogin ? 'Нет аккаунта?' : 'Уже есть аккаунт?', style: const TextStyle(fontSize: 13)),
-            TextButton(onPressed: () => setState(() => _isLogin = !_isLogin), child: Text(_isLogin ? 'Создать' : 'Войти', style: const TextStyle(fontWeight: FontWeight.bold))),
+            AppButton.text(text: _isLogin ? 'Создать' : 'Войти', onPressed: () => setState(() => _isLogin = !_isLogin)),
           ]),
           const SizedBox(height: 8),
-          TextButton(onPressed: () => context.go('/welcome'), child: const Text('← Назад', style: TextStyle(fontSize: 13))),
+          AppButton.text(text: '← Назад', onPressed: () => context.go('/welcome')),
         ]),
       ),
     );
@@ -86,7 +68,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void _showSuccess() {
     AppDialog.custom(context, title: 'Аккаунт создан!',
       child: const Text('Проверьте email для подтверждения. Вы можете начать использовать SportOS прямо сейчас.'),
-      actions: [FilledButton(onPressed: () { Navigator.of(context, rootNavigator: true).pop(); context.go('/hub'); }, child: const Text('Начать'))],
+      actions: [AppButton.small(text: 'Начать', onPressed: () { Navigator.of(context, rootNavigator: true).pop(); context.go('/hub'); })],
     );
   }
 }

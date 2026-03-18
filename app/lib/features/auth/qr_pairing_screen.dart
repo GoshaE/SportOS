@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/core/widgets/widgets.dart';
 
 /// Screen ID: QR — QR Pairing для волонтёра/маршала
 class QrPairingScreen extends StatelessWidget {
@@ -22,7 +23,7 @@ class QrPairingScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text('Секретарь покажет QR-код на своём устройстве.\nОтсканируйте его для получения роли.', textAlign: TextAlign.center, style: TextStyle(color: cs.onSurfaceVariant)),
             const SizedBox(height: 32),
-            OutlinedButton(onPressed: () => context.go('/profile'), child: const Text('← Назад к профилю')),
+            AppButton.text(text: '← Назад к профилю', onPressed: () => context.go('/profile')),
           ]),
         ),
       ),

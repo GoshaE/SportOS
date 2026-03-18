@@ -88,23 +88,23 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
               Row(children: [
                 // Back button
                 if (_prevStatus(config.status) != null)
-                  Expanded(child: OutlinedButton.icon(
+                  Expanded(child: AppButton.smallSecondary(
+                    text: _prevLabel(config.status)!,
+                    icon: Icons.arrow_back,
                     onPressed: () => _confirmTransition(
                       context, config.status, _prevStatus(config.status)!, isBack: true,
                     ),
-                    icon: const Icon(Icons.arrow_back, size: 16),
-                    label: Text(_prevLabel(config.status)!, style: const TextStyle(fontSize: 12)),
                   )),
                 if (_prevStatus(config.status) != null && _nextStatus(config.status) != null)
                   const SizedBox(width: 8),
                 // Forward button
                 if (_nextStatus(config.status) != null)
-                  Expanded(child: FilledButton.icon(
+                  Expanded(child: AppButton.small(
+                    text: _nextLabel(config.status)!,
+                    icon: Icons.arrow_forward,
                     onPressed: () => _confirmTransition(
                       context, config.status, _nextStatus(config.status)!,
                     ),
-                    icon: const Icon(Icons.arrow_forward, size: 16),
-                    label: Text(_nextLabel(config.status)!, style: const TextStyle(fontSize: 12)),
                   )),
               ]),
             ]),
@@ -153,13 +153,10 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
 
         // ─── Название ───
         _sectionTitle(cs, 'Название', Icons.title),
-        TextField(
+        AppTextField(
+          label: 'Название',
           controller: _nameCtrl,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Чемпионат Урала 2026',
-          ),
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          hintText: 'Чемпионат Урала 2026',
         ),
         const SizedBox(height: 20),
 
@@ -188,47 +185,36 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
 
         // ─── Место ───
         _sectionTitle(cs, 'Место проведения', Icons.location_on),
-        TextField(
+        AppTextField(
+          label: 'Место проведения',
           controller: _locationCtrl,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Екатеринбург, озеро Шарташ',
-            prefixIcon: Icon(Icons.place),
-          ),
+          hintText: 'Екатеринбург, озеро Шарташ',
+          prefixIcon: Icons.place,
         ),
         const SizedBox(height: 20),
 
         // ─── Описание ───
         _sectionTitle(cs, 'Описание', Icons.description),
-        TextField(
+        AppTextField(
+          label: 'Описание',
           controller: _descCtrl,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Описание мероприятия для участников...',
-            alignLabelWithHint: true,
-          ),
+          hintText: 'Описание мероприятия для участников...',
           maxLines: 4,
         ),
         const SizedBox(height: 20),
 
         // ─── Контакты ───
         _sectionTitle(cs, 'Контактная информация', Icons.phone),
-        TextField(
+        AppTextField(
+          label: 'Контактная информация',
           controller: _contactCtrl,
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(),
-            hintText: 'Телефон, email организатора',
-            prefixIcon: Icon(Icons.contact_phone),
-          ),
+          hintText: 'Телефон, email организатора',
+          prefixIcon: Icons.contact_phone,
         ),
         const SizedBox(height: 24),
 
         // ─── Сохранить ───
-        SizedBox(width: double.infinity, child: FilledButton.icon(
-          onPressed: _save,
-          icon: const Icon(Icons.save),
-          label: const Text('Сохранить'),
-        )),
+        AppButton.primary(text: 'Сохранить', icon: Icons.save, onPressed: _save),
         const SizedBox(height: 16),
       ]),
     );
@@ -287,8 +273,7 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
         ),
         if (current != null) ...[
           const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () {
+          AppButton.text(text: 'Удалить обложку', icon: Icons.delete_outline, isDanger: true, onPressed: () {
               ref.read(eventConfigProvider.notifier).update((c) => EventConfig(
                 id: c.id, name: c.name, startDate: c.startDate,
                 endDate: c.endDate, location: c.location, description: c.description,
@@ -298,10 +283,7 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
                 penaltyTemplates: c.penaltyTemplates, checklistItems: c.checklistItems,
               ));
               Navigator.pop(context);
-            },
-            icon: Icon(Icons.delete_outline, size: 16, color: cs.error),
-            label: Text('Удалить обложку', style: TextStyle(color: cs.error)),
-          ),
+            }),
         ],
       ],
     ));
@@ -373,13 +355,11 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
         title: Text(isBack ? 'Вернуть этап?' : 'Перейти на следующий этап?'),
         content: Text(_transitionWarning(from, to, isBack)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Отмена')),
-          FilledButton(
+          AppButton.text(text: 'Отмена', onPressed: () => Navigator.pop(ctx, false)),
+          AppButton.small(
+            text: isBack ? 'Вернуть' : 'Подтвердить',
             onPressed: () => Navigator.pop(ctx, true),
-            style: FilledButton.styleFrom(
-              backgroundColor: isBack ? cs.error : cs.primary,
-            ),
-            child: Text(isBack ? 'Вернуть' : 'Подтвердить'),
+            backgroundColor: isBack ? cs.error : cs.primary,
           ),
         ],
       ),

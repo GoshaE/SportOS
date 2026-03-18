@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../core/widgets/widgets.dart';
+
 /// Screen ID: A1 — Welcome
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
@@ -22,16 +24,9 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 8),
               Text('Система спортивного хронометража', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 48),
-              SizedBox(width: double.infinity, height: 52, child: FilledButton.icon(
-                onPressed: () => context.go('/login'),
-                icon: const Icon(Icons.send),
-                label: const Text('Войти через Telegram'),
-              )),
+              AppButton.primary(text: 'Войти через Telegram', icon: Icons.send, onPressed: () => context.go('/login')),
               const SizedBox(height: 16),
-              SizedBox(width: double.infinity, height: 52, child: OutlinedButton(
-                onPressed: () => context.go('/hub'),
-                child: const Text('Продолжить как гость → Хаб'),
-              )),
+              AppButton.secondary(text: 'Продолжить как гость → Хаб', onPressed: () => context.go('/hub')),
             ],
           ),
         ),

@@ -26,19 +26,9 @@ class OtpVerifyScreen extends StatelessWidget {
                 keyboardType: TextInputType.number,
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton(
-                  onPressed: () => context.go('/hub'),
-                  child: const Text('Подтвердить → Хаб'),
-                ),
-              ),
+              AppButton.primary(text: 'Подтвердить → Хаб', onPressed: () => context.go('/hub')),
               const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => context.go('/login'),
-                child: const Text('← Назад к вводу номера'),
-              ),
+              AppButton.text(text: '← Назад к вводу номера', onPressed: () => context.go('/login')),
             ],
           ),
         ),
