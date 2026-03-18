@@ -48,20 +48,20 @@ class _HubSearchScreenState extends State<HubSearchScreen> {
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     Text('Фильтры', style: theme.textTheme.titleSmall),
                     const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _sport,
-                      decoration: const InputDecoration(labelText: 'Вид спорта', isDense: true),
+                    AppSelect<String>(
+                      label: 'Вид спорта',
+                      value: _sport,
                       items: ['Ездовой спорт', 'Каникросс', 'Лыжные гонки', 'Биатлон']
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .map((e) => SelectItem(value: e, label: e))
                           .toList(),
                       onChanged: (v) => setState(() => _sport = v),
                     ),
                     const SizedBox(height: 10),
-                    DropdownButtonFormField<String>(
-                      initialValue: _region,
-                      decoration: const InputDecoration(labelText: 'Регион', isDense: true),
+                    AppSelect<String>(
+                      label: 'Регион',
+                      value: _region,
                       items: ['Свердловская обл.', 'Москва', 'Санкт-Петербург', 'Новосибирская обл.', 'Татарстан']
-                          .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                          .map((e) => SelectItem(value: e, label: e))
                           .toList(),
                       onChanged: (v) => setState(() => _region = v),
                     ),

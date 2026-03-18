@@ -176,23 +176,22 @@ class PreStartChecklistScreen extends ConsumerWidget {
 
     AppBottomSheet.show(context, title: 'Новый пункт чек-листа', child: StatefulBuilder(
       builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(
+        AppTextField(
+          label: 'Название *',
           controller: titleCtrl,
-          decoration: const InputDecoration(labelText: 'Название *', border: OutlineInputBorder()),
-          autofocus: true,
         ),
         const SizedBox(height: 12),
-        TextField(
+        AppTextField(
+          label: 'Описание',
           controller: descCtrl,
-          decoration: const InputDecoration(labelText: 'Описание', border: OutlineInputBorder()),
         ),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: DropdownButtonFormField<String>(
-            initialValue: selectedRole,
-            decoration: const InputDecoration(labelText: 'Роль', border: OutlineInputBorder(), isDense: true),
-            items: _roleLabels.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(),
-            onChanged: (v) => setModal(() => selectedRole = v!),
+          Expanded(child: AppSelect<String>(
+            label: 'Роль',
+            value: selectedRole,
+            items: _roleLabels.entries.map((e) => SelectItem(value: e.key, label: e.value)).toList(),
+            onChanged: (v) => setModal(() => selectedRole = v),
           )),
           const SizedBox(width: 12),
           Expanded(child: CheckboxListTile(

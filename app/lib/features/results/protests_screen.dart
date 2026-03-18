@@ -280,9 +280,10 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
         AppCard(
           padding: const EdgeInsets.all(12),
           children: [
-            DropdownButtonFormField<String>(
-              decoration: const InputDecoration(border: OutlineInputBorder(), hintText: 'Выберите BIB', isDense: true),
-              items: _athletes.map((a) => DropdownMenuItem(value: a['bib'], child: Text('BIB ${a['bib']} — ${a['name']}'))).toList(),
+            AppSelect<String>(
+              label: 'Выберите BIB',
+              value: null,
+              items: _athletes.map((a) => SelectItem(value: a['bib']!, label: 'BIB ${a['bib']} — ${a['name']}')).toList(),
               onChanged: (_) {},
             ),
           ],

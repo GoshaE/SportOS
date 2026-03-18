@@ -60,17 +60,17 @@ class DiplomaGenScreen extends StatelessWidget {
         AppCard(
           padding: const EdgeInsets.all(16),
           children: [
-            DropdownButtonFormField<String>(
-              initialValue: 'Все дисциплины',
-              decoration: const InputDecoration(labelText: 'Дисциплина'),
-              items: ['Все дисциплины', 'Скиджоринг 5км', 'Скиджоринг 10км', 'Каникросс 3км', 'Нарты 15км'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            AppSelect<String>(
+              label: 'Дисциплина',
+              value: 'Все дисциплины',
+              items: ['Все дисциплины', 'Скиджоринг 5км', 'Скиджоринг 10км', 'Каникросс 3км', 'Нарты 15км'].map((e) => SelectItem(value: e, label: e)).toList(),
               onChanged: (_) {},
             ),
             const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: 'Топ-3',
-              decoration: const InputDecoration(labelText: 'Кому генерировать'),
-              items: ['Топ-3', 'Топ-5', 'Топ-10', 'Все финишировавшие', 'Все участники'].map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
+            AppSelect<String>(
+              label: 'Кому генерировать',
+              value: 'Топ-3',
+              items: ['Топ-3', 'Топ-5', 'Топ-10', 'Все финишировавшие', 'Все участники'].map((e) => SelectItem(value: e, label: e)).toList(),
               onChanged: (_) {},
             ),
           ],

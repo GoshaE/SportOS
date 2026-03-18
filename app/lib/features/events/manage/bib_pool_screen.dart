@@ -233,15 +233,16 @@ class BibPoolScreen extends ConsumerWidget {
         final capacity = (end - start + 1).clamp(0, 9999);
 
         return Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(
+          AppTextField(
+            label: 'Название',
             controller: labelCtrl,
-            decoration: const InputDecoration(labelText: 'Название', border: OutlineInputBorder(), prefixIcon: Icon(Icons.label)),
+            prefixIcon: Icons.label,
           ),
           const SizedBox(height: 12),
           Row(children: [
-            Expanded(child: TextField(
+            Expanded(child: AppTextField(
+              label: 'От',
               controller: startCtrl,
-              decoration: const InputDecoration(labelText: 'От', border: OutlineInputBorder(), isDense: true),
               keyboardType: TextInputType.number,
               onChanged: (_) => setModal(() {}),
             )),
@@ -249,9 +250,9 @@ class BibPoolScreen extends ConsumerWidget {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               child: Text('–', style: TextStyle(fontSize: 20, color: cs.outline)),
             ),
-            Expanded(child: TextField(
+            Expanded(child: AppTextField(
+              label: 'До',
               controller: endCtrl,
-              decoration: const InputDecoration(labelText: 'До', border: OutlineInputBorder(), isDense: true),
               keyboardType: TextInputType.number,
               onChanged: (_) => setModal(() {}),
             )),
@@ -263,12 +264,12 @@ class BibPoolScreen extends ConsumerWidget {
             ),
           ]),
           const SizedBox(height: 12),
-          DropdownButtonFormField<String?>(
-            initialValue: selectedDisciplineId,
-            decoration: const InputDecoration(labelText: 'Дисциплина', border: OutlineInputBorder(), prefixIcon: Icon(Icons.sports)),
+          AppSelect<String?>(
+            label: 'Дисциплина',
+            value: selectedDisciplineId,
             items: [
-              const DropdownMenuItem(value: null, child: Text('Общий пул')),
-              ...disciplines.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))),
+              const SelectItem(value: null, label: 'Общий пул'),
+              ...disciplines.map((d) => SelectItem(value: d.id, label: d.name)),
             ],
             onChanged: (v) => setModal(() => selectedDisciplineId = v),
           ),

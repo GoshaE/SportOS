@@ -527,9 +527,9 @@ class EventOverviewScreen extends ConsumerWidget {
           FilterChip(label: const Text('Скиджоринг 5км (21)'), selected: false, onSelected: (_) {}),
         ]),
         const SizedBox(height: 16),
-        const TextField(decoration: InputDecoration(labelText: 'Заголовок', border: OutlineInputBorder(), hintText: 'Важное изменение в расписании')),
+        AppTextField(label: 'Заголовок', hintText: 'Важное изменение в расписании'),
         const SizedBox(height: 12),
-        const TextField(decoration: InputDecoration(labelText: 'Текст сообщения', border: OutlineInputBorder(), hintText: 'Старт дистанции 5км переносится на 10:30...'), maxLines: 4),
+        AppTextField(label: 'Текст сообщения', hintText: 'Старт дистанции 5км переносится на 10:30...', maxLines: 4),
       ]),
     );
   }
@@ -572,18 +572,18 @@ class EventOverviewScreen extends ConsumerWidget {
             ]),
             const SizedBox(height: 8),
             Row(children: [
-              Expanded(flex: 2, child: DropdownButtonFormField<String>(
-                initialValue: c['gender'],
-                decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder(), isDense: true),
-                items: ['Мужчины', 'Женщины', 'Смешанная', 'Любой'].map((s) => DropdownMenuItem(value: s, child: Text(s, style: const TextStyle(fontSize: 13)))).toList(),
-                onChanged: (v) => setModal(() => c['gender'] = v!),
+              Expanded(flex: 2, child: AppSelect<String>(
+                label: 'Пол',
+                value: c['gender'],
+                items: ['Мужчины', 'Женщины', 'Смешанная', 'Любой'].map((s) => SelectItem(value: s, label: s)).toList(),
+                onChanged: (v) => setModal(() => c['gender'] = v),
               )),
               const SizedBox(width: 8),
-              Expanded(child: TextFormField(initialValue: c['minAge'], decoration: const InputDecoration(labelText: 'От (лет)', border: OutlineInputBorder(), isDense: true), keyboardType: TextInputType.number, onChanged: (v) => c['minAge'] = v)),
+              Expanded(child: AppTextField(label: 'От (лет)', controller: TextEditingController(text: c['minAge']), keyboardType: TextInputType.number, onChanged: (v) => c['minAge'] = v)),
               const SizedBox(width: 8),
-              Expanded(child: TextFormField(initialValue: c['maxAge'], decoration: const InputDecoration(labelText: 'До', border: OutlineInputBorder(), isDense: true), keyboardType: TextInputType.number, onChanged: (v) => c['maxAge'] = v)),
+              Expanded(child: AppTextField(label: 'До', controller: TextEditingController(text: c['maxAge']), keyboardType: TextInputType.number, onChanged: (v) => c['maxAge'] = v)),
               const SizedBox(width: 8),
-              Expanded(flex: 2, child: TextFormField(initialValue: c['weight'], decoration: const InputDecoration(labelText: 'Вес / Класс', border: OutlineInputBorder(), isDense: true), onChanged: (v) => c['weight'] = v)),
+              Expanded(flex: 2, child: AppTextField(label: 'Вес / Класс', controller: TextEditingController(text: c['weight']), onChanged: (v) => c['weight'] = v)),
             ]),
           ])),
         );

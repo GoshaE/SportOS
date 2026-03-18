@@ -233,11 +233,11 @@ class RegistrationSettingsScreen extends ConsumerWidget {
   void _editNumber(BuildContext context, String title, int? current, ValueChanged<int?> onSave) {
     final ctrl = TextEditingController(text: current?.toString() ?? '');
     AppBottomSheet.show(context, title: title, child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(
+      AppTextField(
+        label: 'Количество',
         controller: ctrl,
-        decoration: const InputDecoration(labelText: 'Количество', border: OutlineInputBorder(), hintText: 'Пустое = без лимита'),
+        hintText: 'Пустое = без лимита',
         keyboardType: TextInputType.number,
-        autofocus: true,
       ),
       const SizedBox(height: 16),
       SizedBox(width: double.infinity, child: FilledButton(
@@ -257,31 +257,32 @@ class RegistrationSettingsScreen extends ConsumerWidget {
 
     AppBottomSheet.show(context, title: 'Новое поле', child: StatefulBuilder(
       builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(
+        AppTextField(
+          label: 'Название поля *',
           controller: ctrl,
-          decoration: const InputDecoration(labelText: 'Название поля *', border: OutlineInputBorder(), hintText: 'Например: Номер лицензии'),
+          hintText: 'Например: Номер лицензии',
         ),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: DropdownButtonFormField<CustomFieldType>(
-            initialValue: type,
-            decoration: const InputDecoration(labelText: 'Тип', border: OutlineInputBorder(), isDense: true),
+          Expanded(child: AppSelect<CustomFieldType>(
+            label: 'Тип',
+            value: type,
             items: const [
-              DropdownMenuItem(value: CustomFieldType.text, child: Text('Текст')),
-              DropdownMenuItem(value: CustomFieldType.number, child: Text('Число')),
-              DropdownMenuItem(value: CustomFieldType.checkbox, child: Text('Галочка')),
+              SelectItem(value: CustomFieldType.text, label: 'Текст'),
+              SelectItem(value: CustomFieldType.number, label: 'Число'),
+              SelectItem(value: CustomFieldType.checkbox, label: 'Галочка'),
             ],
-            onChanged: (v) => setModal(() => type = v!),
+            onChanged: (v) => setModal(() => type = v),
           )),
           const SizedBox(width: 12),
-          Expanded(child: DropdownButtonFormField<FieldVisibility>(
-            initialValue: vis,
-            decoration: const InputDecoration(labelText: 'Режим', border: OutlineInputBorder(), isDense: true),
+          Expanded(child: AppSelect<FieldVisibility>(
+            label: 'Режим',
+            value: vis,
             items: const [
-              DropdownMenuItem(value: FieldVisibility.required, child: Text('Обязательное')),
-              DropdownMenuItem(value: FieldVisibility.optional, child: Text('Необязательное')),
+              SelectItem(value: FieldVisibility.required, label: 'Обязательное'),
+              SelectItem(value: FieldVisibility.optional, label: 'Необязательное'),
             ],
-            onChanged: (v) => setModal(() => vis = v!),
+            onChanged: (v) => setModal(() => vis = v),
           )),
         ]),
         const SizedBox(height: 16),

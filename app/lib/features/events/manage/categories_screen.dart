@@ -198,44 +198,46 @@ class CategoriesScreen extends ConsumerWidget {
 
     AppBottomSheet.show(context, title: isNew ? 'Своя категория' : existing.name, child: StatefulBuilder(
       builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
-        TextField(
+        AppTextField(
+          label: 'Название *',
           controller: nameCtrl,
-          decoration: const InputDecoration(labelText: 'Название *', border: OutlineInputBorder(), hintText: 'Например: Элита'),
+          hintText: 'Например: Элита',
         ),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'Код',
             controller: shortCtrl,
-            decoration: const InputDecoration(labelText: 'Код', border: OutlineInputBorder(), isDense: true, hintText: 'ЭЛ'),
+            hintText: 'ЭЛ',
           )),
           const SizedBox(width: 12),
-          Expanded(child: DropdownButtonFormField<CategoryGender>(
-            initialValue: gender,
-            decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder(), isDense: true),
+          Expanded(child: AppSelect<CategoryGender>(
+            label: 'Пол',
+            value: gender,
             items: const [
-              DropdownMenuItem(value: CategoryGender.any, child: Text('Любой')),
-              DropdownMenuItem(value: CategoryGender.male, child: Text('Мужской')),
-              DropdownMenuItem(value: CategoryGender.female, child: Text('Женский')),
+              SelectItem(value: CategoryGender.any, label: 'Любой'),
+              SelectItem(value: CategoryGender.male, label: 'Мужской'),
+              SelectItem(value: CategoryGender.female, label: 'Женский'),
             ],
-            onChanged: (v) => setModal(() => gender = v!),
+            onChanged: (v) => setModal(() => gender = v),
           )),
         ]),
         const SizedBox(height: 12),
         Row(children: [
           Text('Возраст:', style: TextStyle(fontSize: 13, color: cs.onSurface)),
           const SizedBox(width: 12),
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'от',
             controller: ageMinCtrl,
-            decoration: const InputDecoration(labelText: 'от', border: OutlineInputBorder(), isDense: true),
             keyboardType: TextInputType.number,
           )),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8),
             child: Text('–', style: TextStyle(fontSize: 18, color: cs.outline)),
           ),
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'до',
             controller: ageMaxCtrl,
-            decoration: const InputDecoration(labelText: 'до', border: OutlineInputBorder(), isDense: true),
             keyboardType: TextInputType.number,
           )),
         ]),

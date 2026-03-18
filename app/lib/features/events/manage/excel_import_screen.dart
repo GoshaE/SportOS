@@ -357,18 +357,17 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
               const SizedBox(width: 12),
               SizedBox(
                 width: 160,
-                child: DropdownButtonFormField<ImportField>(
-                  decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8)),
-                  initialValue: currentField,
-                  isExpanded: true,
-                  items: ImportField.values.map((f) => DropdownMenuItem(value: f, child: Text(f.label, style: const TextStyle(fontSize: 12)))).toList(),
+                child: AppSelect<ImportField>(
+                  label: '',
+                  value: currentField,
+                  items: ImportField.values.map((f) => SelectItem(value: f, label: f.label)).toList(),
                   onChanged: (v) {
                     setState(() {
                       if (v == ImportField.skip) {
                         _mapping.remove(i);
                       } else {
                         _mapping.removeWhere((_, val) => val == v);
-                        _mapping[i] = v!;
+                        _mapping[i] = v;
                       }
                     });
                   },
@@ -572,23 +571,14 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
                   const SizedBox(width: 8),
                   SizedBox(
                     width: 160,
-                    child: DropdownButtonFormField<String>(
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        fillColor: !hasDisc ? cs.error.withValues(alpha: 0.05) : null,
-                        filled: !hasDisc,
-                      ),
-                      initialValue: row.disciplineId,
-                      isExpanded: true,
-                      hint: Text('⚠ Выбрать', style: TextStyle(fontSize: 12, color: cs.error)),
-                      items: disciplines.map((d) => DropdownMenuItem(
+                    child: AppSelect<String>(
+                      label: '',
+                      value: row.disciplineId,
+                      items: disciplines.map((d) => SelectItem(
                         value: d.id,
-                        child: Text(d.name, style: const TextStyle(fontSize: 11)),
+                        label: d.name,
                       )).toList(),
                       onChanged: (v) {
-                        if (v == null) return;
                         final disc = disciplines.firstWhere((d) => d.id == v);
                         setState(() {
                           _rows[i] = row.copyWith(disciplineId: disc.id, disciplineName: disc.name);

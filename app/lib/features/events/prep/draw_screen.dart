@@ -491,28 +491,26 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         margin: const EdgeInsets.all(8),
         child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
           Row(children: [
-            Expanded(child: DropdownButtonFormField(
-              decoration: const InputDecoration(labelText: 'Режим', border: OutlineInputBorder(), isDense: true),
-              isExpanded: true,
+            Expanded(child: AppSelect<String>(
+              label: 'Режим',
+              value: _mode,
               items: const [
-                DropdownMenuItem(value: 'auto', child: Text('Авто')),
-                DropdownMenuItem(value: 'manual', child: Text('Ручная')),
-                DropdownMenuItem(value: 'seed', child: Text('По рейтингу')),
+                SelectItem(value: 'auto', label: 'Авто'),
+                SelectItem(value: 'manual', label: 'Ручная'),
+                SelectItem(value: 'seed', label: 'По рейтингу'),
               ],
-              initialValue: _mode,
-              onChanged: (v) => setState(() => _mode = v!),
+              onChanged: (v) => setState(() => _mode = v),
             )),
             const SizedBox(width: 8),
-            Expanded(child: DropdownButtonFormField(
-              decoration: const InputDecoration(labelText: 'Посев', border: OutlineInputBorder(), isDense: true),
-              isExpanded: true,
+            Expanded(child: AppSelect<String>(
+              label: 'Посев',
+              value: _seeding,
               items: const [
-                DropdownMenuItem(value: 'random', child: Text('Случайный')),
-                DropdownMenuItem(value: 'rating', child: Text('По рейтингу')),
-                DropdownMenuItem(value: 'bib', child: Text('По номеру BIB')),
+                SelectItem(value: 'random', label: 'Случайный'),
+                SelectItem(value: 'rating', label: 'По рейтингу'),
+                SelectItem(value: 'bib', label: 'По номеру BIB'),
               ],
-              initialValue: _seeding,
-              onChanged: (v) => setState(() => _seeding = v!),
+              onChanged: (v) => setState(() => _seeding = v),
             )),
           ]),
           const SizedBox(height: 8),

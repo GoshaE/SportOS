@@ -171,16 +171,14 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
                 const Expanded(child: Text('Таймаут', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13))),
               ]),
               const SizedBox(height: 12),
-              DropdownButtonFormField<int>(
-                initialValue: config.registrationConfig.refundDeadlineHours,
-                decoration: const InputDecoration(border: OutlineInputBorder(), isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10)),
-                items: [12, 24, 48, 72].map((h) => DropdownMenuItem(value: h, child: Text('$h ч.'))).toList(),
+              AppSelect<int>(
+                label: 'Таймаут',
+                value: config.registrationConfig.refundDeadlineHours,
+                items: [12, 24, 48, 72].map((h) => SelectItem(value: h, label: '$h ч.')).toList(),
                 onChanged: (v) {
-                  if (v != null) {
-                    ref.read(eventConfigProvider.notifier).update(
-                      (c) => c.copyWith(registrationConfig: c.registrationConfig.copyWith(refundDeadlineHours: v)),
-                    );
-                  }
+                  ref.read(eventConfigProvider.notifier).update(
+                    (c) => c.copyWith(registrationConfig: c.registrationConfig.copyWith(refundDeadlineHours: v)),
+                  );
                 },
               ),
               const SizedBox(height: 8),
@@ -212,16 +210,21 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
             ]),
             const SizedBox(height: 16),
             if (_paymentTier == 'acquiring') ...[
-              DropdownButtonFormField<String>(
-                decoration: const InputDecoration(labelText: 'Провайдер', border: OutlineInputBorder(), isDense: true), initialValue: 'tinkoff',
-                items: const [DropdownMenuItem(value: 'tinkoff', child: Text('Tinkoff Acquiring')), DropdownMenuItem(value: 'yookassa', child: Text('YooKassa')), DropdownMenuItem(value: 'cloud', child: Text('CloudPayments'))],
+              AppSelect<String>(
+                label: 'Провайдер',
+                value: 'tinkoff',
+                items: const [
+                  SelectItem(value: 'tinkoff', label: 'Tinkoff Acquiring'),
+                  SelectItem(value: 'yookassa', label: 'YooKassa'),
+                  SelectItem(value: 'cloud', label: 'CloudPayments'),
+                ],
                 onChanged: (_) {},
               ),
               const SizedBox(height: 12),
             ],
-            const TextField(decoration: InputDecoration(labelText: 'ИНН', border: OutlineInputBorder(), isDense: true)),
+            AppTextField(label: 'ИНН'),
             const SizedBox(height: 12),
-            const TextField(decoration: InputDecoration(labelText: 'Merchant ID / Terminal Key', border: OutlineInputBorder(), isDense: true)),
+            AppTextField(label: 'Merchant ID / Terminal Key'),
             const SizedBox(height: 16),
             SizedBox(width: double.infinity, child: FilledButton.icon(
               onPressed: () => AppSnackBar.info(context, 'Тестовое подключение...'),

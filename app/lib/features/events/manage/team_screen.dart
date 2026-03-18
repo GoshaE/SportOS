@@ -1150,15 +1150,10 @@ class _TeamScreenState extends State<TeamScreen>
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (existing == null) ...[
-            TextField(
+            AppTextField(
+              label: 'ФИО, телефон или email',
               controller: nameCtrl,
-              decoration: InputDecoration(
-                labelText: 'ФИО, телефон или email',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                prefixIcon: const Icon(Icons.search),
-              ),
+              prefixIcon: Icons.search,
             ),
             const SizedBox(height: 16),
           ] else ...[
@@ -1435,23 +1430,9 @@ class _TeamScreenState extends State<TeamScreen>
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Быстрый выбор',
-            border: OutlineInputBorder(),
-          ),
-          items: const [
-            DropdownMenuItem(value: 'CP1 — 3км', child: Text('CP1 — 3км')),
-            DropdownMenuItem(value: 'CP2 — 6км', child: Text('CP2 — 6км')),
-            DropdownMenuItem(value: 'Старт', child: Text('Старт')),
-            DropdownMenuItem(value: 'Финиш', child: Text('Финиш')),
-            DropdownMenuItem(
-              value: 'Зона регистрации',
-              child: Text('Зона регистрации'),
-            ),
-            DropdownMenuItem(value: 'Ветзона', child: Text('Ветзона')),
-          ],
-          initialValue:
+        AppSelect<String>(
+          label: 'Быстрый выбор',
+          value:
               member['checkpoint'] != null &&
                   [
                     'CP1 — 3км',
@@ -1463,15 +1444,20 @@ class _TeamScreenState extends State<TeamScreen>
                   ].contains(member['checkpoint'])
               ? member['checkpoint']
               : null,
-          onChanged: (v) => ctrl.text = v ?? '',
+          items: const [
+            SelectItem(value: 'CP1 — 3км', label: 'CP1 — 3км'),
+            SelectItem(value: 'CP2 — 6км', label: 'CP2 — 6км'),
+            SelectItem(value: 'Старт', label: 'Старт'),
+            SelectItem(value: 'Финиш', label: 'Финиш'),
+            SelectItem(value: 'Зона регистрации', label: 'Зона регистрации'),
+            SelectItem(value: 'Ветзона', label: 'Ветзона'),
+          ],
+          onChanged: (v) => ctrl.text = v,
         ),
         const SizedBox(height: 16),
-        TextField(
+        AppTextField(
+          label: 'Свой вариант (или ID поста)',
           controller: ctrl,
-          decoration: const InputDecoration(
-            labelText: 'Свой вариант (или ID поста)',
-            border: OutlineInputBorder(),
-          ),
         ),
         const SizedBox(height: 24),
         Row(
