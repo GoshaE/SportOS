@@ -157,11 +157,7 @@ class TimingSettingsScreen extends ConsumerWidget {
           );
         }),
         const SizedBox(height: 8),
-        OutlinedButton.icon(
-          onPressed: () => _addPenalty(context, ref, penalties),
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Добавить штраф'),
-        ),
+        AppButton.smallSecondary(text: 'Добавить штраф', icon: Icons.add, onPressed: () => _addPenalty(context, ref, penalties)),
         const SizedBox(height: 32),
       ]),
     );
@@ -197,13 +193,15 @@ class TimingSettingsScreen extends ConsumerWidget {
   void _editMinLap(BuildContext context, WidgetRef ref, dynamic disc) {
     final ctrl = TextEditingController(text: '${disc.minLapTime.inSeconds}');
     AppBottomSheet.show(context, title: '${disc.name} — мин. время круга', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(
+      AppTextField(
+        label: 'Секунды',
         controller: ctrl,
-        decoration: const InputDecoration(labelText: 'Секунды', border: OutlineInputBorder(), suffixText: 'сек'),
-        keyboardType: TextInputType.number, autofocus: true,
+        keyboardType: TextInputType.number,
+        autofocus: true,
       ),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           final secs = int.tryParse(ctrl.text) ?? 20;
           ref.read(eventConfigProvider.notifier).updateDiscipline(
@@ -211,8 +209,7 @@ class TimingSettingsScreen extends ConsumerWidget {
           );
           Navigator.pop(context);
         },
-        child: const Text('Сохранить'),
-      )),
+      ),
     ]));
   }
 
@@ -225,34 +222,35 @@ class TimingSettingsScreen extends ConsumerWidget {
     AppBottomSheet.show(context, title: 'Новый штраф', child: StatefulBuilder(
       builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
-          SizedBox(width: 80, child: TextField(
+          SizedBox(width: 80, child: AppTextField(
+            label: 'Код *',
             controller: codeCtrl,
-            decoration: const InputDecoration(labelText: 'Код *', border: OutlineInputBorder(), hintText: 'P9'),
-            textCapitalization: TextCapitalization.characters,
+            hintText: 'P9',
           )),
           const SizedBox(width: 12),
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'Описание *',
             controller: descCtrl,
-            decoration: const InputDecoration(labelText: 'Описание *', border: OutlineInputBorder()),
           )),
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: CheckboxListTile(
-            dense: true, contentPadding: EdgeInsets.zero,
-            title: const Text('DSQ (дисквалификация)', style: TextStyle(fontSize: 13)),
+          Expanded(child: AppCheckbox(
+            label: 'DSQ (дисквалификация)',
             value: isDsq,
-            onChanged: (v) => setModal(() => isDsq = v!),
+            onChanged: (v) => setModal(() => isDsq = v),
           )),
           if (!isDsq)
-            SizedBox(width: 100, child: TextField(
+            SizedBox(width: 100, child: AppTextField(
+              label: 'Сек.',
               controller: secsCtrl,
-              decoration: const InputDecoration(labelText: 'Сек.', border: OutlineInputBorder(), isDense: true),
               keyboardType: TextInputType.number,
             )),
         ]),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: 'Добавить',
+          icon: Icons.add,
           onPressed: () {
             if (codeCtrl.text.trim().isEmpty || descCtrl.text.trim().isEmpty) {
               AppSnackBar.error(ctx, 'Заполните код и описание');
@@ -270,9 +268,7 @@ class TimingSettingsScreen extends ConsumerWidget {
             );
             Navigator.pop(ctx);
           },
-          icon: const Icon(Icons.add),
-          label: const Text('Добавить'),
-        )),
+        ),
       ]),
     ));
   }

@@ -929,34 +929,18 @@ class _TeamScreenState extends State<TeamScreen>
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
-            TextField(
-              decoration: InputDecoration(
-                hintText: 'ФИО, email или телефон',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                isDense: true,
-              ),
+            AppTextField(
+              label: 'ФИО, email или телефон',
+              prefixIcon: Icons.search,
             ),
             const SizedBox(height: 12),
             AppUserTile(
               dense: true,
               name: 'Маркова А.А.',
               subtitle: 'markova@email.com',
-              trailing: SizedBox(
-                height: 32,
-                child: FilledButton.tonal(
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  onPressed: () => _showAssignRole(context),
-                  child: const Text('+ Добавить'),
-                ),
+              trailing: AppButton.small(
+                text: '+ Добавить',
+                onPressed: () => _showAssignRole(context),
               ),
             ),
           ],
@@ -1351,69 +1335,47 @@ class _TeamScreenState extends State<TeamScreen>
 
           const SizedBox(height: 32),
           if (existing != null) ...[
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton(
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: cs.error,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                ),
-                onPressed: () {
-                  setState(() => _team.remove(existing));
-                  Navigator.pop(ctx);
-                  // also pop outer context if opened from within the modal
-                  if (Navigator.of(ctx).canPop()) Navigator.pop(ctx);
-                  AppSnackBar.success(
-                    context,
-                    '${existing['name']} удален из команды',
-                  );
-                },
-                child: const Text(
-                  'Снять все роли и удалить',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
+            AppButton.smallDanger(
+              text: 'Снять все роли и удалить',
+              icon: Icons.person_remove,
+              onPressed: () {
+                setState(() => _team.remove(existing));
+                Navigator.pop(ctx);
+                if (Navigator.of(ctx).canPop()) Navigator.pop(ctx);
+                AppSnackBar.success(
+                  context,
+                  '${existing['name']} удален из команды',
+                );
+              },
             ),
             const SizedBox(height: 12),
           ],
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-              onPressed: selectedRole != null
-                  ? () {
-                      if (existing != null) {
-                        setState(() {
-                          existing['role'] = selectedRole;
-                          existing['checkpoint'] = currentCheckpoint;
-                        });
-                      } else if (nameCtrl.text.isNotEmpty) {
-                        setState(
-                          () => _team.add({
-                            'name': nameCtrl.text,
-                            'role': selectedRole,
-                            'checkpoint': currentCheckpoint,
-                            'status': 'offline',
-                          }),
-                        );
-                      }
-                      Navigator.pop(ctx);
-                      AppSnackBar.success(
-                        context,
-                        '${existing != null ? 'Роль обновлена' : 'Назначен'}: ${_roleDef(selectedRole!)['label']}',
+          AppButton.primary(
+            text: existing != null ? 'Сохранить изменения' : 'Выдать доступ',
+            onPressed: selectedRole != null
+                ? () {
+                    if (existing != null) {
+                      setState(() {
+                        existing['role'] = selectedRole;
+                        existing['checkpoint'] = currentCheckpoint;
+                      });
+                    } else if (nameCtrl.text.isNotEmpty) {
+                      setState(
+                        () => _team.add({
+                          'name': nameCtrl.text,
+                          'role': selectedRole,
+                          'checkpoint': currentCheckpoint,
+                          'status': 'offline',
+                        }),
                       );
                     }
-                  : null,
-              child: Text(
-                existing != null ? 'Сохранить изменения' : 'Выдать доступ',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
-              ),
-            ),
+                    Navigator.pop(ctx);
+                    AppSnackBar.success(
+                      context,
+                      '${existing != null ? 'Роль обновлена' : 'Назначен'}: ${_roleDef(selectedRole!)['label']}',
+                    );
+                  }
+                : null,
           ),
         ],
       ),
@@ -1462,18 +1424,14 @@ class _TeamScreenState extends State<TeamScreen>
         const SizedBox(height: 24),
         Row(
           children: [
-            TextButton(
-              onPressed: () {
-                onApply(null);
-              },
-              child: Text('Очистить пост', style: TextStyle(color: cs.error)),
+            AppButton.text(
+              text: 'Очистить пост',
+              onPressed: () => onApply(null),
             ),
             const Spacer(),
-            FilledButton(
-              onPressed: () {
-                onApply(ctrl.text.isNotEmpty ? ctrl.text : null);
-              },
-              child: const Text('Применить'),
+            AppButton.small(
+              text: 'Применить',
+              onPressed: () => onApply(ctrl.text.isNotEmpty ? ctrl.text : null),
             ),
           ],
         ),
