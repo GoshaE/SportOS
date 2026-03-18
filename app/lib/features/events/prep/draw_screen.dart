@@ -87,7 +87,6 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   String? _selectedDiscId;
 
   String _mode = 'auto';
-  String _grouping = 'together';
   String _seeding = 'random';
 
   @override
@@ -117,21 +116,25 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 
   /// Build draw entries from real participants.
   List<DrawEntry> _buildEntries(List<Participant> participants, DisciplineConfig disc, BibPool? pool) {
+    final config = ref.read(eventConfigProvider);
+    final draw = config.drawConfig;
     final bibStart = pool?.rangeStart ?? 1;
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
     final intervalSec = disc.interval.inSeconds;
+    final baseSeconds = hour * 3600 + minute * 60;
 
-    // Create entries from participants, shuffle for random draw
+    // Shuffle all
     final shuffled = List<Participant>.from(participants)..shuffle(Random());
+
+    // Group by gender if needed
+    if (draw.grouping == DrawGrouping.byGender) {
+      return _buildGroupedEntries(shuffled, draw, bibStart, baseSeconds, intervalSec);
+    }
 
     return List.generate(shuffled.length, (i) {
       final p = shuffled[i];
-      final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
-      final h = totalSec ~/ 3600;
-      final m = (totalSec % 3600) ~/ 60;
-      final s = totalSec % 60;
-
+      final t = baseSeconds + i * intervalSec;
       return DrawEntry(
         position: i + 1,
         bib: bibStart + i,
@@ -139,11 +142,92 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         name: p.name,
         gender: p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?',
         dog: p.dogName ?? '',
-        startTime: '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}',
+        startTime: _fmtTime(t),
         category: p.category,
         city: p.city,
       );
     });
+  }
+
+  /// Build entries grouped by gender with buffer between groups.
+  List<DrawEntry> _buildGroupedEntries(
+    List<Participant> participants, DrawConfig draw,
+    int bibStart, int baseSeconds, int intervalSec,
+  ) {
+    final groups = <String, List<Participant>>{};
+    for (final p in participants) {
+      final g = p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?';
+      groups.putIfAbsent(g, () => []).add(p);
+    }
+
+    final entries = <DrawEntry>[];
+    var currentSec = baseSeconds;
+    var bibCounter = bibStart;
+    var position = 1;
+
+    for (final groupKey in draw.groupOrder) {
+      final groupParticipants = groups.remove(groupKey) ?? [];
+      if (groupParticipants.isEmpty) continue;
+
+      // Add buffer BEFORE this group (except first group)
+      if (entries.isNotEmpty) {
+        currentSec += draw.bufferMinutes * 60;
+      }
+
+      for (final p in groupParticipants) {
+        entries.add(DrawEntry(
+          position: position,
+          bib: bibCounter,
+          participantId: p.id,
+          name: p.name,
+          gender: groupKey,
+          dog: p.dogName ?? '',
+          startTime: _fmtTime(currentSec),
+          category: p.category,
+          city: p.city,
+        ));
+        position++;
+        bibCounter++;
+        currentSec += intervalSec;
+      }
+    }
+
+    // Remaining ungrouped (gender = '?' etc.)
+    for (final remaining in groups.values) {
+      if (remaining.isEmpty) continue;
+      if (entries.isNotEmpty) currentSec += draw.bufferMinutes * 60;
+      for (final p in remaining) {
+        entries.add(DrawEntry(
+          position: position,
+          bib: bibCounter,
+          participantId: p.id,
+          name: p.name,
+          gender: '?',
+          dog: p.dogName ?? '',
+          startTime: _fmtTime(currentSec),
+          category: p.category,
+          city: p.city,
+        ));
+        position++;
+        bibCounter++;
+        currentSec += intervalSec;
+      }
+    }
+
+    return entries;
+  }
+
+  String _fmtTime(int totalSec) {
+    final h = totalSec ~/ 3600;
+    final m = (totalSec % 3600) ~/ 60;
+    final s = totalSec % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  String _currentGroupingValue() {
+    final draw = ref.read(eventConfigProvider).drawConfig;
+    if (draw.grouping != DrawGrouping.byGender) return 'joint';
+    return draw.groupOrder.firstOrNull == 'Ж' ? 'fm' : 'mf';
   }
 
   void _openDiscipline(String id) => setState(() => _selectedDiscId = id);
@@ -152,38 +236,53 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   void _reshuffle(DisciplineConfig disc) {
     final result = _results[disc.id];
     if (result == null) return;
+    final config = ref.read(eventConfigProvider);
+    final draw = config.drawConfig;
     final entries = List<DrawEntry>.from(result.entries)..shuffle();
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
     final intervalSec = disc.interval.inSeconds;
+    final baseSeconds = hour * 3600 + minute * 60;
 
-    for (var i = 0; i < entries.length; i++) {
-      final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
-      final h = totalSec ~/ 3600;
-      final m = (totalSec % 3600) ~/ 60;
-      final s = totalSec % 60;
-      entries[i] = entries[i].copyWith(
-        position: i + 1,
-        startTime: '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}',
-      );
-    }
-
-    // If grouping by gender — sort M first then Ж (or vice versa), then re-number
-    if (_grouping == 'separate') {
-      entries.sort((a, b) => a.gender.compareTo(b.gender));
-      for (var i = 0; i < entries.length; i++) {
-        final totalSec = hour * 3600 + minute * 60 + i * intervalSec;
-        final h = totalSec ~/ 3600;
-        final m = (totalSec % 3600) ~/ 60;
-        final s = totalSec % 60;
-        entries[i] = entries[i].copyWith(
-          position: i + 1,
-          startTime: '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}',
-        );
+    if (draw.grouping == DrawGrouping.byGender) {
+      // Group by gender, apply order + buffer
+      final groups = <String, List<DrawEntry>>{};
+      for (final e in entries) {
+        groups.putIfAbsent(e.gender, () => []).add(e);
       }
+
+      final sorted = <DrawEntry>[];
+      var currentSec = baseSeconds;
+      var position = 1;
+
+      for (final groupKey in draw.groupOrder) {
+        final group = groups.remove(groupKey) ?? [];
+        if (group.isEmpty) continue;
+        if (sorted.isNotEmpty) currentSec += draw.bufferMinutes * 60;
+        for (final e in group) {
+          sorted.add(e.copyWith(position: position, startTime: _fmtTime(currentSec)));
+          position++;
+          currentSec += intervalSec;
+        }
+      }
+      // Remaining
+      for (final remaining in groups.values) {
+        if (remaining.isEmpty) continue;
+        if (sorted.isNotEmpty) currentSec += draw.bufferMinutes * 60;
+        for (final e in remaining) {
+          sorted.add(e.copyWith(position: position, startTime: _fmtTime(currentSec)));
+          position++;
+          currentSec += intervalSec;
+        }
+      }
+
+      setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: sorted));
+    } else {
+      // Joint: simple sequential
+      _recalcTimes(entries, disc);
+      setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
     }
 
-    setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
     AppSnackBar.success(context, 'Жеребьёвка пересчитана — ${entries.length} участников');
   }
 
@@ -453,15 +552,27 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               onChanged: (v) => setState(() => _mode = v!),
             )),
             const SizedBox(width: 8),
-            Expanded(child: DropdownButtonFormField(
+            Expanded(child: DropdownButtonFormField<String>(
               decoration: const InputDecoration(labelText: 'Группировка', border: OutlineInputBorder(), isDense: true),
               isExpanded: true,
               items: const [
-                DropdownMenuItem(value: 'together', child: Text('Вместе')),
-                DropdownMenuItem(value: 'separate', child: Text('М / Ж раздельно')),
+                DropdownMenuItem(value: 'joint', child: Text('Вместе')),
+                DropdownMenuItem(value: 'mf', child: Text('М → Ж')),
+                DropdownMenuItem(value: 'fm', child: Text('Ж → М')),
               ],
-              initialValue: _grouping,
-              onChanged: (v) => setState(() => _grouping = v!),
+              initialValue: _currentGroupingValue(),
+              onChanged: (v) {
+                final notifier = ref.read(eventConfigProvider.notifier);
+                switch (v) {
+                  case 'joint':
+                    notifier.update((c) => c.copyWith(drawConfig: c.drawConfig.copyWith(grouping: DrawGrouping.joint)));
+                  case 'mf':
+                    notifier.update((c) => c.copyWith(drawConfig: c.drawConfig.copyWith(grouping: DrawGrouping.byGender, groupOrder: ['М', 'Ж'])));
+                  case 'fm':
+                    notifier.update((c) => c.copyWith(drawConfig: c.drawConfig.copyWith(grouping: DrawGrouping.byGender, groupOrder: ['Ж', 'М'])));
+                }
+                setState(() {});
+              },
             )),
           ]),
           const SizedBox(height: 8),

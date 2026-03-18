@@ -840,6 +840,8 @@ enum DrawMode {
 enum DrawGrouping {
   /// Все категории вместе.
   joint,
+  /// По полу (М/Ж раздельно с порядком и буфером).
+  byGender,
   /// По категориям (CEC → OPEN → Юн...).
   byCategory,
 }
@@ -852,12 +854,15 @@ class DrawConfig {
   final int bufferMinutes;
   /// Только подтверждённые участники.
   final bool onlyApproved;
+  /// Порядок групп при byGender (напр. ['М', 'Ж'] или ['Ж', 'М']).
+  final List<String> groupOrder;
 
   const DrawConfig({
     this.mode = DrawMode.auto,
     this.grouping = DrawGrouping.joint,
     this.bufferMinutes = 5,
     this.onlyApproved = true,
+    this.groupOrder = const ['М', 'Ж'],
   });
 
   DrawConfig copyWith({
@@ -865,12 +870,14 @@ class DrawConfig {
     DrawGrouping? grouping,
     int? bufferMinutes,
     bool? onlyApproved,
+    List<String>? groupOrder,
   }) {
     return DrawConfig(
       mode: mode ?? this.mode,
       grouping: grouping ?? this.grouping,
       bufferMinutes: bufferMinutes ?? this.bufferMinutes,
       onlyApproved: onlyApproved ?? this.onlyApproved,
+      groupOrder: groupOrder ?? this.groupOrder,
     );
   }
 }
