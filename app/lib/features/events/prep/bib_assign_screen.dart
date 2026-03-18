@@ -73,28 +73,37 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
           ]),
           const SizedBox(height: 16),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8), border: Border.all(color: cs.primary.withValues(alpha: 0.2))),
-            child: Row(children: [
-              Icon(Icons.pool, color: cs.primary, size: 20), const SizedBox(width: 8),
-              const Text('С номера:', style: TextStyle(fontWeight: FontWeight.bold)), const SizedBox(width: 8),
-              SizedBox(width: 60, child: TextFormField(
-                initialValue: '$_startBib',
-                decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder()),
-                keyboardType: TextInputType.number,
-                onChanged: (v) { final n = int.tryParse(v); if (n != null && n > 0) setState(() => _startBib = n); },
-              )),
-              const SizedBox(width: 8),
-              Expanded(child: DropdownButtonFormField<String>(
-                decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), border: OutlineInputBorder()),
-                initialValue: _selectedDisc,
-                items: discNames.map((d) => DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis))).toList(),
-                onChanged: (v) => setState(() => _selectedDisc = v!),
-              )),
-              const SizedBox(width: 8),
-              FilledButton.icon(
+            child: Column(children: [
+              Row(children: [
+                Icon(Icons.pool, color: cs.primary, size: 20), const SizedBox(width: 8),
+                const Text('С номера:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(width: 8),
+                SizedBox(width: 60, child: TextFormField(
+                  initialValue: '$_startBib',
+                  decoration: const InputDecoration(isDense: true, contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 8), border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) { final n = int.tryParse(v); if (n != null && n > 0) setState(() => _startBib = n); },
+                )),
+                const SizedBox(width: 8),
+                Expanded(child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(border: Border.all(color: cs.outline), borderRadius: BorderRadius.circular(4)),
+                  child: DropdownButton<String>(
+                    isExpanded: true,
+                    isDense: true,
+                    underline: const SizedBox.shrink(),
+                    value: _selectedDisc,
+                    items: discNames.map((d) => DropdownMenuItem(value: d, child: Text(d, overflow: TextOverflow.ellipsis))).toList(),
+                    onChanged: (v) => setState(() => _selectedDisc = v!),
+                  ),
+                )),
+              ]),
+              const SizedBox(height: 8),
+              SizedBox(width: double.infinity, child: FilledButton.icon(
                 icon: const Icon(Icons.auto_fix_high, size: 16),
-                label: Text(_selectedDisc == 'Все' ? 'Авто-всем' : 'Авто-группе'),
+                label: Text(_selectedDisc == 'Все' ? 'Авто-назначение всем' : 'Авто-назначение: $_selectedDisc'),
                 style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
                 onPressed: () {
                   final toAssign = filtered.where((p) => p.bib.isEmpty).toList();
@@ -110,7 +119,7 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
                   }
                   AppSnackBar.success(context, 'Выдано автоматически $count номеров');
                 },
-              ),
+              )),
             ]),
           ),
         ])),

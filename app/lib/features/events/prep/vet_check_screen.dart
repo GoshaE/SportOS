@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sportos_app/ui/molecules/app_list_row.dart';
 
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -10,6 +9,7 @@ import '../../../domain/event/event_config.dart';
 /// Screen ID: P4 — Ветконтроль
 ///
 /// Читает участников из [participantsProvider].
+/// Все участники отображаются (не только с dogName) — это ездовой спорт.
 /// Кнопки «Допустить» / «Не допустить» → обновляют [Participant.vetStatus].
 class VetCheckScreen extends ConsumerStatefulWidget {
   const VetCheckScreen({super.key});
@@ -27,19 +27,18 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
     final cs = Theme.of(context).colorScheme;
     final participants = ref.watch(participantsProvider);
 
-    // Only show participants that have dogs
-    final withDogs = participants.where((p) => p.dogName != null && p.dogName!.isNotEmpty).toList();
+    // All participants — this is ezdovoy sport, everyone has a dog
+    final passedCount = participants.where((p) => p.vetStatus == VetStatus.passed).length;
+    final pendingCount = participants.where((p) => p.vetStatus == VetStatus.pending).length;
+    final failedCount = participants.where((p) => p.vetStatus == VetStatus.failed).length;
 
-    final passedCount = withDogs.where((p) => p.vetStatus == VetStatus.passed).length;
-    final pendingCount = withDogs.where((p) => p.vetStatus == VetStatus.pending).length;
-    final failedCount = withDogs.where((p) => p.vetStatus == VetStatus.failed).length;
-
-    final filtered = withDogs.where((p) {
+    final filtered = participants.where((p) {
       if (_searchQuery.isNotEmpty) {
         final q = _searchQuery.toLowerCase();
         if (!p.name.toLowerCase().contains(q) &&
             !(p.dogName?.toLowerCase().contains(q) ?? false) &&
-            !p.bib.toLowerCase().contains(q)) {
+            !p.bib.toLowerCase().contains(q) &&
+            !p.disciplineName.toLowerCase().contains(q)) {
           return false;
         }
       }
@@ -52,11 +51,10 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
     return Scaffold(
       appBar: AppAppBar(title: const Text('Ветконтроль'), actions: [
         if (failedCount > 0)
-          Badge(label: Text('$failedCount'), child: IconButton(icon: const Icon(Icons.warning), onPressed: () => setState(() => _filter = 'failed'))),
-        IconButton(icon: const Icon(Icons.nfc), tooltip: 'NFC чтение чипа', onPressed: () => AppSnackBar.info(context, 'NFC — поиск чипа собаки')),
+          Badge(label: Text('$failedCount'), child: IconButton(icon: Icon(Icons.warning, color: cs.error), onPressed: () => setState(() => _filter = 'failed'))),
       ]),
       body: Column(children: [
-        // ─── Статистика ───
+        // ─── Stats bar ───
         AppInfoPanel(
           backgroundColor: cs.surfaceContainerHighest,
           children: [
@@ -66,45 +64,44 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
           ],
         ),
 
-        // ─── Поиск + фильтры ───
+        // ─── Search + filters ───
         Padding(padding: const EdgeInsets.all(8), child: TextField(
           decoration: InputDecoration(
             hintText: 'Поиск по кличке, ФИО, BIB...',
             prefixIcon: const Icon(Icons.search),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            isDense: true,
           ),
           onChanged: (v) => setState(() => _searchQuery = v),
         )),
-        Padding(
+        SingleChildScrollView(scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 8),
           child: Row(children: [
-            _filterChip(cs, 'Все', 'all'),
+            _filterChip(cs, 'Все (${participants.length})', 'all'),
             const SizedBox(width: 6),
-            _filterChip(cs, 'Ожидают', 'pending'),
+            _filterChip(cs, 'Ожидают ($pendingCount)', 'pending'),
             const SizedBox(width: 6),
-            _filterChip(cs, 'Прошли', 'passed'),
+            _filterChip(cs, 'Прошли ($passedCount)', 'passed'),
             const SizedBox(width: 6),
-            _filterChip(cs, 'Отклонены', 'failed'),
-            const Spacer(),
-            Text('${filtered.length}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+            _filterChip(cs, 'Отклонены ($failedCount)', 'failed'),
           ]),
         ),
         const SizedBox(height: 4),
 
-        // ─── Список ───
+        // ─── List ───
         Expanded(child: filtered.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.pets, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
               const SizedBox(height: 8),
               Text(
-                withDogs.isEmpty ? 'Нет участников с собаками' : 'Нет совпадений',
+                participants.isEmpty ? 'Нет участников' : 'Нет совпадений',
                 style: TextStyle(color: cs.onSurfaceVariant),
               ),
             ]))
           : ListView.builder(
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               itemCount: filtered.length,
-              itemBuilder: (ctx, i) => _vetRow(context, cs, filtered[i]),
+              itemBuilder: (ctx, i) => _vetCard(context, cs, filtered[i]),
             ),
         ),
       ]),
@@ -120,99 +117,248 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
     );
   }
 
-  Widget _vetRow(BuildContext context, ColorScheme cs, Participant p) {
+  Widget _vetCard(BuildContext context, ColorScheme cs, Participant p) {
     final status = p.vetStatus;
-    final color = status == VetStatus.passed ? cs.primary
-        : status == VetStatus.failed ? cs.error
-        : cs.onSurfaceVariant;
-    final icon = status == VetStatus.passed ? Icons.check_circle
+    final borderColor = status == VetStatus.passed ? cs.primary.withValues(alpha: 0.3)
+        : status == VetStatus.failed ? cs.error.withValues(alpha: 0.3)
+        : cs.outlineVariant.withValues(alpha: 0.2);
+    final statusIcon = status == VetStatus.passed ? Icons.check_circle
         : status == VetStatus.failed ? Icons.cancel
         : Icons.hourglass_empty;
+    final statusColor = status == VetStatus.passed ? cs.primary
+        : status == VetStatus.failed ? cs.error
+        : cs.onSurfaceVariant;
+    final statusLabel = status == VetStatus.passed ? 'Допущен'
+        : status == VetStatus.failed ? 'Не допущен'
+        : 'Ожидает';
 
-    return Card(child: AppListRow.status(
-      icon: icon,
-      iconColor: color,
-      title: '${p.dogName ?? "—"} · ${p.name}',
-      subtitle: '${p.bib.isNotEmpty ? "BIB ${p.bib} · " : ""}${p.disciplineName}${p.insuranceNo != null ? " · Страх.: ${p.insuranceNo}" : ""}',
-      trailing: status == VetStatus.pending
-        ? FilledButton(onPressed: () => _showDogCard(context, cs, p), child: const Text('Осмотр'))
-        : IconButton(icon: const Icon(Icons.info_outline), onPressed: () => _showDogCard(context, cs, p)),
-      onTap: () => _showDogCard(context, cs, p),
-    ));
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: borderColor),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _showDogCard(context, cs, p),
+        child: Padding(padding: const EdgeInsets.all(12), child: Row(children: [
+          // Dog avatar
+          CircleAvatar(
+            radius: 24,
+            backgroundColor: statusColor.withValues(alpha: 0.1),
+            child: Icon(Icons.pets, color: statusColor, size: 24),
+          ),
+          const SizedBox(width: 12),
+          // Info
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              if (p.bib.isNotEmpty) ...[
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                  child: Text(p.bib, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: cs.primary)),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Expanded(child: Text(p.dogName ?? 'Собака не указана', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15))),
+            ]),
+            const SizedBox(height: 2),
+            Text(p.name, style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+            const SizedBox(height: 2),
+            Row(children: [
+              Text(p.disciplineName, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              if (p.club != null) ...[
+                Text(' · ', style: TextStyle(color: cs.onSurfaceVariant)),
+                Text(p.club!, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+              ],
+            ]),
+          ])),
+          const SizedBox(width: 8),
+          // Status / Action
+          Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+            Icon(statusIcon, color: statusColor, size: 24),
+            const SizedBox(height: 2),
+            Text(statusLabel, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: statusColor)),
+          ]),
+        ])),
+      ),
+    );
   }
 
   void _showDogCard(BuildContext context, ColorScheme cs, Participant p) {
-    AppBottomSheet.show(context, title: p.dogName ?? 'Собака', initialHeight: 0.55, actions: [
-      Row(children: [
-        Expanded(child: FilledButton.icon(
+    final vetPassed = p.vetStatus == VetStatus.passed;
+    final vetFailed = p.vetStatus == VetStatus.failed;
+
+    AppBottomSheet.show(
+      context,
+      title: '🐕 ${p.dogName ?? "Собака"} — осмотр',
+      initialHeight: 0.65,
+      actions: [
+        FilledButton.icon(
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             ref.read(participantsProvider.notifier).setVetStatus(p.id, VetStatus.passed);
-            AppSnackBar.success(context, '${p.dogName} — допущен');
+            AppSnackBar.success(context, '${p.dogName ?? p.name} — допущен к участию');
           },
-          icon: const Icon(Icons.check), label: const Text('Допустить'),
-        )),
-        const SizedBox(width: 8),
-        Expanded(child: OutlinedButton.icon(
+          icon: const Icon(Icons.check),
+          label: const Text('Допустить'),
+        ),
+        OutlinedButton.icon(
           style: OutlinedButton.styleFrom(foregroundColor: cs.error),
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
-            _showRejectReason(context, cs, p);
+            _showRejectDialog(context, cs, p);
           },
-          icon: const Icon(Icons.close), label: const Text('Не допустить'),
-        )),
-      ]),
-      const SizedBox(height: 8),
-      OutlinedButton.icon(
-        onPressed: () { Navigator.of(context, rootNavigator: true).pop(); AppSnackBar.info(context, 'Замена собаки — двухэтапная проверка чипа'); },
-        icon: const Icon(Icons.swap_horiz), label: const Text('Замена собаки'),
-      ),
-    ], child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Row(children: [
-        CircleAvatar(radius: 30, backgroundColor: cs.secondaryContainer, child: Icon(Icons.pets, size: 32, color: cs.secondary)),
-        const SizedBox(width: 16),
-        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(p.dogName ?? '—', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-          Text('Владелец: ${p.name}'),
-          if (p.club != null) Text('Клуб: ${p.club}', style: TextStyle(color: cs.onSurfaceVariant)),
+          icon: const Icon(Icons.close),
+          label: const Text('Не допустить'),
+        ),
+      ],
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Dog & Owner info ──
+        Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          CircleAvatar(
+            radius: 32,
+            backgroundColor: cs.secondaryContainer,
+            child: Icon(Icons.pets, size: 36, color: cs.secondary),
+          ),
+          const SizedBox(width: 16),
+          Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(p.dogName ?? '—', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Владелец: ${p.name}', style: TextStyle(fontSize: 14, color: cs.onSurfaceVariant)),
+            if (p.club != null)
+              Text('Клуб: ${p.club}', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+            Text('Дисциплина: ${p.disciplineName}', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+            if (p.bib.isNotEmpty)
+              Text('BIB: ${p.bib}', style: TextStyle(fontSize: 13, color: cs.primary, fontWeight: FontWeight.bold)),
+          ])),
         ]),
+        const SizedBox(height: 16),
+
+        // ── Current status badge ──
+        if (vetPassed || vetFailed)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: (vetPassed ? cs.primary : cs.error).withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: (vetPassed ? cs.primary : cs.error).withValues(alpha: 0.3)),
+            ),
+            child: Row(children: [
+              Icon(vetPassed ? Icons.check_circle : Icons.cancel, color: vetPassed ? cs.primary : cs.error),
+              const SizedBox(width: 8),
+              Text(vetPassed ? 'Допущен к участию' : 'Не допущен', style: TextStyle(fontWeight: FontWeight.bold, color: vetPassed ? cs.primary : cs.error)),
+            ]),
+          ),
+        const SizedBox(height: 16),
+
+        // ── Checklist ──
+        Text('Проверка', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: cs.onSurfaceVariant)),
+        const SizedBox(height: 8),
+
+        _checkRow(cs, 'Ветеринарный паспорт', vetPassed),
+        _checkRow(cs, 'Вакцинация (действительна)', vetPassed),
+        _checkRow(cs, 'Общее состояние здоровья', vetPassed),
+        _checkRow(cs, 'Страховка', p.insuranceNo != null && p.insuranceNo!.isNotEmpty),
+        _checkRow(cs, 'Отсутствие агрессии', vetPassed),
+        _checkRow(cs, 'Чип / клеймо', vetPassed),
+
+        if (p.insuranceNo != null && p.insuranceNo!.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: cs.surfaceContainerHighest, borderRadius: BorderRadius.circular(8)),
+            child: Row(children: [
+              Icon(Icons.verified_user, size: 16, color: cs.primary),
+              const SizedBox(width: 8),
+              Text('Страховка: ${p.insuranceNo}', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
+            ]),
+          ),
+        ],
       ]),
-      Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
-      AppListRow.status(icon: p.insuranceNo != null ? Icons.check_circle : Icons.warning, title: 'Страховка', subtitle: p.insuranceNo ?? 'Не указана'),
-      AppListRow.status(icon: Icons.medical_services, title: 'Осмотр', subtitle: 'Общее состояние'),
-      AppListRow.status(icon: Icons.thermostat, iconColor: cs.tertiary, title: 'Температура', subtitle: '—'),
-    ]));
+    );
   }
 
-  void _showRejectReason(BuildContext context, ColorScheme cs, Participant p) {
+  Widget _checkRow(ColorScheme cs, String label, bool checked) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(children: [
+        Icon(
+          checked ? Icons.check_box : Icons.check_box_outline_blank,
+          size: 20,
+          color: checked ? cs.primary : cs.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Text(label, style: TextStyle(
+          fontSize: 14,
+          color: checked ? cs.onSurface : cs.onSurfaceVariant,
+          decoration: checked ? TextDecoration.lineThrough : null,
+        )),
+      ]),
+    );
+  }
+
+  void _showRejectDialog(BuildContext context, ColorScheme cs, Participant p) {
+    String? selectedReason;
+
     AppBottomSheet.show(
       context,
-      title: 'Не допустить — ${p.dogName}',
-      initialHeight: 0.5,
+      title: 'Причина отказа — ${p.dogName ?? p.name}',
+      initialHeight: 0.55,
       actions: [
-        AppButton.primary(
+        AppButton.danger(
           text: 'Подтвердить отказ',
-          backgroundColor: cs.error,
+          icon: Icons.block,
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             ref.read(participantsProvider.notifier).setVetStatus(p.id, VetStatus.failed);
-            AppSnackBar.error(context, '${p.dogName} — не допущен');
+            AppSnackBar.error(context, '${p.dogName ?? p.name} — не допущен');
           },
         ),
       ],
-      child: AppCard(
-        padding: const EdgeInsets.all(12),
-        children: [
-          Wrap(spacing: 8, runSpacing: 8, children: [
-            ChoiceChip(label: const Text('Просрочена вакцинация'), selected: true, onSelected: (_) {}),
-            ChoiceChip(label: const Text('Травма'), selected: false, onSelected: (_) {}),
-            ChoiceChip(label: const Text('Агрессия'), selected: false, onSelected: (_) {}),
-            ChoiceChip(label: const Text('Другое'), selected: false, onSelected: (_) {}),
-          ]),
-          const SizedBox(height: 12),
-          const TextField(decoration: InputDecoration(labelText: 'Комментарий', border: OutlineInputBorder()), maxLines: 2),
-        ]
-      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Text('Выберите причину:', style: TextStyle(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
+        const SizedBox(height: 12),
+
+        ...[
+          ('vaccine', 'Просрочена вакцинация', Icons.vaccines),
+          ('health', 'Проблемы со здоровьем', Icons.healing),
+          ('injury', 'Травма', Icons.personal_injury),
+          ('aggression', 'Агрессивное поведение', Icons.warning),
+          ('docs', 'Отсутствие документов', Icons.description),
+          ('other', 'Другое', Icons.more_horiz),
+        ].map((r) => Padding(
+          padding: const EdgeInsets.only(bottom: 8),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(8),
+            onTap: () => setState(() => selectedReason = r.$1),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: selectedReason == r.$1 ? cs.error : cs.outlineVariant.withValues(alpha: 0.3)),
+                color: selectedReason == r.$1 ? cs.error.withValues(alpha: 0.05) : null,
+              ),
+              child: Row(children: [
+                Icon(r.$3, size: 20, color: selectedReason == r.$1 ? cs.error : cs.onSurfaceVariant),
+                const SizedBox(width: 12),
+                Text(r.$2, style: TextStyle(color: selectedReason == r.$1 ? cs.error : cs.onSurface)),
+              ]),
+            ),
+          ),
+        )),
+
+        const SizedBox(height: 8),
+        TextField(
+          decoration: InputDecoration(
+            labelText: 'Комментарий (необязательно)',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+            isDense: true,
+          ),
+          maxLines: 2,
+        ),
+      ]),
     );
   }
 }
