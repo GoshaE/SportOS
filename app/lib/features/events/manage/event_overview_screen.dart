@@ -60,144 +60,93 @@ class EventOverviewScreen extends ConsumerWidget {
     final participants = ref.watch(participantsProvider);
     final totalParticipants = participants.length;
     final daysUntilStart = eventConfig.startDate.difference(DateTime.now()).inDays;
-    final daysLabel = daysUntilStart > 0 ? '$daysUntilStart дн.' : daysUntilStart == 0 ? 'Сегодня' : 'Прошло';
+    final daysLabel = daysUntilStart > 0 ? '$daysUntilStart' : daysUntilStart == 0 ? '0' : '—';
+    final daysSubtitle = daysUntilStart > 0 ? 'дн. до старта' : daysUntilStart == 0 ? 'Сегодня старт!' : 'Уже прошло';
     final paidParticipants = participants.where((p) => p.paymentStatus == PaymentStatus.paid).toList();
     final revenue = paidParticipants.fold<int>(0, (sum, p) => sum + (p.priceRub ?? 0));
     final revenueStr = revenue >= 1000 ? '${(revenue / 1000).toStringAsFixed(1)}К' : '$revenue';
     final bibAssigned = participants.where((p) => p.bib.isNotEmpty).length;
     final vetPassed = participants.where((p) => p.vetStatus == VetStatus.passed).length;
     final mandatePassed = participants.where((p) => p.mandateStatus == MandateStatus.passed).length;
-    
+    final checkedIn = participants.where((p) => p.checkInTime != null).length;
+
+    // Checklist items
+    final checkItems = [
+      _CheckItem('Жеребьёвка', 'Настроена', 1, 1, Icons.shuffle, '/manage/$eventId/draw'),
+      _CheckItem('Стартовый лист', 'Настроен', 1, 1, Icons.format_list_numbered, '/manage/$eventId/startlist'),
+      _CheckItem('BIB номера', '$bibAssigned из $totalParticipants', bibAssigned, totalParticipants, Icons.confirmation_number, '/manage/$eventId/bibs'),
+      _CheckItem('Ветконтроль', '$vetPassed из $totalParticipants', vetPassed, totalParticipants, Icons.pets, '/manage/$eventId/vetcheck'),
+      _CheckItem('Мандатная комиссия', '$mandatePassed из $totalParticipants', mandatePassed, totalParticipants, Icons.assignment_turned_in, '/manage/$eventId/mandate'),
+    ];
+    final doneCount = checkItems.where((c) => c.done == c.total && c.total > 0).length;
+    final totalChecks = checkItems.length;
+    final overallProgress = totalChecks > 0 ? doneCount / totalChecks : 0.0;
+
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       children: [
         // ─── Status Banner ───
         _buildStatusBanner(context, cs, eventConfig, ref),
-        const SizedBox(height: 16),
+        const SizedBox(height: 20),
 
-        // 1. Bento KPI Grid (Top)
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left: Main KPI (Participants)
-            Expanded(
-              flex: 3,
-              child: _buildGlassCard(
-                cs: cs,
-                isDark: isDark,
-                height: 140,
-                gradient: LinearGradient(
-                  colors: [cs.primary, cs.primaryContainer.withValues(alpha: 0.8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.groups, color: cs.onPrimary.withValues(alpha: 0.7)),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            eventConfig.status == EventStatus.registrationOpen ? 'Регистрация открыта' : 'Участники',
-                            style: TextStyle(color: cs.onPrimary, fontWeight: FontWeight.bold, fontSize: 13),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        FittedBox(
-                          fit: BoxFit.scaleDown,
-                          alignment: Alignment.centerLeft,
-                          child: Text('$totalParticipants', style: TextStyle(color: cs.onPrimary, fontSize: 32, fontWeight: FontWeight.w900, letterSpacing: -1)),
-                        ),
-                        Text('Участников', style: TextStyle(color: cs.onPrimary.withValues(alpha: 0.8), fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Right: Smaller KPIs
-            Expanded(
-              flex: 2,
-              child: Column(
-                children: [
-                  _buildGlassCard(
-                    cs: cs,
-                    isDark: isDark,
-                    height: 64,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(daysLabel, style: TextStyle(color: cs.onSurface, fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('До старта', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildGlassCard(
-                    cs: cs,
-                    isDark: isDark,
-                    height: 64,
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(revenueStr, style: TextStyle(color: cs.tertiary, fontSize: 18, fontWeight: FontWeight.bold)),
-                        Text('Собрано ₽', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11)),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
+        // ─── KPI Row ───
+        Row(children: [
+          Expanded(child: _kpiCard(cs, isDark, Icons.groups, '$totalParticipants', 'Участники', cs.primary)),
+          const SizedBox(width: 10),
+          Expanded(child: _kpiCard(cs, isDark, Icons.calendar_today, daysLabel, daysSubtitle, const Color(0xFF00838F))),
+          const SizedBox(width: 10),
+          Expanded(child: _kpiCard(cs, isDark, Icons.payments, revenueStr, 'Собрано ₽', cs.tertiary)),
+          const SizedBox(width: 10),
+          Expanded(child: _kpiCard(cs, isDark, Icons.check_circle, '$checkedIn', 'Чек-ин', const Color(0xFF2E7D32))),
+        ]),
+        const SizedBox(height: 28),
 
-        // 2. Quick Actions Carousel
+        // ─── Quick Actions ───
+        Text('Быстрые действия', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
+        const SizedBox(height: 10),
         SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           clipBehavior: Clip.none,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildQuickAction(context, Icons.qr_code_scanner, 'Чек-ин\nQR', () => context.push('/manage/$eventId/checkin'), cs),
-              _buildQuickAction(context, Icons.campaign, 'Отправить\nPush', () => _showAnnouncementsModal(context, cs), cs),
-              // Участники и Финансы переехали в "Ресурсы", но для скорости можно оставить их и тут (или убрать и сделать быстрый линк)
-              _buildQuickAction(context, Icons.people, 'Участники', () => context.push('/manage/$eventId/participants'), cs),
-              // _buildQuickAction(context, Icons.settings, 'Настройки', () => DefaultTabController.of(context).animateTo(1), cs),
-            ],
-          ),
+          child: Row(children: [
+            _quickActionCard(context, cs, Icons.qr_code_scanner, 'Чек-ин', cs.primary, () => context.push('/manage/$eventId/checkin')),
+            _quickActionCard(context, cs, Icons.format_list_numbered, 'Старт-лист', const Color(0xFF00838F), () => context.push('/manage/$eventId/startlist')),
+            _quickActionCard(context, cs, Icons.people, 'Участники', const Color(0xFF6A1B9A), () => context.push('/manage/$eventId/participants')),
+            _quickActionCard(context, cs, Icons.campaign, 'Push', cs.tertiary, () => _showAnnouncementsModal(context, cs)),
+          ]),
         ),
-        const SizedBox(height: 32),
+        const SizedBox(height: 28),
 
-        // 4. Preparation Checklist
-        Text('Подготовка перед стартом', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurface)),
-        const SizedBox(height: 12),
-        _buildGlassCard(
-          cs: cs,
-          isDark: isDark,
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _buildChecklistItem(cs, 'Жеребьёвка', 'Настроена', true, () => context.push('/manage/$eventId/draw')),
-              _buildChecklistItem(cs, 'Стартовый лист', 'Настроен', true, () => context.push('/manage/$eventId/startlist')),
-              _buildChecklistItem(cs, 'BIB номера', '$bibAssigned из $totalParticipants назначено', bibAssigned == totalParticipants && totalParticipants > 0, () => context.push('/manage/$eventId/bibs')),
-              _buildChecklistItem(cs, 'Ветконтроль', '$vetPassed из $totalParticipants прошли', vetPassed == totalParticipants && totalParticipants > 0, () => context.push('/manage/$eventId/vetcheck')),
-              _buildChecklistItem(cs, 'Мандатная комиссия', '$mandatePassed из $totalParticipants допущено', mandatePassed == totalParticipants && totalParticipants > 0, () => context.push('/manage/$eventId/mandate')),
-            ],
+        // ─── Preparation Progress ───
+        Row(children: [
+          Expanded(child: Text('Подготовка к старту', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: overallProgress == 1.0 ? const Color(0xFF2E7D32).withValues(alpha: 0.15) : cs.primary.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              overallProgress == 1.0 ? '✓ Готово' : '$doneCount из $totalChecks',
+              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: overallProgress == 1.0 ? const Color(0xFF2E7D32) : cs.primary),
+            ),
+          ),
+        ]),
+        const SizedBox(height: 10),
+        // Progress bar
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LinearProgressIndicator(
+            value: overallProgress,
+            minHeight: 6,
+            backgroundColor: cs.surfaceContainerHighest,
+            valueColor: AlwaysStoppedAnimation(overallProgress == 1.0 ? const Color(0xFF2E7D32) : cs.primary),
           ),
         ),
+        const SizedBox(height: 14),
+
+        // ─── Checklist ───
+        ...checkItems.map((item) => _checklistCard(context, cs, isDark, item)),
+
         const SizedBox(height: 48),
       ],
     );
@@ -542,61 +491,118 @@ class EventOverviewScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildQuickAction(BuildContext context, IconData icon, String label, VoidCallback onTap, ColorScheme cs) {
+  // ─── KPI Card ───
+  Widget _kpiCard(ColorScheme cs, bool isDark, IconData icon, String value, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: isDark ? cs.surfaceContainerHigh.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: isDark ? Colors.white.withValues(alpha: 0.08) : cs.outlineVariant.withValues(alpha: 0.2)),
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: isDark ? 0.15 : 0.04), blurRadius: 8, offset: const Offset(0, 2))],
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Container(
+          width: 32, height: 32,
+          decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(8)),
+          child: Icon(icon, size: 18, color: color),
+        ),
+        const SizedBox(height: 8),
+        FittedBox(fit: BoxFit.scaleDown, child: Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800, color: cs.onSurface, height: 1))),
+        const SizedBox(height: 2),
+        Text(label, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, height: 1.1), maxLines: 1, overflow: TextOverflow.ellipsis),
+      ]),
+    );
+  }
+
+  // ─── Quick Action Card ───
+  Widget _quickActionCard(BuildContext context, ColorScheme cs, IconData icon, String label, Color color, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        width: 72,
-        margin: const EdgeInsets.only(right: 8),
-        child: Column(
-          children: [
-            Container(
-              width: 56,
-              height: 56,
-              margin: const EdgeInsets.only(bottom: 8),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHigh,
-                shape: BoxShape.circle,
-                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
-              ),
-              child: Icon(icon, color: cs.primary),
-            ),
-            Text(label, textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, height: 1.1)),
-          ],
+        width: 88,
+        height: 80,
+        margin: const EdgeInsets.only(right: 10),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: color.withValues(alpha: 0.2)),
         ),
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+          Container(
+            width: 38, height: 38,
+            decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(height: 6),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color, height: 1), textAlign: TextAlign.center),
+        ]),
       ),
     );
   }
 
-  Widget _buildChecklistItem(ColorScheme cs, String title, String subtitle, bool isDone, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        child: Row(
-          children: [
+  // ─── Checklist Card ───
+  Widget _checklistCard(BuildContext context, ColorScheme cs, bool isDark, _CheckItem item) {
+    final isDone = item.done == item.total && item.total > 0;
+    final isPartial = item.done > 0 && item.done < item.total;
+    final progress = item.total > 0 ? item.done / item.total : 0.0;
+
+    final statusColor = isDone ? const Color(0xFF2E7D32) : isPartial ? cs.tertiary : cs.onSurfaceVariant;
+    final bgColor = isDone ? const Color(0xFF2E7D32).withValues(alpha: 0.05) : null;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(
+        color: bgColor ?? (isDark ? cs.surfaceContainerHigh.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.8)),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: statusColor.withValues(alpha: isDone ? 0.25 : 0.1)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => context.push(item.route),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(children: [
+            // Icon
             Container(
-              width: 24,
-              height: 24,
+              width: 36, height: 36,
               decoration: BoxDecoration(
-                color: isDone ? cs.primary : Colors.transparent,
-                shape: BoxShape.circle,
-                border: Border.all(color: isDone ? cs.primary : cs.outlineVariant),
+                color: statusColor.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(10),
               ),
-              child: isDone ? Icon(Icons.check, size: 16, color: cs.onPrimary) : null,
+              child: Icon(
+                isDone ? Icons.check_circle : item.icon,
+                size: 20,
+                color: statusColor,
+              ),
             ),
             const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(title, style: TextStyle(fontWeight: FontWeight.w600, color: cs.onSurface, decoration: isDone ? TextDecoration.lineThrough : null)),
-                  Text(subtitle, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
-          ],
+            // Title + subtitle + mini progress
+            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text(item.title, style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: cs.onSurface,
+                decoration: isDone ? TextDecoration.lineThrough : null,
+                decorationColor: cs.onSurfaceVariant,
+              )),
+              const SizedBox(height: 2),
+              Text(item.subtitle, style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              if (!isDone && item.total > 1) ...[  
+                const SizedBox(height: 6),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 3,
+                    backgroundColor: cs.surfaceContainerHighest,
+                    valueColor: AlwaysStoppedAnimation(statusColor),
+                  ),
+                ),
+              ],
+            ])),
+            const SizedBox(width: 8),
+            Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+          ]),
         ),
       ),
     );
@@ -692,4 +698,16 @@ class EventOverviewScreen extends ConsumerWidget {
       }),
     ])));
   }
+}
+
+/// Data class for checklist items on the dashboard.
+class _CheckItem {
+  final String title;
+  final String subtitle;
+  final int done;
+  final int total;
+  final IconData icon;
+  final String route;
+
+  const _CheckItem(this.title, this.subtitle, this.done, this.total, this.icon, this.route);
 }
