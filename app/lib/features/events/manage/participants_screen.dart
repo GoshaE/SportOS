@@ -76,6 +76,26 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
             if (widget.isOrganizer) ...[
               IconButton(icon: const Icon(Icons.upload_file, size: 20), tooltip: 'Из Excel', onPressed: () => context.push('/manage/$eventId/import')),
               IconButton(icon: const Icon(Icons.person_add, size: 20), tooltip: 'Добавить', onPressed: () => _showAddParticipant(context)),
+              // ⋮ Overflow menu
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, size: 20),
+                tooltip: 'Ещё',
+                onSelected: (value) {
+                  switch (value) {
+                    case 'select':
+                      setState(() => _selectMode = true);
+                    case 'select_all':
+                      setState(() {
+                        _selectMode = true;
+                        _selected.addAll(allParticipants.map((p) => p.id));
+                      });
+                  }
+                },
+                itemBuilder: (ctx) => const [
+                  PopupMenuItem(value: 'select', child: ListTile(leading: Icon(Icons.checklist, size: 20), title: Text('Выделить несколько'), dense: true, contentPadding: EdgeInsets.zero)),
+                  PopupMenuItem(value: 'select_all', child: ListTile(leading: Icon(Icons.select_all, size: 20), title: Text('Выбрать всех'), dense: true, contentPadding: EdgeInsets.zero)),
+                ],
+              ),
             ],
           ],
         ],
