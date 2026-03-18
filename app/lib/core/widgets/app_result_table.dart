@@ -1,116 +1,149 @@
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../theme/app_typography.dart';
 import 'package:sportos_app/domain/timing/result_table.dart';
 
-/// Column-driven result table powered by [ResultTable].
+/// Universal column-driven result table powered by [ResultTable].
 ///
-/// Receives a pre-built [ResultTable] from [ResultTableBuilder] and renders
-/// it automatically — columns from [ColumnDef], cells from [ResultRow].
+/// **Smart scroll:** Horizontal scroll appears ONLY when columns exceed
+/// available width. Each column has a minimum width based on its type.
 ///
-/// **Adaptive:**
-/// - Wide screens (>600px): Table mode with horizontal scroll
-/// - Narrow screens (<600px): Card mode for mobile readability
+/// **View modes:**
+/// - Table (default, even on mobile) — rows with cells
+/// - Card — per-athlete cards for quick scanning
+/// Switch via [showCards] or use [AppResultTable.withToggle] for built-in button.
 ///
-/// **Mobile-first:**
-/// - Min font 12px (above 11px floor from design system)
-/// - Touch-friendly row height (min 44px)
-/// - Horizontal scroll when table exceeds viewport
-/// - Medal badges 🥇🥈🥉 for top-3
-/// - Mono font for time/speed/gap columns
+/// **Edge-to-edge:** No side margins — critical info fills the screen.
+///
+/// **Universal features:**
+/// - Flex columns from [ColumnDef]
+/// - Zebra striping for readability
+/// - Status row tints (onTrack, DNF, DNS, DSQ)
+/// - Medal badges 🥇🥈🥉
+/// - Mono font for time/speed/gap
+/// - [CellStyle] → color/weight
+/// - Min row height 44px (Material touch target)
 class AppResultTable extends StatelessWidget {
-  /// Pre-built result table from the engine.
   final ResultTable table;
-
-  /// Callback when a data row is tapped.
   final void Function(ResultRow row)? onRowTap;
 
-  /// Minimum width for table content when horizontal scroll kicks in.
-  /// Defaults to 700px — enough for 6-8 columns to breathe.
-  final double minTableWidth;
+  /// Show card mode instead of table mode.
+  final bool showCards;
 
-  /// Force table or card mode. `null` = auto (>600px = table).
-  final bool? forceTableView;
+  /// Minimum width per column type (px). If total minWidth > viewport,
+  /// horizontal scroll activates automatically.
+  final double minColumnWidth;
 
   const AppResultTable({
     super.key,
     required this.table,
     this.onRowTap,
-    this.minTableWidth = 700,
-    this.forceTableView,
+    this.showCards = false,
+    this.minColumnWidth = 60,
   });
 
   @override
   Widget build(BuildContext context) {
     if (table.rows.isEmpty) return const SizedBox.shrink();
 
-    return LayoutBuilder(builder: (context, constraints) {
-      final isTable = forceTableView ?? (constraints.maxWidth > 600);
-      if (isTable) {
-        return _buildTableMode(context, constraints);
-      } else {
-        return _buildCardMode(context);
-      }
-    });
+    if (showCards) return _buildCardMode(context);
+    return _buildTableMode(context);
   }
 
   // ═══════════════════════════════════════
-  // TABLE MODE — horizontal scroll, sticky header, zebra
+  // TABLE MODE — smart horizontal scroll, edge-to-edge
   // ═══════════════════════════════════════
 
-  Widget _buildTableMode(BuildContext context, BoxConstraints constraints) {
+  Widget _buildTableMode(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final tableWidth = math.max(constraints.maxWidth - 24, minTableWidth);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      child: Container(
+    return LayoutBuilder(builder: (context, constraints) {
+      // Calculate minimum total width from column types
+      final totalMinWidth = _calcMinTableWidth(table.columns);
+      final availableWidth = constraints.maxWidth;
+      final needsScroll = totalMinWidth > availableWidth;
+      final tableWidth = needsScroll ? totalMinWidth : availableWidth;
+
+      Widget tableContent = SizedBox(
+        width: tableWidth,
+        child: Column(
+          children: [
+            // ── Header ──
+            _TableHeader(columns: table.columns),
+            Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.25)),
+            // ── Body ──
+            Expanded(
+              child: ListView.separated(
+                itemCount: table.rows.length,
+                padding: EdgeInsets.zero,
+                separatorBuilder: (context, index) => Divider(
+                  height: 1,
+                  color: cs.outlineVariant.withValues(alpha: 0.08),
+                ),
+                itemBuilder: (ctx, i) => _TableRow(
+                  columns: table.columns,
+                  row: table.rows[i],
+                  index: i,
+                  onTap: onRowTap != null ? () => onRowTap!(table.rows[i]) : null,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+
+      // Wrap in horizontal scroll only when needed
+      if (needsScroll) {
+        tableContent = SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: tableContent,
+        );
+      }
+
+      return Container(
         clipBehavior: Clip.antiAlias,
         decoration: BoxDecoration(
           color: theme.cardTheme.color ?? cs.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)),
-        ),
-        // Horizontal scroll wraps BOTH header and body (synced)
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SizedBox(
-            width: tableWidth,
-            child: Column(
-              children: [
-                // ── Sticky Header ──
-                _TableHeader(columns: table.columns),
-                Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.25)),
-                // ── Scrollable body ──
-                Expanded(
-                  child: ListView.separated(
-                    itemCount: table.rows.length,
-                    padding: EdgeInsets.zero,
-                    separatorBuilder: (context, index) => Divider(
-                      height: 1,
-                      color: cs.outlineVariant.withValues(alpha: 0.12),
-                    ),
-                    itemBuilder: (ctx, i) => _TableRow(
-                      columns: table.columns,
-                      row: table.rows[i],
-                      index: i,
-                      onTap: onRowTap != null ? () => onRowTap!(table.rows[i]) : null,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          border: Border(
+            top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
+            bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
           ),
         ),
-      ),
-    );
+        child: tableContent,
+      );
+    });
+  }
+
+  /// Calculate minimum table width from column types.
+  double _calcMinTableWidth(List<ColumnDef> columns) {
+    double total = 0;
+    for (final col in columns) {
+      total += _minWidthForColumn(col);
+    }
+    // Add horizontal padding (14 * 2)
+    return total + 28;
+  }
+
+  /// Minimum width per column type to remain readable.
+  double _minWidthForColumn(ColumnDef col) {
+    switch (col.type) {
+      case ColumnType.number: return 40; // #, BIB
+      case ColumnType.text:
+        // Name column needs more space
+        if (col.id == 'name') return 140;
+        if (col.id == 'category') return 50;
+        return minColumnWidth;
+      case ColumnType.time: return 75; // 00:00.0
+      case ColumnType.speed: return 55; // 12.5
+      case ColumnType.gap: return 65; // +00:05
+      case ColumnType.status: return 60; // LIVE, DNF
+    }
   }
 
   // ═══════════════════════════════════════
-  // CARD MODE — mobile-friendly, one card per athlete
+  // CARD MODE — mobile-friendly
   // ═══════════════════════════════════════
 
   Widget _buildCardMode(BuildContext context) {
@@ -118,9 +151,9 @@ class AppResultTable extends StatelessWidget {
     final cs = theme.colorScheme;
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       itemCount: table.rows.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 6),
+      separatorBuilder: (context, index) => const SizedBox(height: 4),
       itemBuilder: (ctx, i) {
         final row = table.rows[i];
         return GestureDetector(
@@ -158,7 +191,7 @@ class _TableHeader extends StatelessWidget {
               fontWeight: FontWeight.w700,
               color: cs.onSurfaceVariant,
               letterSpacing: 0.5,
-              fontSize: 12, // ≥11 min from design system
+              fontSize: 12,
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -170,7 +203,7 @@ class _TableHeader extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// TABLE DATA ROW
+// TABLE ROW
 // ─────────────────────────────────────────────────────────────────
 
 class _TableRow extends StatelessWidget {
@@ -196,11 +229,9 @@ class _TableRow extends StatelessWidget {
         ? Colors.transparent
         : cs.surfaceContainerLowest.withValues(alpha: 0.4);
 
-    // Status tint
     final rowTint = _rowTint(row.type, cs);
 
     Widget content = Container(
-      // Min height 44px for touch targets (Material guidelines)
       constraints: const BoxConstraints(minHeight: 44),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       color: rowTint ?? bgColor,
@@ -223,7 +254,7 @@ class _TableRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// CARD ROW (mobile)
+// CARD ROW (mobile-friendly)
 // ─────────────────────────────────────────────────────────────────
 
 class _CardRow extends StatelessWidget {
@@ -252,108 +283,71 @@ class _CardRow extends StatelessWidget {
     final rowTint = _rowTint(row.type, cs);
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: rowTint ?? (theme.cardTheme.color ?? cs.surfaceContainerHigh),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // ── Top: place + bib + name + category ──
           Row(children: [
-            // Place (medal or text)
-            SizedBox(width: 32, child: _placeInCard(place)),
-            // BIB chip
+            SizedBox(width: 30, child: _placeInCard(place)),
             if (bib != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  bib.display,
+                child: Text(bib.display,
                   style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: cs.onSurfaceVariant,
-                    fontSize: 13,
-                  ),
-                ),
+                    fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
               ),
               const SizedBox(width: 8),
             ],
-            // Name
             Expanded(
-              child: Text(
-                name?.display ?? '',
+              child: Text(name?.display ?? '',
                 style: theme.textTheme.titleSmall?.copyWith(
                   fontWeight: FontWeight.w600,
                   color: isDnf ? cs.onSurfaceVariant : cs.onSurface,
-                  fontSize: 15,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
+                  fontSize: 14),
+                maxLines: 1, overflow: TextOverflow.ellipsis),
             ),
-            // Category badge
             if (category != null && category.display.isNotEmpty)
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer.withValues(alpha: 0.25),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  category.display,
+                child: Text(category.display,
                   style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: cs.primary,
-                  ),
-                ),
+                    fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
               ),
           ]),
-          const SizedBox(height: 8),
-          // ── Bottom: lap times / penalties / result time ──
+          const SizedBox(height: 6),
+          // ── Bottom: lap times + penalties + result time ──
           Row(children: [
-            // Lap times (dynamic)
-            Expanded(
-              child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: _lapChips(),
-              ),
-            ),
-            // Penalty
+            Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: _lapChips())),
             if (penalty != null && penalty.display.isNotEmpty && penalty.display != '—') ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.tertiaryContainer.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(
-                  'Штр: ${penalty.display}',
+                child: Text('Штр: ${penalty.display}',
                   style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: cs.tertiary,
-                  ),
-                ),
+                    fontSize: 11, fontWeight: FontWeight.w600, color: cs.tertiary)),
               ),
-              const SizedBox(width: 6),
+              const SizedBox(width: 4),
             ],
-            // Result time
-            Text(
-              time?.display ?? '',
+            Text(time?.display ?? '',
               style: AppTypography.monoTiming.copyWith(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                color: _timeColor(row, cs),
-              ),
-            ),
+                fontSize: 15, fontWeight: FontWeight.w700, color: _timeColor(row, cs))),
           ]),
         ],
       ),
@@ -365,58 +359,46 @@ class _CardRow extends StatelessWidget {
     if (cell.raw is int) {
       final p = cell.raw as int;
       if (p >= 1 && p <= 3) {
-        return Text(['🥇', '🥈', '🥉'][p - 1], style: const TextStyle(fontSize: 18));
+        return Text(['🥇', '🥈', '🥉'][p - 1], style: const TextStyle(fontSize: 16));
       }
       return Text('$p', textAlign: TextAlign.center,
-          style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 15));
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 14));
     }
-    // Status text
-    final isError = cell.style == CellStyle.error;
-    return Text(
-      cell.display,
-      textAlign: TextAlign.center,
+    return Text(cell.display, textAlign: TextAlign.center,
       style: theme.textTheme.labelSmall?.copyWith(
         fontWeight: FontWeight.w700,
-        color: isError ? cs.error : cs.onSurfaceVariant,
-        fontSize: 11,
-      ),
-    );
+        color: cell.style == CellStyle.error ? cs.error : cs.onSurfaceVariant,
+        fontSize: 11));
   }
 
   List<Widget> _lapChips() {
     final chips = <Widget>[];
-    // Collect lap times from cells
     for (final col in columns) {
       if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
         final cell = row.cells[col.id];
         if (cell != null && cell.display.isNotEmpty) {
           chips.add(Container(
-            padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: cell.style == CellStyle.highlight
                   ? cs.primaryContainer.withValues(alpha: 0.3)
                   : cs.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(4),
+              borderRadius: BorderRadius.circular(3),
             ),
-            child: Text(
-              '${col.label}: ${cell.display}',
+            child: Text('${col.label}: ${cell.display}',
               style: AppTypography.monoTiming.copyWith(
                 fontSize: 11,
                 fontWeight: cell.style == CellStyle.highlight ? FontWeight.w700 : FontWeight.w400,
-                color: cell.style == CellStyle.highlight ? cs.primary : cs.onSurfaceVariant,
-              ),
-            ),
+                color: cell.style == CellStyle.highlight ? cs.primary : cs.onSurfaceVariant)),
           ));
         }
       }
     }
-    // Gap
     final gap = row.cells['gap_leader'] ?? row.cells['gap_prev'];
     if (gap != null && gap.display.isNotEmpty) {
-      chips.add(Text(
-        'Δ ${gap.display}',
-        style: AppTypography.monoTiming.copyWith(fontSize: 11, color: cs.onSurfaceVariant),
-      ));
+      chips.add(Text('Δ ${gap.display}',
+        style: AppTypography.monoTiming.copyWith(fontSize: 11, color: cs.onSurfaceVariant)));
     }
     return chips;
   }
@@ -430,7 +412,7 @@ class _CardRow extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────
-// CELL WIDGET (used in table mode)
+// CELL WIDGET (table mode)
 // ─────────────────────────────────────────────────────────────────
 
 class _CellWidget extends StatelessWidget {
@@ -444,132 +426,92 @@ class _CellWidget extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // Special: place column
     if (col.id == 'place') return _placeCell(cell, theme, cs);
-
-    // Special: bib column
     if (col.id == 'bib') return _bibCell(cell, theme, cs);
 
-    // Generic cell with type-based styling
+    // Empty cell
+    if (cell.display.isEmpty) {
+      return Text('—', textAlign: _textAlign(col.align),
+        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.3)));
+    }
+
     final style = _baseStyle(col.type, theme, cs).copyWith(
       color: _cellColor(cell.style, cs),
       fontWeight: _cellWeight(cell.style),
     );
 
-    return Text(
-      cell.display,
+    return Text(cell.display,
       textAlign: _textAlign(col.align),
       style: style,
       maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-    );
+      overflow: TextOverflow.ellipsis);
   }
 
   Widget _placeCell(CellValue cell, ThemeData theme, ColorScheme cs) {
-    // Status text (DNF, DNS, DSQ, LIVE, —)
     if (cell.raw is! int) {
       final isError = cell.style == CellStyle.error;
       final isLive = cell.style == CellStyle.highlight;
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
         decoration: BoxDecoration(
-          color: isError
-              ? cs.errorContainer.withValues(alpha: 0.2)
+          color: isError ? cs.errorContainer.withValues(alpha: 0.2)
               : (isLive ? cs.primaryContainer.withValues(alpha: 0.2) : Colors.transparent),
           borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(
-          cell.display,
-          textAlign: TextAlign.center,
+        child: Text(cell.display, textAlign: TextAlign.center,
           style: theme.textTheme.labelSmall?.copyWith(
             fontWeight: FontWeight.w700,
             color: isError ? cs.error : (isLive ? cs.primary : cs.onSurfaceVariant),
-            fontSize: 11, // min from design system
-            letterSpacing: 0.5,
-          ),
-        ),
+            fontSize: 11, letterSpacing: 0.5)),
       );
     }
 
-    // Medal for top-3
     final place = cell.raw as int;
     if (place >= 1 && place <= 3) {
-      return Text(
-        ['🥇', '🥈', '🥉'][place - 1],
+      return Text(['🥇', '🥈', '🥉'][place - 1],
         textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 16),
-      );
+        style: const TextStyle(fontSize: 15));
     }
 
-    // Regular number
-    return Text(
-      cell.display,
-      textAlign: TextAlign.center,
+    return Text(cell.display, textAlign: TextAlign.center,
       style: theme.textTheme.labelMedium?.copyWith(
-        fontWeight: FontWeight.w600,
-        color: cs.onSurfaceVariant,
-        fontSize: 14,
-      ),
-    );
+        fontWeight: FontWeight.w600, color: cs.onSurfaceVariant, fontSize: 13));
   }
 
   Widget _bibCell(CellValue cell, ThemeData theme, ColorScheme cs) {
     return Align(
       alignment: Alignment.center,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
         decoration: BoxDecoration(
           color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
-          borderRadius: BorderRadius.circular(5),
+          borderRadius: BorderRadius.circular(4),
         ),
-        child: Text(
-          cell.display,
+        child: Text(cell.display,
           style: theme.textTheme.labelMedium?.copyWith(
-            fontWeight: FontWeight.w700,
-            color: cs.onSurfaceVariant,
-            fontSize: 13,
-          ),
-        ),
+            fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
       ),
     );
   }
-
-  // ── Type-based styles (all ≥12px, above 11px min) ──
 
   TextStyle _baseStyle(ColumnType type, ThemeData theme, ColorScheme cs) {
     switch (type) {
       case ColumnType.time:
       case ColumnType.gap:
         return AppTypography.monoTiming.copyWith(
-          fontSize: 13,
-          fontWeight: FontWeight.w500,
-          color: cs.onSurface,
-          letterSpacing: 0.5,
-        );
+          fontSize: 13, fontWeight: FontWeight.w500, color: cs.onSurface, letterSpacing: 0.5);
       case ColumnType.speed:
         return AppTypography.monoTiming.copyWith(
-          fontSize: 12,
-          fontWeight: FontWeight.w400,
-          color: cs.onSurfaceVariant,
-          letterSpacing: 0.3,
-        );
+          fontSize: 12, fontWeight: FontWeight.w400, color: cs.onSurfaceVariant, letterSpacing: 0.3);
       case ColumnType.number:
         return theme.textTheme.labelMedium?.copyWith(
-          fontWeight: FontWeight.w600,
-          color: cs.onSurface,
-          fontSize: 13,
-        ) ?? const TextStyle();
+          fontWeight: FontWeight.w600, color: cs.onSurface, fontSize: 13) ?? const TextStyle();
       case ColumnType.status:
         return theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700,
-          letterSpacing: 0.5,
-          fontSize: 12,
-        ) ?? const TextStyle();
+          fontWeight: FontWeight.w700, letterSpacing: 0.5, fontSize: 12) ?? const TextStyle();
       case ColumnType.text:
         return theme.textTheme.bodySmall?.copyWith(
-          color: cs.onSurface,
-          fontSize: 13,
-        ) ?? const TextStyle();
+          color: cs.onSurface, fontSize: 13) ?? const TextStyle();
     }
   }
 
@@ -617,7 +559,7 @@ Color? _rowTint(RowType type, ColorScheme cs) {
     case RowType.waiting:
       return cs.onSurface.withValues(alpha: 0.03);
     case RowType.onTrack:
-      return cs.primaryContainer.withValues(alpha: 0.08);
+      return cs.primaryContainer.withValues(alpha: 0.06);
     case RowType.finished:
       return null;
   }

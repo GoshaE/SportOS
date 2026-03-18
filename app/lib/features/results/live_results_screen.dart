@@ -19,6 +19,7 @@ class LiveResultsScreen extends ConsumerStatefulWidget {
 class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   int _currentDay = 1;
   bool _showSplits = false;
+  bool _showCards = false;
   String? _selectedDiscId;
 
   static const _tableBuilder = ResultTableBuilder();
@@ -191,6 +192,24 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
                 ]),
               ),
             ),
+            const SizedBox(width: 8),
+            // Table/Card view toggle
+            GestureDetector(
+              onTap: () => setState(() => _showCards = !_showCards),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: _showCards ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _showCards ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+                ),
+                child: Icon(
+                  _showCards ? Icons.view_agenda_outlined : Icons.table_rows_outlined,
+                  size: 16,
+                  color: _showCards ? cs.primary : cs.onSurfaceVariant,
+                ),
+              ),
+            ),
           ]),
         ]),
       ),
@@ -202,7 +221,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
               const SizedBox(height: 8),
               Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
             ]))
-          : AppResultTable(table: table),
+          : AppResultTable(table: table, showCards: _showCards),
       ),
 
       // ── Auto-refresh indicator ──
