@@ -202,7 +202,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
               const SizedBox(height: 8),
               Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
             ]))
-          : AppResultTable(table: table, compact: true),
+          : AppResultTable(table: table),
       ),
 
       // ── Auto-refresh indicator ──
