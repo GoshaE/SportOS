@@ -230,19 +230,24 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
 
     final viewportWidth = _scroll.position.viewportDimension;
     final scrollOffset = _scroll.offset;
-    const edgePadding = 24.0;
 
-    // Check if tab is fully visible
-    final tabLeft = tabRect.left + scrollOffset;
+    // tabRect.left is relative to the Stack (content origin, not viewport).
+    // It already IS the absolute content-space X.
+    final tabLeft = tabRect.left;
     final tabRight = tabLeft + tabRect.width;
+
+    // Check if the tab is fully visible in the current viewport
+    final visibleLeft = scrollOffset;
+    final visibleRight = scrollOffset + viewportWidth;
+    const edgePadding = 32.0;
 
     double? targetScroll;
 
-    if (tabLeft - scrollOffset < edgePadding) {
-      // Tab is off-screen to the left
+    if (tabLeft < visibleLeft + edgePadding) {
+      // Tab is off-screen to the left — scroll left to show it
       targetScroll = (tabLeft - edgePadding).clamp(0.0, _scroll.position.maxScrollExtent);
-    } else if (tabRight - scrollOffset > viewportWidth - edgePadding) {
-      // Tab is off-screen to the right
+    } else if (tabRight > visibleRight - edgePadding) {
+      // Tab is off-screen to the right — scroll right to show it
       targetScroll = (tabRight - viewportWidth + edgePadding).clamp(0.0, _scroll.position.maxScrollExtent);
     }
 
