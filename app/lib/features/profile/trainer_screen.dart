@@ -260,9 +260,9 @@ class _TrainerScreenState extends State<TrainerScreen> with SingleTickerProvider
         ]),
         const SizedBox(height: 12),
         Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.message, size: 16), label: const Text('Написать'))),
+          Expanded(child: AppButton.secondary(text: 'Написать', icon: Icons.message, onPressed: () {})),
           const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.bar_chart, size: 16), label: const Text('Результаты'))),
+          Expanded(child: AppButton.secondary(text: 'Результаты', icon: Icons.bar_chart, onPressed: () {})),
         ]),
       ]),
     );

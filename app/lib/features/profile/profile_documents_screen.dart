@@ -79,7 +79,7 @@ class _ProfileDocumentsScreenState extends State<ProfileDocumentsScreen> {
                   }
                 },
               )
-            : TextButton(onPressed: _showUpload, child: const Text('Загрузить')),
+            : AppButton.text(text: 'Загрузить', onPressed: _showUpload),
         isThreeLine: true,
       ),
     );

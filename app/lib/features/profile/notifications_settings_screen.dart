@@ -63,9 +63,9 @@ class _NotificationsSettingsScreenState extends State<NotificationsSettingsScree
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Row(children: [
-                    Expanded(child: OutlinedButton(onPressed: () {}, child: Text('С $_quietFrom'))),
+                    Expanded(child: AppButton.secondary(text: 'С $_quietFrom', onPressed: () {})),
                     const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('—')),
-                    Expanded(child: OutlinedButton(onPressed: () {}, child: Text('До $_quietTo'))),
+                    Expanded(child: AppButton.secondary(text: 'До $_quietTo', onPressed: () {})),
                   ]),
                 ),
                 const SizedBox(height: 8),

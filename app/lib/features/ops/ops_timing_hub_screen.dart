@@ -304,11 +304,9 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
           )),
           SizedBox(
             height: 32,
-            child: FilledButton.icon(
+            child: AppButton.small(
+              text: 'Добавить',
               onPressed: _showAddAthleteSheet,
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('Добавить'),
-              style: FilledButton.styleFrom(textStyle: const TextStyle(fontSize: 12)),
             ),
           ),
         ]),

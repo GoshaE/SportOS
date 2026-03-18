@@ -158,10 +158,9 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
         title: Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
         subtitle: Text(subtitle, style: theme.textTheme.bodySmall),
         isThreeLine: true,
-        trailing: FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: cs.tertiary, foregroundColor: cs.onTertiary),
+        trailing: AppButton.primary(
+          text: 'Штраф',
           onPressed: () => _showAssignPenaltyForBib(context, bib, name),
-          child: const Text('Штраф', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
         ),
       ),
     );
@@ -209,10 +208,10 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.icon(
-                        style: FilledButton.styleFrom(backgroundColor: cs.primary.withValues(alpha: 0.1), foregroundColor: cs.primary, elevation: 0),
-                        icon: const Icon(Icons.gavel), label: const Text('Рассмотреть'), 
-                        onPressed: () => _showVerdict(ctx, title, from)
+                      child: AppButton.primary(
+                        text: 'Рассмотреть',
+                        icon: Icons.gavel,
+                        onPressed: () => _showVerdict(ctx, title, from),
                       ),
                     ),
                   ],
@@ -563,7 +562,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
         const SizedBox(width: 6),
         Text('BIB $bib — ${_athletes.firstWhere((a) => a['bib'] == bib)['name']}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         const Spacer(),
-        TextButton(onPressed: onClear, child: const Text('Изменить', style: TextStyle(fontSize: 11))),
+        AppButton.text(text: 'Изменить', onPressed: onClear),
       ]),
     );
   }

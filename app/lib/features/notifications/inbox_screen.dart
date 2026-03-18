@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 
 
@@ -43,7 +44,7 @@ class _InboxScreenState extends State<InboxScreen> {
           ],
         ]),
         actions: [
-          TextButton(onPressed: () => setState(() { for (var i in _items) { i['read'] = true; } }), child: Text('Прочитать все', style: Theme.of(context).textTheme.labelMedium)),
+          AppButton.text(text: 'Прочитать все', onPressed: () => setState(() { for (var i in _items) { i['read'] = true; } })),
         ],
       ),
       body: Column(children: [

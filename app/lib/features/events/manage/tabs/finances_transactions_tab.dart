@@ -70,23 +70,9 @@ class _FinancesTransactionsTabState extends State<FinancesTransactionsTab> {
           child: Row(
             children: [
               Expanded(
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Поиск по ФИО или ID',
-                    prefixIcon: const Icon(Icons.search, size: 20),
-                    isDense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
-                    ),
-                    filled: true,
-                    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                  ),
+                child: AppTextField(
+                  label: 'Поиск по ФИО или ID',
+                  prefixIcon: Icons.search,
                 ),
               ),
               const SizedBox(width: 8),

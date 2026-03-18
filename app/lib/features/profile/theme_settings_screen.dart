@@ -271,11 +271,11 @@ class _ThemePreview extends StatelessWidget {
 
           // Кнопки
           Row(children: [
-            Expanded(child: FilledButton(onPressed: () {}, child: const Text('Главная'))),
+            Expanded(child: AppButton.primary(text: 'Главная', onPressed: () {})),
             const SizedBox(width: 8),
-            Expanded(child: OutlinedButton(onPressed: () {}, child: const Text('Вторая'))),
+            Expanded(child: AppButton.secondary(text: 'Вторая', onPressed: () {})),
             const SizedBox(width: 8),
-            Expanded(child: TextButton(onPressed: () {}, child: const Text('Текст'))),
+            Expanded(child: AppButton.text(text: 'Текст', onPressed: () {})),
           ]),
           const SizedBox(height: 12),
 

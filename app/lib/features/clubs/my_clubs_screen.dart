@@ -106,7 +106,7 @@ class _MyClubsScreenState extends State<MyClubsScreen> with SingleTickerProvider
         const SizedBox(height: 4),
         Text('Перейдите на вкладку «Все клубы» чтобы найти клуб', style: theme.textTheme.bodySmall?.copyWith(color: cs.outline)),
         const SizedBox(height: 16),
-        FilledButton.icon(onPressed: () => _tabController.animateTo(1), icon: const Icon(Icons.explore), label: const Text('Найти клуб')),
+        AppButton.primary(text: 'Найти клуб', icon: Icons.explore, onPressed: () => _tabController.animateTo(1)),
       ]));
     }
 
@@ -184,9 +184,9 @@ class _MyClubsScreenState extends State<MyClubsScreen> with SingleTickerProvider
         child: Row(children: [
           Text('Найдено ${filtered.length} клубов', style: theme.textTheme.bodySmall?.copyWith(color: cs.outline)),
           const Spacer(),
-          TextButton.icon(
-            icon: const Icon(Icons.sort, size: 16),
-            label: const Text('По участникам', style: TextStyle(fontSize: 12)),
+          AppButton.text(
+            text: 'По участникам',
+            icon: Icons.sort,
             onPressed: () {},
           ),
         ]),

@@ -92,15 +92,16 @@ class _CreateClubScreenState extends State<CreateClubScreen> {
             child: Row(children: [
               if (_step > 0)
                 Expanded(
-                  child: OutlinedButton(
+                  child: AppButton.secondary(
+                    text: 'Назад',
                     onPressed: () => setState(() => _step--),
-                    child: const Text('Назад'),
                   ),
                 ),
               if (_step > 0) const SizedBox(width: 12),
               Expanded(
                 flex: 2,
-                child: FilledButton(
+                child: AppButton.primary(
+                  text: _step < 2 ? 'Продолжить' : '🚀 Создать клуб',
                   onPressed: () {
                     if (_step < 2) {
                       setState(() => _step++);
@@ -109,10 +110,6 @@ class _CreateClubScreenState extends State<CreateClubScreen> {
                       context.push('/clubs/club-1');
                     }
                   },
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: Text(_step < 2 ? 'Продолжить' : '🚀 Создать клуб'),
                 ),
               ),
             ]),

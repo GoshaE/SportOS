@@ -126,14 +126,7 @@ class DiplomaGenScreen extends StatelessWidget {
             subtitle: Text(detail, style: Theme.of(context).textTheme.bodySmall),
             trailing: generated
               ? Icon(Icons.check_circle, color: cs.primary, size: 24)
-              : OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    minimumSize: const Size(0, 32),
-                  ),
-                  child: const Text('Создать', style: TextStyle(fontSize: 12)),
-                ),
+              : AppButton.secondary(text: 'Создать', onPressed: () {}),
           ),
         ],
       ),

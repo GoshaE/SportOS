@@ -140,12 +140,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
           // ═══ Danger Zone ═══
           Center(
-            child: TextButton(
+            child: AppButton.text(
+              text: 'Удалить аккаунт',
               onPressed: _showDeleteAccount,
-              child: Text(
-                'Удалить аккаунт',
-                style: theme.textTheme.bodySmall?.copyWith(color: cs.error),
-              ),
             ),
           ),
           const SizedBox(height: 32),
@@ -174,12 +171,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
       trailing: linked
           ? (onUnlink != null
-              ? TextButton(
+              ? AppButton.text(
+                  text: 'Отвязать',
                   onPressed: onUnlink,
-                  child: Text('Отвязать', style: TextStyle(color: cs.error, fontSize: 12)),
                 )
               : Icon(Icons.check_circle, color: cs.primary, size: 20))
-          : TextButton(onPressed: onLink, child: const Text('Привязать', style: TextStyle(fontSize: 12))),
+          : AppButton.text(text: 'Привязать', onPressed: onLink ?? () {}),
     );
   }
 
@@ -299,7 +296,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           : null,
       trailing: given
           ? Icon(Icons.check_circle, color: cs.primary, size: 20)
-          : OutlinedButton(onPressed: () {}, child: const Text('Дать', style: TextStyle(fontSize: 11))),
+          : AppButton.secondary(text: 'Дать', onPressed: () {}),
     );
   }
 

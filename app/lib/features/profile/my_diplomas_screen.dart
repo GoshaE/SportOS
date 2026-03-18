@@ -143,7 +143,7 @@ class _MyDiplomasScreenState extends State<MyDiplomasScreen> {
         ]),
       ]),
       actions: [
-        TextButton(onPressed: () => Navigator.of(context, rootNavigator: true).pop(), child: const Text('Закрыть')),
+        AppButton.text(text: 'Закрыть', onPressed: () => Navigator.of(context, rootNavigator: true).pop()),
       ],
     );
   }

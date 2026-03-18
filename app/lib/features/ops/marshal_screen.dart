@@ -122,14 +122,13 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
       title: 'Нарушение — BIB $bib $name',
       initialHeight: 0.65,
       actions: [
-        SizedBox(width: double.infinity, child: FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: cs.tertiary),
+        AppButton.primary(
+          text: 'Отправить судье',
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             AppSnackBar.info(context, 'Нарушение BIB $bib → отправлено судье');
           },
-          child: const Text('Отправить судье', style: TextStyle(fontSize: 16)),
-        )),
+        ),
       ],
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Тип нарушения:', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
@@ -146,9 +145,9 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         const SizedBox(height: 4),
         AppInfoBanner.info(title: 'Наказание назначает судья. Маршал только фиксирует факт нарушения.'),
         const SizedBox(height: 12),
-        const TextField(decoration: InputDecoration(labelText: 'Описание нарушения', border: OutlineInputBorder(), hintText: 'Cобака без поводка, помощь извне...'), maxLines: 2),
+        AppTextField(label: 'Описание нарушения', hintText: 'Cобака без поводка, помощь извне...', maxLines: 2),
         const SizedBox(height: 12),
-        OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.camera_alt), label: const Text('Прикрепить фото')),
+        AppButton.secondary(text: 'Прикрепить фото', icon: Icons.camera_alt, onPressed: () {}),
       ]),
     );
   }
@@ -179,7 +178,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         AppCard(
           padding: const EdgeInsets.all(12),
           children: const [
-            TextField(decoration: InputDecoration(labelText: 'Причина DNF *', border: OutlineInputBorder(), hintText: 'Атлет сошёл с трассы, травма собаки...'), maxLines: 2),
+            AppTextField(label: 'Причина DNF *', hintText: 'Атлет сошёл с трассы, травма собаки...', maxLines: 2),
           ]
         ),
       ]),
@@ -209,9 +208,9 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         AppCard(
           padding: const EdgeInsets.all(12),
           children: [
-            const TextField(decoration: InputDecoration(labelText: 'Checkpoint', border: OutlineInputBorder(), hintText: '3 км')),
+            AppTextField(label: 'Checkpoint', hintText: '3 км'),
             const SizedBox(height: 12),
-            const TextField(decoration: InputDecoration(labelText: 'Описание ситуации *', border: OutlineInputBorder(), hintText: 'Травма атлета, собака убежала...'), maxLines: 3),
+            AppTextField(label: 'Описание ситуации *', hintText: 'Травма атлета, собака убежала...', maxLines: 3),
             const SizedBox(height: 12),
             Text('Время и GPS будут зафиксированы автоматически', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
           ]
@@ -415,16 +414,17 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         // ── Кнопки ──
         SafeArea(
           child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-            Expanded(child: SizedBox(height: 52, child: OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(foregroundColor: cs.tertiary),
+            Expanded(child: SizedBox(height: 52, child: AppButton.secondary(
+              text: 'Нарушение',
+              icon: Icons.gavel,
               onPressed: () => _showViolation('—', '(выбрать)'),
-              icon: const Icon(Icons.gavel), label: const Text('Нарушение'),
             ))),
             const SizedBox(width: 8),
-            Expanded(child: SizedBox(height: 52, child: FilledButton.icon(
-              style: FilledButton.styleFrom(backgroundColor: cs.error),
+            Expanded(child: SizedBox(height: 52, child: AppButton.primary(
+              text: 'SOS',
+              icon: Icons.emergency,
+              backgroundColor: cs.error,
               onPressed: _showSos,
-              icon: const Icon(Icons.emergency), label: const Text('SOS'),
             ))),
           ])),
         ),

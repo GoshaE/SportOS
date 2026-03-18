@@ -271,10 +271,9 @@ class _SeriesScreenState extends State<SeriesScreen> {
                             ),
                           ],
                         ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: cs.tertiary, foregroundColor: cs.onTertiary),
+                        AppButton.primary(
+                          text: 'Купить',
                           onPressed: () {},
-                          child: const Text('Купить'),
                         ),
                       ],
                     ),
@@ -334,9 +333,9 @@ class _SeriesScreenState extends State<SeriesScreen> {
                             ),
                           ],
                         ),
-                        FilledButton.tonal(
+                        AppButton.secondary(
+                          text: 'Выбрать',
                           onPressed: () {},
-                          child: const Text('Выбрать'),
                         ),
                       ],
                     ),
@@ -380,9 +379,9 @@ class _SeriesScreenState extends State<SeriesScreen> {
                             Text('3 000 ₽', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w900, color: cs.onSurfaceVariant)),
                           ],
                         ),
-                        OutlinedButton(
+                        AppButton.text(
+                          text: 'Подробнее',
                           onPressed: () {},
-                          child: const Text('Подробнее'),
                         ),
                       ],
                     ),
@@ -535,19 +534,16 @@ class _SeriesScreenState extends State<SeriesScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.add), label: const Text('Новый этап'))),
+                Expanded(child: AppButton.secondary(text: 'Новый этап', icon: Icons.add, onPressed: () {})),
                 const SizedBox(width: 8),
-                Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.link), label: const Text('Существующий'))),
+                Expanded(child: AppButton.secondary(text: 'Существующий', icon: Icons.link, onPressed: () {})),
               ],
             ),
             const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity, 
-              child: FilledButton.icon(
-                onPressed: () => AppSnackBar.success(context, 'Настройки серии сохранены'),
-                icon: const Icon(Icons.save), 
-                label: const Text('Сохранить изменения', style: TextStyle(fontWeight: FontWeight.bold)),
-              )
+            AppButton.primary(
+              text: 'Сохранить изменения',
+              icon: Icons.save,
+              onPressed: () => AppSnackBar.success(context, 'Настройки серии сохранены'),
             ),
             const SizedBox(height: 32),
           ]),

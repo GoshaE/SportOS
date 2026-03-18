@@ -96,7 +96,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
         );
       }),
       const SizedBox(height: 12),
-      OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.person_add), label: const Text('Пригласить')),
+      AppButton.secondary(text: 'Пригласить', icon: Icons.person_add, onPressed: () {}),
     ]);
   }
 
@@ -134,7 +134,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
         trailing: Text(p['sum']!, style: theme.textTheme.titleSmall),
       )),
       const SizedBox(height: 12),
-      FilledButton.icon(onPressed: () {}, icon: const Icon(Icons.add), label: const Text('Отметить оплату')),
+      AppButton.primary(text: 'Отметить оплату', icon: Icons.add, onPressed: () {}),
     ]);
   }
 
@@ -270,10 +270,10 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
                     FilterChip(label: const Text('🔔 Push всем'), selected: true, onSelected: (_) {}),
                   ],
                 ),
-                FilledButton.icon(
+                AppButton.primary(
+                  text: 'Отправить',
+                  icon: Icons.send,
                   onPressed: () => AppSnackBar.success(context, 'Объявление опубликовано! 📢'),
-                  icon: const Icon(Icons.send, size: 16),
-                  label: const Text('Отправить'),
                 ),
               ],
             ),
@@ -336,7 +336,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
       const SizedBox(height: 12),
       const AppTextField(label: 'Email', prefixIcon: Icons.email),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(onPressed: () => AppSnackBar.success(context, 'Настройки сохранены'), child: const Text('Сохранить'))),
+      AppButton.primary(text: 'Сохранить', onPressed: () => AppSnackBar.success(context, 'Настройки сохранены')),
 
       const SizedBox(height: 32),
       // Danger zone
@@ -347,9 +347,9 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
         onPressed: () {},
       ),
       const SizedBox(height: 8),
-      Center(child: TextButton(
+      Center(child: AppButton.text(
+        text: 'Удалить клуб',
         onPressed: () {},
-        child: Text('Удалить клуб', style: theme.textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error)),
       )),
     ]);
   }

@@ -442,13 +442,9 @@ class _RegisterCard extends StatelessWidget {
                   maxLines: 1, overflow: TextOverflow.ellipsis),
               ])),
               const SizedBox(width: 8),
-              FilledButton(
+              AppButton.small(
+                text: 'Выбрать',
                 onPressed: () => context.push('/hub/event/$eventId/register'),
-                style: FilledButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                ),
-                child: Text('Выбрать', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold)),
               ),
             ]),
           ),

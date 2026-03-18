@@ -92,10 +92,10 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
               const SizedBox(height: 8),
               Text('Протоколы формируются во время или после гонки', style: theme.textTheme.bodySmall?.copyWith(color: cs.outline)),
               const SizedBox(height: 24),
-              FilledButton.tonalIcon(
+              AppButton.secondary(
+                text: 'Назад',
+                icon: Icons.arrow_back,
                 onPressed: () => Navigator.of(context).pop(),
-                icon: const Icon(Icons.arrow_back),
-                label: const Text('Назад'),
               ),
             ]))
           // ── Есть сессия — полный UI ──
@@ -289,13 +289,13 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
           if (_currentDay == 0) Text('Общий зачёт: сумма дней', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
         ])),
         const SizedBox(width: 8),
-        TextButton.icon(
+        AppButton.text(
+          text: 'Отозвать',
+          icon: Icons.undo,
           onPressed: () {
             ref.read(raceSessionProvider.notifier).revokeApproval();
             AppSnackBar.info(context, 'Утверждение отозвано');
           },
-          icon: const Icon(Icons.undo, size: 16),
-          label: const Text('Отозвать'),
         ),
       ]),
     );
@@ -322,10 +322,10 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
         ])),
         if (hasSession) ...[
           const SizedBox(width: 8),
-          FilledButton.tonalIcon(
+          AppButton.primary(
+            text: 'Утвердить',
+            icon: Icons.verified,
             onPressed: _showApprove,
-            icon: const Icon(Icons.verified, size: 16),
-            label: const Text('Утвердить'),
           ),
         ],
       ]),
@@ -414,9 +414,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
               ],
             ),
           const SizedBox(height: 16),
-          FilledButton(
+          AppButton.primary(
+            text: 'Закрыть',
             onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-            child: const Text('Закрыть'),
           ),
         ],
       ),
@@ -449,15 +449,12 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
           const SizedBox(height: 16),
           AppInfoBanner.info(title: 'После утверждения изменения возможны только через протест.'),
           const SizedBox(height: 16),
-          const AppCard(
-            padding: EdgeInsets.all(16),
+          AppCard(
+            padding: const EdgeInsets.all(16),
             children: [
-              TextField(
-                decoration: InputDecoration(
-                  labelText: 'PIN электронной подписи',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.fingerprint),
-                ),
+              AppTextField(
+                label: 'PIN электронной подписи',
+                prefixIcon: Icons.fingerprint,
                 obscureText: true,
                 keyboardType: TextInputType.number,
               ),
@@ -475,13 +472,13 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
       title: 'Экспорт PDF',
       initialHeight: 0.65,
       actions: [
-        FilledButton.icon(
+        AppButton.primary(
+          text: 'Поделиться / Сохранить',
+          icon: Icons.share,
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             AppSnackBar.success(context, 'PDF сгенерирован и сохранён');
           },
-          icon: const Icon(Icons.share),
-          label: const Text('Поделиться / Сохранить'),
         ),
       ],
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

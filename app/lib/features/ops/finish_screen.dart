@@ -57,26 +57,9 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
       title: 'Назначить BIB',
       initialHeight: 0.6,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        TextField(
-          decoration: InputDecoration(
-            hintText: 'Поиск по BIB / фамилии',
-            prefixIcon: Icon(Icons.search, color: cs.primary),
-            filled: true,
-            fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide(color: cs.primary.withValues(alpha: 0.5), width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          ),
+        AppTextField(
+          label: 'Поиск по BIB / фамилии',
+          prefixIcon: Icons.search,
         ),
         const SizedBox(height: 12),
         SingleChildScrollView(
@@ -253,11 +236,11 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
           AppCard(
             padding: const EdgeInsets.all(12),
             children: [
-              TextField(decoration: _glassInputDecoration('Время (HH:mm:ss.SSS)', cs)),
+              AppTextField(label: 'Время (HH:mm:ss.SSS)'),
               const SizedBox(height: 12),
-              TextField(decoration: _glassInputDecoration('BIB (опционально)', cs)),
+              AppTextField(label: 'BIB (опционально)'),
               const SizedBox(height: 12),
-              TextField(decoration: _glassInputDecoration('Причина *', cs, hint: 'Не сработал сенсор...'), maxLines: 2),
+              AppTextField(label: 'Причина *', hintText: 'Не сработал сенсор...', maxLines: 2),
             ]
           ),
         ],

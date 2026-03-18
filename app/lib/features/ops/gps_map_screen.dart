@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import '../../core/widgets/widgets.dart';
 
 /// Screen ID: O5 — GPS Карта трассы (прототип)
 class GpsMapScreen extends StatelessWidget {
@@ -68,11 +69,11 @@ class GpsMapScreen extends StatelessWidget {
 
         // Controls
         SafeArea(child: Padding(padding: const EdgeInsets.all(8), child: Row(children: [
-          Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.layers, size: 16), label: const Text('Слои'))),
+          Expanded(child: AppButton.secondary(text: 'Слои', icon: Icons.layers, onPressed: () {})),
           const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.my_location, size: 16), label: const Text('Позиция'))),
+          Expanded(child: AppButton.secondary(text: 'Позиция', icon: Icons.my_location, onPressed: () {})),
           const SizedBox(width: 8),
-          Expanded(child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.fullscreen, size: 16), label: const Text('Полный'))),
+          Expanded(child: AppButton.secondary(text: 'Полный', icon: Icons.fullscreen, onPressed: () {})),
         ]))),
       ]),
     );

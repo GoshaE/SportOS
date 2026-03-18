@@ -908,16 +908,16 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
 
       // Кнопки экспорта
       Row(children: [
-        Expanded(child: OutlinedButton.icon(
+        Expanded(child: AppButton.secondary(
+          text: 'PDF',
+          icon: Icons.picture_as_pdf,
           onPressed: () => AppSnackBar.info(context, 'Экспорт PDF → скоро'),
-          icon: const Icon(Icons.picture_as_pdf, size: 16),
-          label: const Text('PDF'),
         )),
         const SizedBox(width: 8),
-        Expanded(child: OutlinedButton.icon(
+        Expanded(child: AppButton.secondary(
+          text: 'Excel',
+          icon: Icons.table_chart,
           onPressed: () => AppSnackBar.info(context, 'Экспорт Excel → скоро'),
-          icon: const Icon(Icons.table_chart, size: 16),
-          label: const Text('Excel'),
         )),
       ]),
     ]);

@@ -569,24 +569,15 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 child: Row(children: [
-                  Expanded(child: SizedBox(height: 52, child: OutlinedButton(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: cs.error,
-                      side: BorderSide(color: cs.error.withValues(alpha: 0.3), width: 1.5),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                    ),
+                  Expanded(child: SizedBox(height: 52, child: AppButton.secondary(
+                    text: 'DNS',
                     onPressed: current != null ? () => _markDns(current.bib) : null,
-                    child: const Text('DNS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                   ))),
                   const SizedBox(width: 12),
                   Expanded(flex: 2, child: session.config.manualStart
-                    ? SizedBox(height: 52, child: FilledButton(
-                        style: FilledButton.styleFrom(
-                          backgroundColor: !_isSynced && !_preFlightPassed ? cs.tertiary : cs.primary,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        ),
+                    ? SizedBox(height: 52, child: AppButton.primary(
+                        text: !_isSynced && !_preFlightPassed ? 'ПРОВЕРКА' : 'УШЁЛ ✅',
                         onPressed: current != null ? () => _tryStart(_markStarted) : null,
-                        child: Text(!_isSynced && !_preFlightPassed ? 'ПРОВЕРКА' : 'УШЁЛ ✅', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                       ))
                     : Container(
                         height: 52,

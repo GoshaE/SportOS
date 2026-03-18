@@ -217,9 +217,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return AppInfoBanner.warning(
       title: 'Результаты без аккаунта (${_unclaimedResults.length})',
       subtitle: '${r['event']} · ${r['disc']} · #${r['place']} (${r['time']})',
-      action: TextButton(
+      action: AppButton.text(
+        text: 'Привязать',
         onPressed: _showClaimDialog,
-        child: const Text('Привязать', style: TextStyle(fontSize: 12)),
       ),
     );
   }

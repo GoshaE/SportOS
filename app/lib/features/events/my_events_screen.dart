@@ -90,16 +90,16 @@ class MyEventsScreen extends ConsumerWidget {
             const SizedBox(height: 8),
             // Quick actions row
             Row(children: [
-              Expanded(child: FilledButton.icon(
+              Expanded(child: AppButton.primary(
+                text: 'Подробнее',
+                icon: Icons.visibility,
                 onPressed: () => context.push('/hub/event/${config.id}'),
-                icon: const Icon(Icons.visibility, size: 16),
-                label: const Text('Подробнее'),
               )),
               const SizedBox(width: 8),
-              Expanded(child: FilledButton.tonalIcon(
+              Expanded(child: AppButton.secondary(
+                text: 'Управлять',
+                icon: Icons.settings,
                 onPressed: () => context.push('/manage/${config.id}'),
-                icon: const Icon(Icons.settings, size: 16),
-                label: const Text('Управлять'),
               )),
             ]),
             const SizedBox(height: 16),

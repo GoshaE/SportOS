@@ -182,11 +182,11 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
       // Membership Status / Actions
       if (!isOwner) _buildMembershipSection(cs, theme)
       else ...[
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: 'Управление клубом',
+          icon: Icons.admin_panel_settings,
           onPressed: () => context.push('/clubs/$clubId/manage'),
-          icon: const Icon(Icons.admin_panel_settings),
-          label: const Text('Управление клубом'),
-        )),
+        ),
         const SizedBox(height: 16),
       ],
 
@@ -215,10 +215,10 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
         badge: StatusBadge(text: m['role'] as String, type: m['type'] as BadgeType),
       )),
 
-      TextButton.icon(
+      AppButton.text(
+        text: 'Все участники (45)',
+        icon: Icons.people,
         onPressed: () {},
-        icon: const Icon(Icons.people, size: 16),
-        label: const Text('Все участники (45)', style: TextStyle(fontSize: 13)),
       ),
     ]);
   }
@@ -328,10 +328,10 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
       // Season selector
       Row(children: [
         Expanded(child: Text('Сезон 2025/2026', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold))),
-        TextButton.icon(
+        AppButton.text(
+          text: 'Другой сезон',
+          icon: Icons.calendar_month,
           onPressed: () {},
-          icon: const Icon(Icons.calendar_month, size: 16),
-          label: const Text('Другой сезон', style: TextStyle(fontSize: 12)),
         ),
       ]),
       const SizedBox(height: 8),
@@ -545,7 +545,7 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
           AppInfoBanner.warning(
             title: 'Заявка на рассмотрении',
             subtitle: 'Администратор клуба рассмотрит вашу заявку. Обычно это занимает 1-2 дня.',
-            action: TextButton(onPressed: () => setState(() => _membershipStatus = null), child: const Text('Отозвать', style: TextStyle(fontSize: 12))),
+            action: AppButton.text(text: 'Отозвать', onPressed: () => setState(() => _membershipStatus = null)),
           ),
           const SizedBox(height: 16),
         ]);
@@ -559,10 +559,11 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
             AppListRow.detail(label: 'Тариф', value: 'Взрослый'),
             AppListRow.detail(label: 'Сумма', value: '3 000 ₽/год'),
             const SizedBox(height: 12),
-            SizedBox(width: double.infinity, child: FilledButton.icon(
+            AppButton.primary(
+              text: 'Оплатить 3 000 ₽',
+              icon: Icons.payment,
               onPressed: () { setState(() => _membershipStatus = 'active'); AppSnackBar.success(context, 'Взнос оплачен! 🎉'); },
-              icon: const Icon(Icons.payment), label: const Text('Оплатить 3 000 ₽'),
-            )),
+            ),
           ])]),
           const SizedBox(height: 16),
         ]);
@@ -599,10 +600,11 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
             const SizedBox(height: 4),
             Text('Заявка → Одобрение → Оплата → Участие', style: TextStyle(fontSize: 12, color: cs.outline)),
             const SizedBox(height: 12),
-            SizedBox(width: double.infinity, child: FilledButton.icon(
+            AppButton.primary(
+              text: 'Подать заявку',
+              icon: Icons.person_add,
               onPressed: () => _showApplyDialog(context),
-              icon: const Icon(Icons.person_add), label: const Text('Подать заявку'),
-            )),
+            ),
           ])]),
           const SizedBox(height: 16),
         ]);
@@ -612,11 +614,11 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
   void _showApplyDialog(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     AppBottomSheet.show(context, title: 'Заявка в клуб', actions: [
-      SizedBox(width: double.infinity, child: FilledButton.icon(
+      AppButton.primary(
+        text: 'Отправить заявку',
+        icon: Icons.send,
         onPressed: () { Navigator.of(context, rootNavigator: true).pop(); setState(() => _membershipStatus = 'pending'); AppSnackBar.success(context, 'Заявка отправлена! ✉️'); },
-        icon: const Icon(Icons.send), label: const Text('Отправить заявку'),
-        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-      )),
+      ),
     ], child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Row(children: [
         const AppAvatar(name: '🐕', size: 48), const SizedBox(width: 12),
