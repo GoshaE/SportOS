@@ -108,16 +108,16 @@ class DisciplinesScreen extends ConsumerWidget {
             ),
             child: Column(children: [
               Row(children: [
-                Expanded(child: TextField(
+                Expanded(child: AppTextField(
+                  label: 'Круг (м)',
                   controller: lapCtrl,
-                  decoration: const InputDecoration(labelText: 'Круг (м)', border: OutlineInputBorder(), isDense: true),
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setModal(() {}),
                 )),
                 const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('×', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-                SizedBox(width: 80, child: TextField(
+                SizedBox(width: 80, child: AppTextField(
+                  label: 'Кругов',
                   controller: lapsCtrl,
-                  decoration: const InputDecoration(labelText: 'Кругов', border: OutlineInputBorder(), isDense: true),
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setModal(() {}),
                 )),
@@ -197,9 +197,9 @@ class DisciplinesScreen extends ConsumerWidget {
           if (startTypeStr == 'individual' || startTypeStr == 'pursuit') ...[
             const SizedBox(height: 8),
             Row(children: [
-              SizedBox(width: 120, child: TextField(
+              SizedBox(width: 120, child: AppTextField(
+                label: 'Интервал (сек)',
                 controller: intervalCtrl,
-                decoration: const InputDecoration(labelText: 'Интервал (сек)', border: OutlineInputBorder(), isDense: true),
                 keyboardType: TextInputType.number,
               )),
               const SizedBox(width: 12),
@@ -226,9 +226,9 @@ class DisciplinesScreen extends ConsumerWidget {
                 ]),
                 const SizedBox(height: 8),
                 Row(children: [
-                  SizedBox(width: 120, child: TextField(
+                  SizedBox(width: 120, child: AppTextField(
+                    label: 'Буфер (сек)',
                     controller: intervalCtrl,
-                    decoration: const InputDecoration(labelText: 'Буфер (сек)', border: OutlineInputBorder(), isDense: true),
                     keyboardType: TextInputType.number,
                   )),
                   const SizedBox(width: 12),
@@ -267,38 +267,34 @@ class DisciplinesScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: TextField(
+            Expanded(child: AppTextField(
+              label: 'Макс. участников',
               controller: maxPartCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Макс. участников',
-                border: OutlineInputBorder(),
-                isDense: true,
-                prefixIcon: Icon(Icons.people_outline, size: 18),
-              ),
+              prefixIcon: Icons.people_outline,
               keyboardType: TextInputType.number,
             )),
           ]),
           const SizedBox(height: 8),
           Row(children: [
             Expanded(child: Row(children: [
-              SizedBox(width: 60, child: TextField(
+              SizedBox(width: 60, child: AppTextField(
+                label: 'Ч',
                 controller: cutoffHCtrl,
-                decoration: const InputDecoration(labelText: 'Ч', border: OutlineInputBorder(), isDense: true),
                 keyboardType: TextInputType.number,
               )),
               const Padding(padding: EdgeInsets.symmetric(horizontal: 4), child: Text(':')),
-              SizedBox(width: 60, child: TextField(
+              SizedBox(width: 60, child: AppTextField(
+                label: 'Мин',
                 controller: cutoffMCtrl,
-                decoration: const InputDecoration(labelText: 'Мин', border: OutlineInputBorder(), isDense: true),
                 keyboardType: TextInputType.number,
               )),
               const SizedBox(width: 8),
               Text('Cutoff', style: TextStyle(fontSize: 12, color: cs.outline)),
             ])),
             const SizedBox(width: 16),
-            SizedBox(width: 100, child: TextField(
+            SizedBox(width: 100, child: AppTextField(
+              label: 'Цена ₽',
               controller: priceCtrl,
-              decoration: const InputDecoration(labelText: 'Цена ₽', border: OutlineInputBorder(), isDense: true),
               keyboardType: TextInputType.number,
             )),
           ]),
@@ -307,13 +303,11 @@ class DisciplinesScreen extends ConsumerWidget {
           // ─── 4. Категории ───
           _editSection(cs, 'Допущенные категории', Icons.category),
           Row(children: [
-            TextButton.icon(
+            AppButton.text(text: 'Все', icon: Icons.select_all,
               onPressed: () => setModal(() { cats = {'М', 'Ж', 'Юн', 'Юнк', 'Дети', 'M35', 'M40', 'M45', 'M50', 'M55', 'M60+', 'F35', 'F40', 'F45', 'F50+', 'Вет'}; }),
-              icon: const Icon(Icons.select_all, size: 16), label: const Text('Все', style: TextStyle(fontSize: 12)),
             ),
-            TextButton.icon(
+            AppButton.text(text: 'Убрать', icon: Icons.deselect,
               onPressed: () => setModal(() => cats.clear()),
-              icon: const Icon(Icons.deselect, size: 16), label: const Text('Убрать', style: TextStyle(fontSize: 12)),
             ),
           ]),
           Text('Основные:', style: TextStyle(fontSize: 11, color: cs.outline)),
@@ -345,7 +339,9 @@ class DisciplinesScreen extends ConsumerWidget {
           const SizedBox(height: 20),
 
           // ─── Save ───
-          SizedBox(width: double.infinity, child: FilledButton.icon(
+          AppButton.primary(
+            text: 'Сохранить',
+            icon: Icons.save,
             onPressed: () {
               final newLapM = int.tryParse(lapCtrl.text) ?? d.lapLengthM ?? (d.distanceKm * 1000).toInt();
               final newLaps = int.tryParse(lapsCtrl.text) ?? d.laps;
@@ -375,20 +371,17 @@ class DisciplinesScreen extends ConsumerWidget {
               Navigator.pop(ctx);
               AppSnackBar.success(context, 'Дисциплина обновлена');
             },
-            icon: const Icon(Icons.save),
-            label: const Text('Сохранить'),
-          )),
+          ),
           const SizedBox(height: 12),
           // ─── Delete ───
-          SizedBox(width: double.infinity, child: OutlinedButton.icon(
+          AppButton.smallDanger(
+            text: 'Удалить дисциплину',
+            icon: Icons.delete,
             onPressed: () {
               Navigator.pop(ctx);
               _confirmDeleteDiscipline(context, ref, d);
             },
-            icon: Icon(Icons.delete, color: cs.error),
-            label: Text('Удалить дисциплину', style: TextStyle(color: cs.error)),
-            style: OutlinedButton.styleFrom(side: BorderSide(color: cs.error.withValues(alpha: 0.3))),
-          )),
+          ),
         ]);
       },
     ));
@@ -488,9 +481,9 @@ class DisciplinesScreen extends ConsumerWidget {
           const SizedBox(height: 12),
 
           // Name
-          TextField(
+          AppTextField(
+            label: 'Название *',
             controller: nameCtrl,
-            decoration: const InputDecoration(labelText: 'Название *', border: OutlineInputBorder()),
           ),
           const SizedBox(height: 16),
 
@@ -501,16 +494,16 @@ class DisciplinesScreen extends ConsumerWidget {
             decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
             child: Column(children: [
               Row(children: [
-                Expanded(child: TextField(
+                Expanded(child: AppTextField(
+                  label: 'Круг (м)',
                   controller: lapCtrl,
-                  decoration: const InputDecoration(labelText: 'Круг (м)', border: OutlineInputBorder(), isDense: true),
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setModal(() {}),
                 )),
                 const Padding(padding: EdgeInsets.symmetric(horizontal: 8), child: Text('×', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold))),
-                SizedBox(width: 80, child: TextField(
+                SizedBox(width: 80, child: AppTextField(
+                  label: 'Кругов',
                   controller: lapsCtrl,
-                  decoration: const InputDecoration(labelText: 'Кругов', border: OutlineInputBorder(), isDense: true),
                   keyboardType: TextInputType.number,
                   onChanged: (_) => setModal(() {}),
                 )),
@@ -536,9 +529,9 @@ class DisciplinesScreen extends ConsumerWidget {
           ]),
           if (startTypeStr == 'individual') ...[
             const SizedBox(height: 8),
-            SizedBox(width: 140, child: TextField(
+            SizedBox(width: 140, child: AppTextField(
+              label: 'Интервал (сек)',
               controller: intervalCtrl,
-              decoration: const InputDecoration(labelText: 'Интервал (сек)', border: OutlineInputBorder(), isDense: true),
               keyboardType: TextInputType.number,
             )),
           ],
@@ -568,13 +561,11 @@ class DisciplinesScreen extends ConsumerWidget {
           // Categories
           _editSection(cs, 'Категории', Icons.category),
           Row(children: [
-            TextButton.icon(
+            AppButton.text(text: 'Все', icon: Icons.select_all,
               onPressed: () => setModal(() { cats = {'М', 'Ж', 'Юн', 'Юнк', 'Дети', 'M35', 'M40', 'F35', 'F40', 'Вет'}; }),
-              icon: const Icon(Icons.select_all, size: 14), label: const Text('Все', style: TextStyle(fontSize: 11)),
             ),
-            TextButton.icon(
+            AppButton.text(text: 'Убрать', icon: Icons.deselect,
               onPressed: () => setModal(() => cats.clear()),
-              icon: const Icon(Icons.deselect, size: 14), label: const Text('Убрать', style: TextStyle(fontSize: 11)),
             ),
           ]),
           Wrap(spacing: 4, runSpacing: 2, children: ['М', 'Ж', 'Юн', 'Юнк', 'Дети', 'M35', 'M40', 'M45', 'M50', 'F35', 'F40', 'F45', 'Вет'].map((c) => FilterChip(
@@ -586,15 +577,17 @@ class DisciplinesScreen extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // Price
-          SizedBox(width: 140, child: TextField(
+          SizedBox(width: 140, child: AppTextField(
+            label: 'Цена ₽',
             controller: priceCtrl,
-            decoration: const InputDecoration(labelText: 'Цена ₽', border: OutlineInputBorder(), isDense: true),
             keyboardType: TextInputType.number,
           )),
           const SizedBox(height: 20),
 
           // Create button
-          SizedBox(width: double.infinity, child: FilledButton.icon(
+          AppButton.primary(
+            text: 'Создать дисциплину',
+            icon: Icons.add,
             onPressed: () {
               if (nameCtrl.text.trim().isEmpty) {
                 AppSnackBar.error(context, 'Введите название дисциплины');
@@ -627,9 +620,7 @@ class DisciplinesScreen extends ConsumerWidget {
               Navigator.of(ctx, rootNavigator: true).pop();
               AppSnackBar.success(context, '${nameCtrl.text.trim()} добавлена');
             },
-            icon: const Icon(Icons.add),
-            label: const Text('Создать дисциплину'),
-          )),
+          ),
         ]);
       },
     ));
@@ -638,21 +629,16 @@ class DisciplinesScreen extends ConsumerWidget {
   // ─── Delete Discipline ───
 
   void _confirmDeleteDiscipline(BuildContext context, WidgetRef ref, DisciplineConfig d) {
-    final cs = Theme.of(context).colorScheme;
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: const Text('Удалить дисциплину?'),
       content: Text('${d.name} (${d.totalDistanceKm.toStringAsFixed(1)} км) будет удалена.'),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: cs.error),
-          onPressed: () {
-            ref.read(eventConfigProvider.notifier).removeDiscipline(d.id);
-            Navigator.pop(ctx);
-            AppSnackBar.success(context, '${d.name} удалена');
-          },
-          child: const Text('Удалить'),
-        ),
+        AppButton.text(text: 'Отмена', onPressed: () => Navigator.pop(ctx)),
+        AppButton.small(text: 'Удалить', onPressed: () {
+          ref.read(eventConfigProvider.notifier).removeDiscipline(d.id);
+          Navigator.pop(ctx);
+          AppSnackBar.success(context, '${d.name} удалена');
+        }),
       ],
     ));
   }
