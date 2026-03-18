@@ -67,12 +67,9 @@ class _MandateScreenState extends ConsumerState<MandateScreen> {
         ),
 
         // ─── Поиск + фильтры ───
-        Padding(padding: const EdgeInsets.all(8), child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Поиск по BIB, ФИО, собаке...',
-            prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
+        Padding(padding: const EdgeInsets.all(8), child: AppTextField(
+          label: 'Поиск по BIB, ФИО, собаке...',
+          prefixIcon: Icons.search,
           onChanged: (v) => setState(() => _searchQuery = v),
         )),
         Padding(
@@ -171,23 +168,22 @@ class _MandateScreenState extends ConsumerState<MandateScreen> {
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(children: [
-              Expanded(child: FilledButton.icon(
+              Expanded(child: AppButton.primary(
+                text: 'Допустить',
+                icon: Icons.check,
                 onPressed: () {
                   ref.read(participantsProvider.notifier).setMandateStatus(p.id, MandateStatus.passed);
                   AppSnackBar.success(context, '${p.name} — допущен');
                 },
-                icon: const Icon(Icons.check),
-                label: const Text('Допустить'),
               )),
               const SizedBox(width: 8),
-              Expanded(child: OutlinedButton.icon(
-                style: OutlinedButton.styleFrom(foregroundColor: cs.error),
+              Expanded(child: AppButton.smallDanger(
+                text: 'Отказать',
+                icon: Icons.close,
                 onPressed: () {
                   ref.read(participantsProvider.notifier).setMandateStatus(p.id, MandateStatus.failed);
                   AppSnackBar.error(context, '${p.name} — не допущен');
                 },
-                icon: const Icon(Icons.close),
-                label: const Text('Отказать'),
               )),
             ]),
           ),

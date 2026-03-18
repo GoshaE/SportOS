@@ -101,10 +101,9 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
                 )),
               ]),
               const SizedBox(height: 8),
-              SizedBox(width: double.infinity, child: FilledButton.icon(
-                icon: const Icon(Icons.auto_fix_high, size: 16),
-                label: Text(_selectedDisc == 'Все' ? 'Авто-назначение всем' : 'Авто-назначение: $_selectedDisc'),
-                style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
+              AppButton.primary(
+                text: _selectedDisc == 'Все' ? 'Авто-назначение всем' : 'Авто-назначение: $_selectedDisc',
+                icon: Icons.auto_fix_high,
                 onPressed: () {
                   final toAssign = filtered.where((p) => p.bib.isEmpty).toList();
                   if (toAssign.isEmpty) { AppSnackBar.info(context, 'Нет участников без номеров'); return; }
@@ -119,14 +118,14 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
                   }
                   AppSnackBar.success(context, 'Выдано автоматически $count номеров');
                 },
-              )),
+              ),
             ]),
           ),
         ])),
 
         // ─── Поиск + фильтры ───
         Container(padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), child: Column(children: [
-          TextField(decoration: InputDecoration(hintText: 'Поиск участника или клуба...', prefixIcon: const Icon(Icons.search), border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), contentPadding: EdgeInsets.zero),
+          AppTextField(label: 'Поиск участника или клуба...', prefixIcon: Icons.search,
             onChanged: (v) => setState(() => _searchQuery = v)),
           const SizedBox(height: 12),
           SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
@@ -170,10 +169,9 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
                           icon: Icon(Icons.edit, color: cs.onSurfaceVariant), tooltip: 'Сменить номер',
                           onPressed: () => _changeBib(context, cs, p, usedBibs),
                         )
-                      : FilledButton(
-                          style: FilledButton.styleFrom(backgroundColor: cs.tertiary, visualDensity: VisualDensity.compact),
+                      : AppButton.small(
+                          text: 'Выдать',
                           onPressed: () => _showAssignBib(context, cs, p, freeBibNumbers()),
-                          child: const Text('Выдать'),
                         ),
                   ])),
                 );
@@ -228,22 +226,22 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
     final ctrl = TextEditingController(text: p.bib);
 
     AppDialog.custom(context, title: 'Редактировать BIB — ${p.name}', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: ctrl, decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+      AppTextField(label: 'BIB', controller: ctrl, keyboardType: TextInputType.number),
       const SizedBox(height: 12),
       Text('Свободные: ...', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
     ]), actions: [
-      TextButton(onPressed: () {
+      AppButton.text(text: 'Сбросить', onPressed: () {
         ref.read(participantsProvider.notifier).update(p.id, (p) => p.copyWith(bib: ''));
         Navigator.of(context, rootNavigator: true).pop();
-      }, child: Text('Сбросить', style: TextStyle(color: cs.error))),
-      TextButton(onPressed: () => Navigator.of(context, rootNavigator: true).pop(), child: const Text('Отмена')),
-      FilledButton(onPressed: () {
+      }),
+      AppButton.text(text: 'Отмена', onPressed: () => Navigator.of(context, rootNavigator: true).pop()),
+      AppButton.small(text: 'Сохранить', onPressed: () {
         final newBib = ctrl.text.padLeft(2, '0');
         if (usedBibs.contains(newBib) && newBib != p.bib) { AppSnackBar.error(context, 'BIB $newBib уже занят!'); return; }
         ref.read(participantsProvider.notifier).update(p.id, (p) => p.copyWith(bib: newBib));
         Navigator.of(context, rootNavigator: true).pop();
         AppSnackBar.success(context, 'BIB сохранён: $newBib');
-      }, child: const Text('Сохранить')),
+      }),
     ]);
   }
 }

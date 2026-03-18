@@ -65,13 +65,9 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
         ),
 
         // ─── Search + filters ───
-        Padding(padding: const EdgeInsets.all(8), child: TextField(
-          decoration: InputDecoration(
-            hintText: 'Поиск по кличке, ФИО, BIB...',
-            prefixIcon: const Icon(Icons.search),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-            isDense: true,
-          ),
+        Padding(padding: const EdgeInsets.all(8), child: AppTextField(
+          label: 'Поиск по кличке, ФИО, BIB...',
+          prefixIcon: Icons.search,
           onChanged: (v) => setState(() => _searchQuery = v),
         )),
         SingleChildScrollView(scrollDirection: Axis.horizontal,
@@ -194,23 +190,22 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
       title: '🐕 ${p.dogName ?? "Собака"} — осмотр',
       initialHeight: 0.65,
       actions: [
-        FilledButton.icon(
+        AppButton.primary(
+          text: 'Допустить',
+          icon: Icons.check,
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             ref.read(participantsProvider.notifier).setVetStatus(p.id, VetStatus.passed);
             AppSnackBar.success(context, '${p.dogName ?? p.name} — допущен к участию');
           },
-          icon: const Icon(Icons.check),
-          label: const Text('Допустить'),
         ),
-        OutlinedButton.icon(
-          style: OutlinedButton.styleFrom(foregroundColor: cs.error),
+        AppButton.smallDanger(
+          text: 'Не допустить',
+          icon: Icons.close,
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             _showRejectDialog(context, cs, p);
           },
-          icon: const Icon(Icons.close),
-          label: const Text('Не допустить'),
         ),
       ],
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -350,12 +345,8 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
         )),
 
         const SizedBox(height: 8),
-        TextField(
-          decoration: InputDecoration(
-            labelText: 'Комментарий (необязательно)',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-            isDense: true,
-          ),
+        AppTextField(
+          label: 'Комментарий (необязательно)',
           maxLines: 2,
         ),
       ]),

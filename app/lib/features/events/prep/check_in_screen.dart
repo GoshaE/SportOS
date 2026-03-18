@@ -74,10 +74,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
         ])),
 
         // ─── Поиск ───
-        Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: TextField(decoration: InputDecoration(
-          hintText: 'Поиск по BIB, ФИО, кличке...', prefixIcon: const Icon(Icons.search),
-          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)), isDense: true,
-        ), onChanged: (v) => setState(() => _searchQuery = v))),
+        Padding(padding: const EdgeInsets.symmetric(horizontal: 8), child: AppTextField(label: 'Поиск по BIB, ФИО, кличке...', prefixIcon: Icons.search,
+          onChanged: (v) => setState(() => _searchQuery = v))),
         const SizedBox(height: 4),
 
         // ─── Список ───
@@ -129,10 +127,9 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     ]),
                     trailing: checked
                       ? Icon(Icons.check, color: cs.primary, size: 20)
-                      : SizedBox(width: 70, height: 32, child: FilledButton(
-                          style: FilledButton.styleFrom(padding: EdgeInsets.zero, textStyle: const TextStyle(fontSize: 12)),
+                      : SizedBox(width: 70, height: 32, child: AppButton.small(
+                          text: 'Чек-ин',
                           onPressed: () => ref.read(participantsProvider.notifier).toggleCheckIn(p.id),
-                          child: const Text('Чек-ин'),
                         )),
                   ),
                 );

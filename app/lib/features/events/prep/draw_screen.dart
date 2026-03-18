@@ -264,25 +264,27 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
       title: '${entry.name} — BIB ${entry.bib}',
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         Row(children: [
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'Позиция',
             controller: posCtrl,
-            decoration: const InputDecoration(labelText: 'Позиция', border: OutlineInputBorder(), isDense: true),
             keyboardType: TextInputType.number,
           )),
           const SizedBox(width: 12),
-          Expanded(child: TextField(
+          Expanded(child: AppTextField(
+            label: 'BIB',
             controller: bibCtrl,
-            decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder(), isDense: true),
             keyboardType: TextInputType.number,
           )),
         ]),
         const SizedBox(height: 12),
-        TextField(
+        AppTextField(
+          label: 'Время старта',
           controller: timeCtrl,
-          decoration: const InputDecoration(labelText: 'Время старта', border: OutlineInputBorder(), isDense: true),
         ),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: 'Сохранить',
+          icon: Icons.save,
           onPressed: () {
             Navigator.pop(context);
             final entries = List<DrawEntry>.from(result.entries);
@@ -294,9 +296,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
             entries.sort((a, b) => a.position.compareTo(b.position));
             setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
           },
-          icon: const Icon(Icons.save),
-          label: const Text('Сохранить'),
-        )),
+        ),
         const SizedBox(height: 8),
       ]),
     );
@@ -613,16 +613,16 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
       SafeArea(child: Padding(
         padding: const EdgeInsets.all(8),
         child: Row(children: [
-          Expanded(child: OutlinedButton.icon(
+          Expanded(child: AppButton.secondary(
+            text: 'Провести',
+            icon: Icons.refresh,
             onPressed: entries.isEmpty ? null : () => _reshuffle(disc),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Провести'),
           )),
           const SizedBox(width: 8),
-          Expanded(child: FilledButton.icon(
+          Expanded(child: AppButton.primary(
+            text: isApproved ? 'Утверждено' : 'Утвердить',
+            icon: isApproved ? Icons.check : Icons.gavel,
             onPressed: entries.isEmpty || isApproved ? null : () => _approve(disc),
-            icon: Icon(isApproved ? Icons.check : Icons.gavel),
-            label: Text(isApproved ? 'Утверждено' : 'Утвердить'),
           )),
         ]),
       )),
@@ -702,20 +702,20 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   void _editGroupBuffer(BuildContext context, StartGroup group) {
     final ctrl = TextEditingController(text: '${group.bufferMinutes}');
     AppBottomSheet.show(context, title: 'Буфер перед «${group.name}»', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(
+      AppTextField(
+        label: 'Минуты',
         controller: ctrl,
-        decoration: const InputDecoration(labelText: 'Минуты', border: OutlineInputBorder(), suffixText: 'мин'),
         keyboardType: TextInputType.number,
         autofocus: true,
       ),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           setState(() => group.bufferMinutes = (int.tryParse(ctrl.text) ?? 5).clamp(0, 120));
           Navigator.pop(context);
         },
-        child: const Text('Сохранить'),
-      )),
+      ),
     ]));
   }
 

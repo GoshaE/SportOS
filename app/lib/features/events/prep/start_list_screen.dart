@@ -88,11 +88,13 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
     if (disc == null) return;
 
     AppBottomSheet.show(context, title: 'Добавить спортсмена', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder())),
+      AppTextField(label: 'ФИО *', controller: nameCtrl),
       const SizedBox(height: 12),
-      TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Кличка собаки', border: OutlineInputBorder())),
+      AppTextField(label: 'Кличка собаки', controller: dogCtrl),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton.icon(
+      AppButton.primary(
+        text: 'Добавить',
+        icon: Icons.add,
         onPressed: () {
           if (nameCtrl.text.isEmpty) { AppSnackBar.error(context, 'Заполните ФИО'); return; }
           final lastPos = list.isEmpty ? 0 : list.last['pos'] as int;
@@ -130,9 +132,7 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
           Navigator.pop(context);
           AppSnackBar.success(context, '${nameCtrl.text} (BIB $nextBib) добавлен');
         },
-        icon: const Icon(Icons.add),
-        label: const Text('Добавить'),
-      )),
+      ),
       const SizedBox(height: 8),
     ]));
   }
@@ -145,13 +145,15 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
     final bibCtrl = TextEditingController(text: a['bib']);
 
     AppBottomSheet.show(context, title: '${a['name']} (BIB ${a['bib']})', child: Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: posCtrl, decoration: const InputDecoration(labelText: 'Позиция', border: OutlineInputBorder()), keyboardType: TextInputType.number),
+      AppTextField(label: 'Позиция', controller: posCtrl, keyboardType: TextInputType.number),
       const SizedBox(height: 12),
-      TextField(controller: bibCtrl, decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder())),
+      AppTextField(label: 'BIB', controller: bibCtrl),
       const SizedBox(height: 12),
-      TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Время старта', border: OutlineInputBorder())),
+      AppTextField(label: 'Время старта', controller: timeCtrl),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton.icon(
+      AppButton.primary(
+        text: 'Сохранить',
+        icon: Icons.save,
         onPressed: () {
           setState(() {
             a['pos'] = int.tryParse(posCtrl.text) ?? a['pos'];
@@ -162,9 +164,7 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
           Navigator.pop(context);
           AppSnackBar.success(context, 'Стартовый лист скорректирован');
         },
-        icon: const Icon(Icons.save),
-        label: const Text('Сохранить'),
-      )),
+      ),
       const SizedBox(height: 8),
     ]));
   }
@@ -232,7 +232,7 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
               const SizedBox(width: 8),
               Text('Стартовый лист опубликован', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: const Color(0xFF2E7D32))),
               const Spacer(),
-              TextButton(onPressed: () => setState(() => _published = false), child: const Text('Снять', style: TextStyle(fontSize: 11))),
+              AppButton.text(text: 'Снять', onPressed: () => setState(() => _published = false)),
             ]),
           ),
 
