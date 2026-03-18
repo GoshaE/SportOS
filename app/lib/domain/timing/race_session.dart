@@ -83,6 +83,15 @@ class RaceSession {
   List<StartEntry> get startedAthletes =>
       startList.all.where((e) => e.status == AthleteStatus.started).toList();
 
+  /// Все «ушедшие на трассу» — started + finished + dnf + dsq.
+  /// Для Финиша и Маршала: нужно видеть всех кто покинул старт.
+  List<StartEntry> get onCourseAthletes =>
+      startList.all.where((e) =>
+          e.status == AthleteStatus.started ||
+          e.status == AthleteStatus.finished ||
+          e.status == AthleteStatus.dnf ||
+          e.status == AthleteStatus.dsq).toList();
+
   /// Есть ли атлеты в стартовом листе.
   bool get hasAthletes => startList.all.isNotEmpty;
 }
@@ -111,6 +120,7 @@ class RaceSessionState {
   GapCalculator get gap => session.gap;
   ResultCalculator get results => session.results;
   List<StartEntry> get startedAthletes => session.startedAthletes;
+  List<StartEntry> get onCourseAthletes => session.onCourseAthletes;
   bool get hasAthletes => session.hasAthletes;
   List<Penalty> get penalties => session.penalties;
   List<RaceResult> calculateResults() => session.calculateResults();
@@ -219,6 +229,26 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
     _notify();
   }
 
+  void markDnf(String bib) {
+    _session?.startList.markDnf(bib);
+    _notify();
+  }
+
+  void undoDnf(String bib) {
+    _session?.startList.undoDnf(bib);
+    _notify();
+  }
+
+  void markDsq(String bib) {
+    _session?.startList.markDsq(bib);
+    _notify();
+  }
+
+  void markFinished(String bib) {
+    _session?.startList.markFinished(bib);
+    _notify();
+  }
+
   // ─── Athlete Management ───────────────────────────────────────
 
   void addAthlete({
@@ -252,7 +282,20 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
   }
 
   bool assignBib(String markId, String bib, {String? entryId}) {
-    final result = _session?.marking.assignBib(markId, bib, entryId: entryId) ?? false;
+    final s = _session;
+    if (s == null) return false;
+    final result = s.marking.assignBib(markId, bib, entryId: entryId);
+
+    // Авто-финиш: если у атлета набралось достаточно финишных отсечек
+    if (result) {
+      final finishMarks = s.marking.officialMarksForBib(bib)
+          .where((m) => m.type == MarkType.finish)
+          .length;
+      if (finishMarks >= s.config.laps) {
+        s.startList.markFinished(bib);
+      }
+    }
+
     _notify();
     return result;
   }

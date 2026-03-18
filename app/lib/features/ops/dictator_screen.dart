@@ -136,7 +136,9 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
 
     final results = session.calculateResults();
     final finishedCount = session.marking.finishedCount;
-    final totalAthletes = session.startedAthletes.length;
+    final courseAthletes = session.onCourseAthletes;
+    final onTrackCount = session.startedAthletes.length;  // только реально на трассе
+    final totalAthletes = courseAthletes.length;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -273,11 +275,11 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
                   Row(children: [
                     Icon(Icons.timeline, color: cs.tertiary, size: 24),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('На трассе: ${totalAthletes - finishedCount}', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
+                    Expanded(child: Text('На трассе: $onTrackCount', style: theme.textTheme.labelMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
                   ]),
                   const SizedBox(height: 8),
                   Text('Ожидается финиш', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
-                  Text('${totalAthletes - finishedCount} участников', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                  Text('$onTrackCount участников', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
                 ],
               ),
             ),

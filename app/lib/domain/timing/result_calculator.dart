@@ -87,7 +87,6 @@ class ResultCalculator {
     final finished = results.where((r) => r.status == AthleteStatus.finished).toList();
     final onCourse = results.where((r) =>
         r.status == AthleteStatus.started ||
-        r.status == AthleteStatus.onCourse ||
         r.status == AthleteStatus.waiting ||
         r.status == AthleteStatus.current).toList();
     final dnf = results.where((r) => r.status == AthleteStatus.dnf).toList();

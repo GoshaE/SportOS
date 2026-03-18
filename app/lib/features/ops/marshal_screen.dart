@@ -130,22 +130,23 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
     final cs = Theme.of(context).colorScheme;
     AppBottomSheet.show(
       context,
-      title: 'Запрос DNF — BIB $bib',
+      title: 'DNF — BIB $bib',
       initialHeight: 0.5,
       actions: [
         AppButton.primary(
-          text: 'Запросить DNF',
+          text: 'Подтвердить DNF',
           backgroundColor: cs.error,
           onPressed: () {
+            ref.read(raceSessionProvider.notifier).markDnf(bib);
             Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.info(context, 'DNF запрос BIB $bib → ожидает подтверждения');
+            AppSnackBar.error(context, 'BIB $bib — DNF');
           },
         ),
       ],
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 12),
-        Text('Этап 1: Маршал запрашивает DNF\nЭтап 2: Главный судья подтверждает или отклоняет', style: TextStyle(color: cs.onSurfaceVariant)),
+        Text('Атлет будет отмечен как сошедший с дистанции (DNF).', style: TextStyle(color: cs.onSurfaceVariant)),
         const SizedBox(height: 16),
         AppCard(
           padding: const EdgeInsets.all(12),
@@ -230,16 +231,19 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
         body: const Center(child: Text('Нет активной сессии.')),
       );
     }
-    final athletes = session.startedAthletes;
+    final athletes = session.onCourseAthletes;
     final passedCount = session.marking.assigned.where((m) => m.type == MarkType.checkpoint).length;
 
-    // Сортировка: непрошедшие первые
+    // Сортировка: активные первые, потом прошедшие, потом DNF/finished
     final sorted = List<StartEntry>.from(athletes)
       ..sort((a, b) {
-        final ap = _isMarked(a.bib);
-        final bp = _isMarked(b.bib);
-        if (ap == bp) return 0;
-        return ap ? 1 : -1;
+        int priority(StartEntry e) {
+          if (e.status == AthleteStatus.dnf || e.status == AthleteStatus.dsq) return 3;
+          if (e.status == AthleteStatus.finished) return 2;
+          if (_isMarked(e.bib)) return 1;
+          return 0;
+        }
+        return priority(a).compareTo(priority(b));
       });
 
     return Scaffold(
@@ -313,29 +317,50 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
             mainAxisSpacing: 12,
             crossAxisSpacing: 12,
             children: sorted.map((a) {
+              final isDnf = a.status == AthleteStatus.dnf;
+              final isDsq = a.status == AthleteStatus.dsq;
+              final isFinished = a.status == AthleteStatus.finished;
+              final isInactive = isDnf || isDsq || isFinished;
               final passed = _isMarked(a.bib);
-              String? timeStr;
-              if (passed) {
+
+              String? lapInfo;
+              BibState bibState;
+
+              if (isDsq) {
+                lapInfo = 'DSQ';
+                bibState = BibState.dns;
+              } else if (isDnf) {
+                lapInfo = 'DNF';
+                bibState = BibState.dns;
+              } else if (isFinished) {
+                lapInfo = 'Финишировал';
+                bibState = BibState.finished;
+              } else if (passed) {
                 final bibMarks = session.marking.marksForBib(a.bib);
                 if (bibMarks.isNotEmpty) {
-                  timeStr = TimeFormatter.hms(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
+                  lapInfo = TimeFormatter.hms(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
                 }
+                bibState = BibState.assigned;
+              } else {
+                lapInfo = a.categoryName;
+                bibState = BibState.available;
               }
 
               return GestureDetector(
-                onLongPress: () => AppBottomSheet.show(context,
+                onLongPress: isInactive ? null : () => AppBottomSheet.show(context,
                   title: 'BIB ${a.bib} — ${a.name}',
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
                     ListTile(leading: Icon(Icons.gavel, color: cs.tertiary), title: const Text('Зафиксировать нарушение'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showViolation(a.bib, a.name); }),
-                    ListTile(leading: Icon(Icons.block, color: cs.error), title: const Text('Запрос DNF'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showDnfRequest(a.bib, a.name); }),
+                    if (a.status == AthleteStatus.started)
+                      ListTile(leading: Icon(Icons.block, color: cs.error), title: const Text('DNF — сошёл'), onTap: () { Navigator.of(context, rootNavigator: true).pop(); _showDnfRequest(a.bib, a.name); }),
                   ]),
                 ),
                 child: AppBibTile(
                   bib: a.bib,
                   name: a.name,
-                  lapInfo: passed ? timeStr : a.categoryName,
-                  state: passed ? BibState.finished : BibState.available,
-                  onTap: () => _tryTogglePassed(a.bib),
+                  lapInfo: lapInfo,
+                  state: bibState,
+                  onTap: isInactive ? null : () => _tryTogglePassed(a.bib),
                 ),
               );
             }).toList(),

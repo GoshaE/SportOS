@@ -79,17 +79,35 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             childAspectRatio: 1.25,
             mainAxisSpacing: 10,
             crossAxisSpacing: 10,
-            children: session.startedAthletes.map((a) {
+            children: session.onCourseAthletes.map((a) {
               final bibMarks = session.marking.marksForBib(a.bib).where((m) => m.type == MarkType.finish && m.owner == MarkOwner.finishJudge).toList();
-              final isFinished = bibMarks.isNotEmpty;
+              final isFinished = a.status == AthleteStatus.finished || bibMarks.isNotEmpty;
+              final isDnf = a.status == AthleteStatus.dnf;
+              final isDsq = a.status == AthleteStatus.dsq;
+
+              final String lapInfo;
+              final BibState bibState;
+
+              if (isDsq) {
+                lapInfo = 'DSQ';
+                bibState = BibState.dns;
+              } else if (isDnf) {
+                lapInfo = 'DNF';
+                bibState = BibState.dns;
+              } else if (isFinished) {
+                lapInfo = TimeFormatter.compact(_elapsedCalc.netTime(a, bibMarks.last.correctedTime));
+                bibState = BibState.finished;
+              } else {
+                lapInfo = 'На трассе';
+                bibState = BibState.available;
+              }
+
               return AppBibTile(
                 bib: a.bib,
                 name: a.name,
-                lapInfo: isFinished
-                    ? TimeFormatter.compact(_elapsedCalc.netTime(a, bibMarks.last.correctedTime))
-                    : 'На трассе',
-                state: isFinished ? BibState.finished : BibState.available,
-                onTap: isFinished ? null : () {
+                lapInfo: lapInfo,
+                state: bibState,
+                onTap: (isFinished || isDnf || isDsq) ? null : () {
                   ref.read(raceSessionProvider.notifier).assignBib(markId, a.bib, entryId: a.entryId);
                   Navigator.of(context, rootNavigator: true).pop();
                   AppSnackBar.success(context, 'BIB ${a.bib} назначен');
@@ -277,8 +295,8 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
     }
     final marks = session.marking.marksBy(MarkOwner.finishJudge);
     final finishCount = session.marking.finishedCount;
-    final startedAthletes = session.startedAthletes;
-    final totalAthletes = startedAthletes.length;
+    final courseAthletes = session.onCourseAthletes;
+    final totalAthletes = courseAthletes.length;
 
     return Scaffold(
       appBar: AppAppBar(

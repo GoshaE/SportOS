@@ -276,7 +276,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
   Widget _buildRaceTab(ThemeData theme, ColorScheme cs) {
     final session = ref.watch(raceSessionProvider);
     if (session == null) return const Center(child: Text('Нет сессии'));
-    final started = session.startedAthletes;
+    final courseAthletes = session.onCourseAthletes;
 
     return Column(children: [
       // Заголовок
@@ -330,14 +330,14 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
 
       // AppProtocolTable
       Expanded(
-        child: started.isEmpty
+        child: courseAthletes.isEmpty
             ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
                 Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
                 const SizedBox(height: 8),
                 Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
               ]))
             : AppProtocolTable(
-                itemCount: started.length,
+                itemCount: courseAthletes.length,
                 forceTableView: _forceTableView,
                 headerRow: AppProtocolRow(
                   isHeader: true,
@@ -350,7 +350,10 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   penalty: '—',
                 ),
                 itemBuilder: (ctx, i, isCard) {
-                  final a = started[i];
+                  final a = courseAthletes[i];
+                  final isDnf = a.status == AthleteStatus.dnf;
+                  final isDsq = a.status == AthleteStatus.dsq;
+
                   final allBibMarks = session.marking.officialMarksForBib(a.bib);
                   final finishMarks = allBibMarks.where((m) => m.type == MarkType.finish).toList();
                   final checkpointMarks = allBibMarks.where((m) => m.type == MarkType.checkpoint).toList();
@@ -359,14 +362,27 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   final splitText = checkpointMarks.isNotEmpty
                       ? TimeFormatter.compact(_elapsedCalc.netTime(a, checkpointMarks.first.correctedTime))
                       : '—';
-                  final finishText = hasFinish
-                      ? TimeFormatter.compact(_elapsedCalc.netTime(a, finishMarks.last.correctedTime))
-                      : '...';
+
+                  final String finishText;
+                  final String? placeText;
+                  if (isDsq) {
+                    finishText = 'DSQ';
+                    placeText = 'DSQ';
+                  } else if (isDnf) {
+                    finishText = 'DNF';
+                    placeText = 'DNF';
+                  } else if (hasFinish) {
+                    finishText = TimeFormatter.compact(_elapsedCalc.netTime(a, finishMarks.last.correctedTime));
+                    placeText = null;
+                  } else {
+                    finishText = '...';
+                    placeText = 'LIVE';
+                  }
 
                   return AppProtocolRow(
                     isCardView: isCard,
-                    place: hasFinish ? i + 1 : null,
-                    placeText: hasFinish ? null : 'LIVE',
+                    place: hasFinish && !isDnf && !isDsq ? i + 1 : null,
+                    placeText: placeText,
                     bib: a.bib,
                     name: a.name,
                     cat: a.categoryName ?? '—',

@@ -88,6 +88,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     int onTrackCount = 0;
     int dnfCount = 0;
     int dnsCount = 0;
+    int dsqCount = 0;
     int waitingCount = 0;
 
     for (final a in session.startList.all) {
@@ -97,9 +98,11 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
 
       if (a.status == AthleteStatus.dns) {
         dnsCount++;
+      } else if (a.status == AthleteStatus.dsq) {
+        dsqCount++;
       } else if (a.status == AthleteStatus.dnf) {
         dnfCount++;
-      } else if (hasFinish) {
+      } else if (a.status == AthleteStatus.finished || hasFinish) {
         finishedCount++;
       } else if (a.status == AthleteStatus.started) {
         onTrackCount++;
@@ -168,18 +171,24 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
           const SizedBox(height: 8),
           // Статистика (динамическая)
           Row(children: [
-            _statPill(cs, theme, '$finishedCount', 'Финиш', cs.primary),
-            const SizedBox(width: 6),
-            _statPill(cs, theme, '$onTrackCount', 'На трассе', cs.tertiary),
-            const SizedBox(width: 6),
-            if (waitingCount > 0) ...[
-              _statPill(cs, theme, '$waitingCount', 'Ожидает', cs.outline),
+            Expanded(child: SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
+              _statPill(cs, theme, '$finishedCount', 'Финиш', cs.primary),
               const SizedBox(width: 6),
-            ],
-            _statPill(cs, theme, '$dnfCount', 'DNF', cs.error),
-            const SizedBox(width: 6),
-            _statPill(cs, theme, '$dnsCount', 'DNS', cs.onSurfaceVariant),
-            const Spacer(),
+              _statPill(cs, theme, '$onTrackCount', 'На трассе', cs.tertiary),
+              const SizedBox(width: 6),
+              if (waitingCount > 0) ...[
+                _statPill(cs, theme, '$waitingCount', 'Ожидает', cs.outline),
+                const SizedBox(width: 6),
+              ],
+              _statPill(cs, theme, '$dnfCount', 'DNF', cs.error),
+              const SizedBox(width: 6),
+              if (dsqCount > 0) ...[
+                _statPill(cs, theme, '$dsqCount', 'DSQ', cs.error),
+                const SizedBox(width: 6),
+              ],
+              _statPill(cs, theme, '$dnsCount', 'DNS', cs.onSurfaceVariant),
+            ]))),
+            const SizedBox(width: 8),
             // Splits toggle
             GestureDetector(
               onTap: () => setState(() => _showSplits = !_showSplits),

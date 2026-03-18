@@ -40,7 +40,7 @@ enum MarkOwner {
 }
 
 /// Статус атлета на гонке.
-enum AthleteStatus { waiting, current, started, onCourse, finished, dns, dnf, dsq }
+enum AthleteStatus { waiting, current, started, finished, dns, dnf, dsq }
 
 // ─────────────────────────────────────────────────────────────────
 // DISCIPLINE CONFIG

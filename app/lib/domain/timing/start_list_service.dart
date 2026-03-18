@@ -207,6 +207,40 @@ class StartListService {
     entry.actualStartTime = actualTime ?? DateTime.now();
   }
 
+  /// DNF — сход с дистанции (только для started атлетов).
+  void markDnf(String bib) {
+    final entry = _find(bib);
+    if (entry == null) return;
+    if (entry.status != AthleteStatus.started) return; // можно снять только на трассе
+
+    entry.status = AthleteStatus.dnf;
+  }
+
+  /// Отменить DNF → вернуть на трассу.
+  void undoDnf(String bib) {
+    final entry = _find(bib);
+    if (entry == null || entry.status != AthleteStatus.dnf) return;
+
+    entry.status = AthleteStatus.started;
+  }
+
+  /// DSQ — дисквалификация (можно для любого started/finished/dnf).
+  void markDsq(String bib) {
+    final entry = _find(bib);
+    if (entry == null) return;
+
+    entry.status = AthleteStatus.dsq;
+  }
+
+  /// Финишировал — все круги пройдены.
+  void markFinished(String bib) {
+    final entry = _find(bib);
+    if (entry == null) return;
+    if (entry.status != AthleteStatus.started) return;
+
+    entry.status = AthleteStatus.finished;
+  }
+
   /// Эстафета: передача этапа.
   /// `nextBib` стартует в момент, когда `prevBib` финишировал.
   void relayHandoff(String nextBib, DateTime handoffTime) {
