@@ -41,22 +41,21 @@ class AppTheme {
         margin: EdgeInsets.zero,
       ),
 
-      // ── Inputs: Clean, minimal borders ──
+      // ── Inputs: Apple-inspired, clean ──
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: cs.surfaceContainerLow,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 14),
+        filled: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 15),
         labelStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        isDense: true,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        isDense: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -199,22 +198,21 @@ class AppTheme {
         margin: EdgeInsets.zero,
       ),
 
-      // ── Inputs: Dark clean ──
+      // ── Inputs: Apple-inspired, dark clean ──
       inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 14),
+        filled: false,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 15),
         labelStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        isDense: true,
+        floatingLabelBehavior: FloatingLabelBehavior.never,
+        isDense: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),

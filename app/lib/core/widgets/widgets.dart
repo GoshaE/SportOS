@@ -17,6 +17,7 @@ export 'app_snack_bar.dart';
 export 'app_tab_switcher.dart';
 export 'app_pill_tab_bar.dart';
 export 'app_text_field.dart';
+export 'app_select.dart';
 export 'status_badge.dart';
 export 'app_shimmer.dart';
 export 'app_event_card_skeleton.dart';
