@@ -113,14 +113,9 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         // ── Search ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: 'Поиск по имени...',
-              prefixIcon: const Icon(Icons.search, size: 20),
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              isDense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            ),
+          child: AppTextField(
+            label: 'Поиск по имени...',
+            prefixIcon: Icons.search,
             onChanged: (v) => setState(() => _search = v),
           ),
         ),
@@ -397,21 +392,16 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
 
   // ─── Delete confirmation ───
   void _confirmDelete(BuildContext context, Participant p) {
-    final cs = Theme.of(context).colorScheme;
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: const Text('Удалить участника?'),
       content: Text('${p.name} будет удалён из списка.'),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: cs.error),
-          onPressed: () {
-            ref.read(participantsProvider.notifier).remove(p.id);
-            Navigator.pop(ctx);
-            AppSnackBar.success(context, '${p.name} удалён');
-          },
-          child: const Text('Удалить'),
-        ),
+        AppButton.text(text: 'Отмена', onPressed: () => Navigator.pop(ctx)),
+        AppButton.small(text: 'Удалить', onPressed: () {
+          ref.read(participantsProvider.notifier).remove(p.id);
+          Navigator.pop(ctx);
+          AppSnackBar.success(context, '${p.name} удалён');
+        }),
       ],
     ));
   }
@@ -429,7 +419,8 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
     final cs = Theme.of(context).colorScheme;
 
     AppBottomSheet.show(context, title: 'Редактировать', actions: [
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           if (nameCtrl.text.trim().isEmpty) {
             AppSnackBar.error(context, 'ФИО не может быть пустым');
@@ -448,8 +439,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
           Navigator.of(context, rootNavigator: true).pop();
           AppSnackBar.success(context, '${nameCtrl.text.trim()} обновлён');
         },
-        child: const Text('Сохранить', style: TextStyle(fontSize: 16)),
-      )),
+      ),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
       Row(children: [
         Expanded(child: AppTextField(label: 'ФИО *', controller: nameCtrl)),
@@ -518,7 +508,8 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
     final cs = Theme.of(context).colorScheme;
 
     AppBottomSheet.show(context, title: 'Добавить участника', actions: [
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Добавить',
         onPressed: () {
           if (nameCtrl.text.trim().isEmpty) {
             AppSnackBar.error(context, 'Введите ФИО');
@@ -546,8 +537,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
           Navigator.of(context, rootNavigator: true).pop();
           AppSnackBar.success(context, '${nameCtrl.text.trim()} добавлен');
         },
-        child: const Text('Добавить', style: TextStyle(fontSize: 16)),
-      )),
+      ),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
       AppTextField(label: 'ФИО *', controller: nameCtrl),
       const SizedBox(height: 12),
@@ -744,23 +734,18 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
 
   // ─── Bulk: Delete ───
   void _showBulkDelete(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     showDialog(context: context, builder: (ctx) => AlertDialog(
       title: const Text('Удалить участников?'),
       content: Text('Будет удалено ${_selected.length} участников. Это действие необратимо.'),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Отмена')),
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: cs.error),
-          onPressed: () {
-            final count = _selected.length;
-            ref.read(participantsProvider.notifier).bulkRemove(_selected);
-            Navigator.pop(ctx);
-            AppSnackBar.success(context, 'Удалено $count участников');
-            _exitSelectMode();
-          },
-          child: const Text('Удалить'),
-        ),
+        AppButton.text(text: 'Отмена', onPressed: () => Navigator.pop(ctx)),
+        AppButton.small(text: 'Удалить', onPressed: () {
+          final count = _selected.length;
+          ref.read(participantsProvider.notifier).bulkRemove(_selected);
+          Navigator.pop(ctx);
+          AppSnackBar.success(context, 'Удалено $count участников');
+          _exitSelectMode();
+        }),
       ],
     ));
   }
