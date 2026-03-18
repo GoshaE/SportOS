@@ -472,9 +472,9 @@ class _SeriesScreenState extends State<SeriesScreen> {
             AppCard(
               padding: const EdgeInsets.all(16),
               children: [
-                const TextField(decoration: InputDecoration(labelText: 'Название серии', border: OutlineInputBorder(), isDense: true)),
+                AppTextField(label: 'Название серии', hintText: 'Кубок Сибири 2026'),
                 const SizedBox(height: 16),
-                const TextField(decoration: InputDecoration(labelText: 'Описание', border: OutlineInputBorder(), isDense: true), maxLines: 3),
+                AppTextField(label: 'Описание', hintText: 'Описание серии...', maxLines: 3),
               ],
             ),
             const SizedBox(height: 20),
@@ -486,26 +486,26 @@ class _SeriesScreenState extends State<SeriesScreen> {
             AppCard(
               padding: const EdgeInsets.all(16),
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: 'standard', 
-                  decoration: const InputDecoration(labelText: 'Система начисления', border: OutlineInputBorder(), isDense: true), 
+                AppSelect<String>(
+                  label: 'Система начисления',
+                  value: 'standard',
                   items: const [
-                    DropdownMenuItem(value: 'standard', child: Text('Стандартная (100/80/60/50...)')),
-                    DropdownMenuItem(value: 'linear', child: Text('Линейная (N-место+1)')),
-                    DropdownMenuItem(value: 'custom', child: Text('Пользовательская (Настроить)')),
-                  ], 
-                  onChanged: (_) {}
+                    SelectItem(value: 'standard', label: 'Стандартная (100/80/60/50...)'),
+                    SelectItem(value: 'linear', label: 'Линейная (N-место+1)'),
+                    SelectItem(value: 'custom', label: 'Пользовательская (Настроить)'),
+                  ],
+                  onChanged: (_) {},
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: 'best4of5', 
-                  decoration: const InputDecoration(labelText: 'Учёт результатов', border: OutlineInputBorder(), isDense: true), 
+                AppSelect<String>(
+                  label: 'Учёт результатов',
+                  value: 'best4of5',
                   items: const [
-                    DropdownMenuItem(value: 'all', child: Text('Сумма всех этапов')),
-                    DropdownMenuItem(value: 'best4of5', child: Text('Лучшие 4 из 5 (1 отбрасывается)')),
-                    DropdownMenuItem(value: 'best3of5', child: Text('Лучшие 3 из 5 (2 отбрасываются)')),
-                  ], 
-                  onChanged: (_) {}
+                    SelectItem(value: 'all', label: 'Сумма всех этапов'),
+                    SelectItem(value: 'best4of5', label: 'Лучшие 4 из 5 (1 отбрасывается)'),
+                    SelectItem(value: 'best3of5', label: 'Лучшие 3 из 5 (2 отбрасываются)'),
+                  ],
+                  onChanged: (_) {},
                 ),
               ],
             ),

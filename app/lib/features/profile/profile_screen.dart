@@ -530,43 +530,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
             AppCard(
               padding: const EdgeInsets.all(16),
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedSport,
-                  decoration: InputDecoration(
-                    labelText: 'Вид спорта',
-                    prefixIcon: const Icon(Icons.sports),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  items: available
-                      .map((s) => DropdownMenuItem(value: s, child: Text(s)))
-                      .toList(),
+                AppSelect<String>(
+                  label: 'Вид спорта',
+                  value: selectedSport,
+                  items: available.map((s) => SelectItem(value: s, label: s)).toList(),
                   onChanged: (v) => setModal(() => selectedSport = v),
                 ),
                 const SizedBox(height: 16),
-                DropdownButtonFormField<String>(
-                  initialValue: selectedRank,
-                  decoration: InputDecoration(
-                    labelText: 'Разряд / Звание',
-                    prefixIcon: const Icon(Icons.military_tech),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  items: _allRanks
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setModal(() => selectedRank = v ?? selectedRank),
+                AppSelect<String>(
+                  label: 'Разряд / Звание',
+                  value: selectedRank,
+                  items: _allRanks.map((r) => SelectItem(value: r, label: r)).toList(),
+                  onChanged: (v) => setModal(() => selectedRank = v),
                 ),
                 const SizedBox(height: 16),
                 AppTextField(
@@ -619,24 +594,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             AppCard(
               padding: const EdgeInsets.all(16),
               children: [
-                DropdownButtonFormField<String>(
-                  initialValue: selectedRank,
-                  decoration: InputDecoration(
-                    labelText: 'Разряд / Звание',
-                    prefixIcon: const Icon(Icons.military_tech),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                  ),
-                  items: _allRanks
-                      .map((r) => DropdownMenuItem(value: r, child: Text(r)))
-                      .toList(),
-                  onChanged: (v) =>
-                      setModal(() => selectedRank = v ?? selectedRank),
+                AppSelect<String>(
+                  label: 'Разряд / Звание',
+                  value: selectedRank,
+                  items: _allRanks.map((r) => SelectItem(value: r, label: r)).toList(),
+                  onChanged: (v) => setModal(() => selectedRank = v),
                 ),
                 const SizedBox(height: 16),
                 AppTextField(

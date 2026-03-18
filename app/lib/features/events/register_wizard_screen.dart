@@ -66,20 +66,20 @@ class _RegisterWizardScreenState extends State<RegisterWizardScreen> {
             title: const Text('Дисциплина'),
             isActive: _step >= 0,
             content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              DropdownButtonFormField<String>(
-                initialValue: _discipline,
-                decoration: const InputDecoration(labelText: 'Дисциплина'),
+              AppSelect<String>(
+                label: 'Дисциплина',
+                value: _discipline,
                 items: ['Скиджоринг 5км', 'Скиджоринг 10км', 'Каникросс 3км', 'Нарты 30км']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => SelectItem(value: e, label: e))
                     .toList(),
                 onChanged: (v) => setState(() => _discipline = v),
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                initialValue: 'M 25-34',
-                decoration: const InputDecoration(labelText: 'Возрастная категория'),
+              AppSelect<String>(
+                label: 'Возрастная категория',
+                value: 'M 25-34',
                 items: ['M 18-24', 'M 25-34', 'M 35-44', 'Ж 25-34']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => SelectItem(value: e, label: e))
                     .toList(),
                 onChanged: (_) {},
               ),
@@ -91,11 +91,11 @@ class _RegisterWizardScreenState extends State<RegisterWizardScreen> {
             title: const Text('Собака и оплата'),
             isActive: _step >= 1,
             content: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              DropdownButtonFormField<String>(
-                initialValue: _dog,
-                decoration: const InputDecoration(labelText: 'Выберите собаку', prefixIcon: Icon(Icons.pets)),
+              AppSelect<String>(
+                label: 'Выберите собаку',
+                value: _dog,
                 items: ['Rex (Хаски)', 'Luna (Маламут)', '+ Добавить собаку']
-                    .map((e) => DropdownMenuItem(value: e, child: Text(e)))
+                    .map((e) => SelectItem(value: e, label: e))
                     .toList(),
                 onChanged: (v) {
                   if (v == '+ Добавить собаку') {

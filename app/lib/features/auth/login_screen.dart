@@ -48,14 +48,14 @@ class _LoginScreenState extends State<LoginScreen> {
             Expanded(child: Divider(color: cs.outlineVariant)),
           ]),
           const SizedBox(height: 20),
-          const TextField(decoration: InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email), border: OutlineInputBorder()), keyboardType: TextInputType.emailAddress),
+          AppTextField(label: 'Email', hintText: 'example@mail.com', prefixIcon: Icons.email, keyboardType: TextInputType.emailAddress),
           const SizedBox(height: 12),
-          const TextField(decoration: InputDecoration(labelText: 'Пароль', prefixIcon: Icon(Icons.lock), border: OutlineInputBorder(), suffixIcon: Icon(Icons.visibility_off)), obscureText: true),
+          AppTextField(label: 'Пароль', hintText: '••••••••', prefixIcon: Icons.lock, obscureText: true),
           if (!_isLogin) ...[
             const SizedBox(height: 12),
-            const TextField(decoration: InputDecoration(labelText: 'Имя и фамилия', prefixIcon: Icon(Icons.person), border: OutlineInputBorder())),
+            AppTextField(label: 'Имя и фамилия', hintText: 'Иван Иванов', prefixIcon: Icons.person),
             const SizedBox(height: 12),
-            const TextField(decoration: InputDecoration(labelText: 'Повторите пароль', prefixIcon: Icon(Icons.lock_outline), border: OutlineInputBorder()), obscureText: true),
+            AppTextField(label: 'Повторите пароль', hintText: '••••••••', prefixIcon: Icons.lock_outline, obscureText: true),
             const SizedBox(height: 12),
             Row(children: [
               Checkbox(value: true, onChanged: (_) {}),

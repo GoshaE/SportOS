@@ -452,19 +452,19 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
       )),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
       Row(children: [
-        Expanded(child: TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'ФИО *', controller: nameCtrl)),
         const SizedBox(width: 12),
-        SizedBox(width: 80, child: TextField(controller: bibCtrl, decoration: const InputDecoration(labelText: 'BIB', border: OutlineInputBorder()))),
+        SizedBox(width: 80, child: AppTextField(label: 'BIB', controller: bibCtrl)),
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder()),
+        Expanded(child: AppSelect<String>(
+          label: 'Пол',
+          value: selectedGender,
           items: const [
-            DropdownMenuItem(value: 'male', child: Text('Мужской')),
-            DropdownMenuItem(value: 'female', child: Text('Женский')),
+            SelectItem(value: 'male', label: 'Мужской'),
+            SelectItem(value: 'female', label: 'Женский'),
           ],
-          initialValue: selectedGender,
           onChanged: (v) => setModal(() => selectedGender = v),
         )),
         const SizedBox(width: 12),
@@ -491,15 +491,15 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Телефон / Email', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Телефон / Email', controller: phoneCtrl)),
         const SizedBox(width: 12),
-        Expanded(child: TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Собака', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Собака', controller: dogCtrl)),
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: TextField(controller: cityCtrl, decoration: const InputDecoration(labelText: 'Город', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Город', controller: cityCtrl)),
         const SizedBox(width: 12),
-        Expanded(child: TextField(controller: clubCtrl, decoration: const InputDecoration(labelText: 'Клуб', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Клуб', controller: clubCtrl)),
       ]),
     ])));
   }
@@ -549,16 +549,16 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         child: const Text('Добавить', style: TextStyle(fontSize: 16)),
       )),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
-      TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'ФИО *', border: OutlineInputBorder())),
+      AppTextField(label: 'ФИО *', controller: nameCtrl),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Пол', border: OutlineInputBorder()),
+        Expanded(child: AppSelect<String>(
+          label: 'Пол',
+          value: selectedGender,
           items: const [
-            DropdownMenuItem(value: 'male', child: Text('Мужской')),
-            DropdownMenuItem(value: 'female', child: Text('Женский')),
+            SelectItem(value: 'male', label: 'Мужской'),
+            SelectItem(value: 'female', label: 'Женский'),
           ],
-          initialValue: selectedGender,
           onChanged: (v) => setModal(() => selectedGender = v),
         )),
         const SizedBox(width: 12),
@@ -584,23 +584,23 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         )),
       ]),
       const SizedBox(height: 12),
-      DropdownButtonFormField<String>(
-        decoration: const InputDecoration(labelText: 'Дисциплина *', border: OutlineInputBorder()),
-        items: disciplines.map((d) => DropdownMenuItem(value: d.id, child: Text(d.name))).toList(),
-        initialValue: selectedDisc,
+      AppSelect<String>(
+        label: 'Дисциплина *',
+        value: selectedDisc,
+        items: disciplines.map((d) => SelectItem(value: d.id, label: d.name)).toList(),
         onChanged: (v) => setModal(() => selectedDisc = v),
       ),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Телефон / Email', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Телефон / Email', controller: phoneCtrl)),
         const SizedBox(width: 12),
-        Expanded(child: TextField(controller: dogCtrl, decoration: const InputDecoration(labelText: 'Собака', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Собака', controller: dogCtrl)),
       ]),
       const SizedBox(height: 12),
       Row(children: [
-        Expanded(child: TextField(controller: cityCtrl, decoration: const InputDecoration(labelText: 'Город', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Город', controller: cityCtrl)),
         const SizedBox(width: 12),
-        Expanded(child: TextField(controller: clubCtrl, decoration: const InputDecoration(labelText: 'Клуб', border: OutlineInputBorder()))),
+        Expanded(child: AppTextField(label: 'Клуб', controller: clubCtrl)),
       ]),
     ])));
   }

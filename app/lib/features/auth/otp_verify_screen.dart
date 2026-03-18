@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/core/widgets/widgets.dart';
 
 /// Screen ID: A3 — Подтверждение OTP
 class OtpVerifyScreen extends StatelessWidget {
@@ -18,15 +19,11 @@ class OtpVerifyScreen extends StatelessWidget {
             children: [
               const Text('Введите код из Telegram', style: TextStyle(fontSize: 18)),
               const SizedBox(height: 24),
-              const TextField(
-                decoration: InputDecoration(
-                  labelText: 'Код подтверждения',
-                  prefixIcon: Icon(Icons.lock),
-                  border: OutlineInputBorder(),
-                ),
+              AppTextField(
+                label: 'Код подтверждения',
+                hintText: '000000',
+                prefixIcon: Icons.lock,
                 keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 24, letterSpacing: 8),
               ),
               const SizedBox(height: 24),
               SizedBox(

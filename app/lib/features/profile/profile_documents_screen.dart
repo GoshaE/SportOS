@@ -93,13 +93,13 @@ class _ProfileDocumentsScreenState extends State<ProfileDocumentsScreen> {
       title: 'Загрузка документа',
       initialHeight: 0.55,
       child: Column(children: [
-        DropdownButtonFormField<String>(
-          decoration: const InputDecoration(labelText: 'Тип документа', border: OutlineInputBorder()),
+        AppSelect<String>(
+          label: 'Тип документа',
           items: const [
-            DropdownMenuItem(value: 'insurance', child: Text('Спортивная страховка')),
-            DropdownMenuItem(value: 'medical', child: Text('Медицинская справка')),
-            DropdownMenuItem(value: 'consent', child: Text('Согласие родителей')),
-            DropdownMenuItem(value: 'other', child: Text('Иное')),
+            SelectItem(value: 'insurance', label: 'Спортивная страховка'),
+            SelectItem(value: 'medical', label: 'Медицинская справка'),
+            SelectItem(value: 'consent', label: 'Согласие родителей'),
+            SelectItem(value: 'other', label: 'Иное'),
           ],
           onChanged: (_) {},
         ),

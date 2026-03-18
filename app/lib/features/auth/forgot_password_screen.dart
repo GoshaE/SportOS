@@ -36,7 +36,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             ),
             const SizedBox(height: 24),
             if (!_sent) ...[
-              const TextField(decoration: InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email), border: OutlineInputBorder()), keyboardType: TextInputType.emailAddress),
+              AppTextField(label: 'Email', hintText: 'example@mail.com', prefixIcon: Icons.email, keyboardType: TextInputType.emailAddress),
               const SizedBox(height: 16),
               SizedBox(width: double.infinity, height: 52, child: FilledButton(onPressed: () => setState(() => _sent = true), child: const Text('Отправить ссылку'))),
             ],
