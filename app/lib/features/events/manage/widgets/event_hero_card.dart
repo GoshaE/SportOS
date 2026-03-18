@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/widgets/widgets.dart';
 import '../../../../domain/event/config_providers.dart';
 import '../../../../domain/event/event_config.dart';
 
@@ -122,23 +123,12 @@ class EventHeroCard extends ConsumerWidget {
         if (nextLabel != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-            child: SizedBox(
-              width: double.infinity,
-              child: FilledButton.icon(
-                style: FilledButton.styleFrom(
-                  backgroundColor: statusColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-                icon: Icon(
-                  nextStatus == EventStatus.inProgress ? Icons.play_arrow : Icons.arrow_forward,
-                  size: 18,
-                ),
-                label: Text(nextLabel, style: const TextStyle(fontWeight: FontWeight.bold)),
-                onPressed: () => ref.read(eventConfigProvider.notifier).update(
-                  (c) => c.copyWith(status: nextStatus),
-                ),
+            child: AppButton.primary(
+              text: nextLabel,
+              icon: nextStatus == EventStatus.inProgress ? Icons.play_arrow : Icons.arrow_forward,
+              backgroundColor: statusColor,
+              onPressed: () => ref.read(eventConfigProvider.notifier).update(
+                (c) => c.copyWith(status: nextStatus),
               ),
             ),
           )

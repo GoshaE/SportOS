@@ -195,11 +195,7 @@ class RegistrationSettingsScreen extends ConsumerWidget {
             ]),
           )),
         ],
-        OutlinedButton.icon(
-          onPressed: () => _addCustomField(context, update, reg),
-          icon: const Icon(Icons.add, size: 18),
-          label: const Text('Добавить поле'),
-        ),
+        AppButton.smallSecondary(text: 'Добавить поле', icon: Icons.add, onPressed: () => _addCustomField(context, update, reg)),
         const SizedBox(height: 32),
       ]),
     );
@@ -240,13 +236,13 @@ class RegistrationSettingsScreen extends ConsumerWidget {
         keyboardType: TextInputType.number,
       ),
       const SizedBox(height: 16),
-      SizedBox(width: double.infinity, child: FilledButton(
+      AppButton.primary(
+        text: 'Сохранить',
         onPressed: () {
           onSave(int.tryParse(ctrl.text));
           Navigator.pop(context);
         },
-        child: const Text('Сохранить'),
-      )),
+      ),
     ]));
   }
 
@@ -286,7 +282,9 @@ class RegistrationSettingsScreen extends ConsumerWidget {
           )),
         ]),
         const SizedBox(height: 16),
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: 'Добавить',
+          icon: Icons.add,
           onPressed: () {
             if (ctrl.text.trim().isEmpty) { AppSnackBar.error(context, 'Введите название'); return; }
             final field = CustomField(
@@ -298,9 +296,7 @@ class RegistrationSettingsScreen extends ConsumerWidget {
             update((r) => r.copyWith(customFields: [...r.customFields, field]));
             Navigator.pop(ctx);
           },
-          icon: const Icon(Icons.add),
-          label: const Text('Добавить'),
-        )),
+        ),
       ]),
     ));
   }

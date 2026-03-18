@@ -129,11 +129,7 @@ class MultiDayConfigScreen extends ConsumerWidget {
 
           // Add day button
           const SizedBox(height: 4),
-          OutlinedButton.icon(
-            onPressed: () => _showAddDayPicker(context, ref, eventConfig),
-            icon: const Icon(Icons.add),
-            label: const Text('Добавить день'),
-          ),
+          AppButton.smallSecondary(text: 'Добавить день', icon: Icons.add, onPressed: () => _showAddDayPicker(context, ref, eventConfig)),
         ],
       ]),
     );
@@ -154,14 +150,13 @@ class MultiDayConfigScreen extends ConsumerWidget {
           const SizedBox(height: 8),
           ...allDiscs.map((disc) {
             final enabled = currentDay.disciplineIds.contains(disc.id);
-            return CheckboxListTile(
-              dense: true,
+            return AppCheckbox(
+              label: disc.displayName,
+              subtitle: '${disc.distanceKm} км',
               value: enabled,
-              title: Text(disc.displayName, style: const TextStyle(fontSize: 14)),
-              subtitle: Text('${disc.distanceKm} км', style: TextStyle(fontSize: 12, color: cs.outline)),
               onChanged: (v) {
                 final newIds = List<String>.from(currentDay.disciplineIds);
-                if (v == true) { newIds.add(disc.id); } else { newIds.remove(disc.id); }
+                if (v) { newIds.add(disc.id); } else { newIds.remove(disc.id); }
                 ref.read(eventConfigProvider.notifier).updateDay(day.dayNumber, (d) => d.copyWith(disciplineIds: newIds));
               },
             );
@@ -203,14 +198,14 @@ class MultiDayConfigScreen extends ConsumerWidget {
           // ─── Удалить ───
           if (day.dayNumber > 1) ...[
             const SizedBox(height: 24),
-            SizedBox(width: double.infinity, child: OutlinedButton.icon(
+            AppButton.smallDanger(
+              text: 'Удалить день ${day.dayNumber}',
+              icon: Icons.delete_outline,
               onPressed: () {
                 ref.read(eventConfigProvider.notifier).removeDay(day.dayNumber);
                 Navigator.of(ctx).pop();
               },
-              icon: Icon(Icons.delete_outline, color: cs.error),
-              label: Text('Удалить день ${day.dayNumber}', style: TextStyle(color: cs.error)),
-            )),
+            ),
           ],
         ]);
       },

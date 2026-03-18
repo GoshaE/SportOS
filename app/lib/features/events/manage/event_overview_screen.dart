@@ -137,15 +137,9 @@ class EventOverviewScreen extends ConsumerWidget {
 
   // ─── Action Button ───
   Widget _actionButton(BuildContext context, ColorScheme cs, IconData icon, String label, VoidCallback onTap) {
-    return OutlinedButton.icon(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: cs.primary,
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-      icon: Icon(icon, size: 18),
-      label: Text(label, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), maxLines: 1, overflow: TextOverflow.ellipsis),
+    return AppButton.smallSecondary(
+      text: label,
+      icon: icon,
       onPressed: onTap,
     );
   }
@@ -506,15 +500,14 @@ class EventOverviewScreen extends ConsumerWidget {
       title: 'Push-уведомления',
       initialHeight: 0.85,
       actions: [
-        SizedBox(width: double.infinity, child: FilledButton.icon(
+        AppButton.primary(
+          text: 'Отправить Push-уведомление',
+          icon: Icons.send,
           onPressed: () {
             Navigator.of(context, rootNavigator: true).pop();
             AppSnackBar.success(context, 'Уведомление отправлено');
           },
-          icon: const Icon(Icons.send),
-          label: const Text('Отправить Push-уведомление'),
-          style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-        )),
+        ),
       ],
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text('Массовая рассылка важных сообщений', style: TextStyle(color: cs.onSurfaceVariant)),
@@ -545,17 +538,17 @@ class EventOverviewScreen extends ConsumerWidget {
     ];
 
     AppBottomSheet.show(context, title: 'Конструктор категорий', initialHeight: 0.8, actions: [
-      SizedBox(width: double.infinity, child: FilledButton(onPressed: () => Navigator.of(context, rootNavigator: true).pop(), child: const Text('Сохранить категории'))),
+      AppButton.primary(text: 'Сохранить категории', onPressed: () => Navigator.of(context, rootNavigator: true).pop()),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
       Text('Настройте возрастные и весовые группы. Система автоматически распределит участников.', style: TextStyle(color: cs.onSurfaceVariant)),
       const SizedBox(height: 16),
       Row(children: [
         const Text('Категории (Скиджоринг)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const Spacer(),
-        FilledButton.icon(
+        AppButton.small(
+          text: 'Добавить',
+          icon: Icons.add,
           onPressed: () => setModal(() => categories.add({'gender': 'Мужчины', 'minAge': '18', 'maxAge': '99', 'weight': 'Любой', 'name': 'Новая'})),
-          icon: const Icon(Icons.add, size: 16), label: const Text('Добавить'),
-          style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
         ),
       ]),
       const SizedBox(height: 8),

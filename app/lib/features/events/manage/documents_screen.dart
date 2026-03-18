@@ -70,10 +70,7 @@ class DocumentsScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(onPressed: () {}, icon: const Icon(Icons.edit), label: const Text('Редактировать шаблон')),
-                      ),
+                      AppButton.secondary(text: 'Редактировать шаблон', icon: Icons.edit, onPressed: () {}),
                     ],
                   ),
                 ),
@@ -106,11 +103,7 @@ class DocumentsScreen extends ConsumerWidget {
       subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: loaded ? cs.onSurfaceVariant : cs.error)),
       trailing: loaded 
         ? Icon(Icons.check_circle, color: cs.primary) 
-        : FilledButton.tonal(
-            onPressed: () {}, 
-            style: FilledButton.styleFrom(visualDensity: VisualDensity.compact),
-            child: const Text('Загрузить'),
-          ),
+        : AppButton.small(text: 'Загрузить', onPressed: () {}),
     );
   }
 }
