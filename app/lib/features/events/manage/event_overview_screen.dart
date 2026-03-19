@@ -235,14 +235,6 @@ class EventOverviewScreen extends ConsumerWidget {
             color: cs.secondary,
             onTap: () => context.push('/manage/$eventId/courses'),
           ),
-          AppMenuItem(
-            icon: Icons.category,
-            label: 'Категории',
-            badge: '24',
-            subtitle: 'М, Ж, Юн, M35…',
-            color: cs.primary,
-            onTap: () => _showCategoriesConstructor(context, cs),
-          ),
         ]),
         const SizedBox(height: 24),
 
@@ -532,60 +524,7 @@ class EventOverviewScreen extends ConsumerWidget {
 
 
 
-  void _showCategoriesConstructor(BuildContext context, ColorScheme cs) {
-    final List<Map<String, dynamic>> categories = [
-      {'gender': 'Мужчины', 'minAge': '18', 'maxAge': '34', 'weight': 'Любой', 'name': 'M 18-34'},
-      {'gender': 'Женщины', 'minAge': '18', 'maxAge': '34', 'weight': 'Любой', 'name': 'Ж 18-34'},
-      {'gender': 'Мужчины', 'minAge': '35', 'maxAge': '99', 'weight': 'Любой', 'name': 'M 35+'},
-      {'gender': 'Женщины', 'minAge': '35', 'maxAge': '99', 'weight': 'Любой', 'name': 'Ж 35+'},
-    ];
 
-    AppBottomSheet.show(context, title: 'Конструктор категорий', initialHeight: 0.8, actions: [
-      AppButton.primary(text: 'Сохранить категории', onPressed: () => Navigator.of(context, rootNavigator: true).pop()),
-    ], child: StatefulBuilder(builder: (ctx, setModal) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Text('Настройте возрастные и весовые группы. Система автоматически распределит участников.', style: TextStyle(color: cs.onSurfaceVariant)),
-      const SizedBox(height: 16),
-      Row(children: [
-        const Text('Категории (Скиджоринг)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-        const Spacer(),
-        AppButton.small(
-          text: 'Добавить',
-          icon: Icons.add,
-          onPressed: () => setModal(() => categories.add({'gender': 'Мужчины', 'minAge': '18', 'maxAge': '99', 'weight': 'Любой', 'name': 'Новая'})),
-        ),
-      ]),
-      const SizedBox(height: 8),
-      ...categories.asMap().entries.map((e) {
-        final i = e.key;
-        final c = e.value;
-        return Card(
-          margin: const EdgeInsets.only(bottom: 8),
-          child: Padding(padding: const EdgeInsets.all(12), child: Column(children: [
-            Row(children: [
-              Text(c['name'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              const Spacer(),
-              IconButton(icon: Icon(Icons.delete, color: cs.error, size: 20), onPressed: () => setModal(() => categories.removeAt(i)), visualDensity: VisualDensity.compact),
-            ]),
-            const SizedBox(height: 8),
-            Row(children: [
-              Expanded(flex: 2, child: AppSelect<String>(
-                label: 'Пол',
-                value: c['gender'],
-                items: ['Мужчины', 'Женщины', 'Смешанная', 'Любой'].map((s) => SelectItem(value: s, label: s)).toList(),
-                onChanged: (v) => setModal(() => c['gender'] = v),
-              )),
-              const SizedBox(width: 8),
-              Expanded(child: AppTextField(label: 'От (лет)', controller: TextEditingController(text: c['minAge']), keyboardType: TextInputType.number, onChanged: (v) => c['minAge'] = v)),
-              const SizedBox(width: 8),
-              Expanded(child: AppTextField(label: 'До', controller: TextEditingController(text: c['maxAge']), keyboardType: TextInputType.number, onChanged: (v) => c['maxAge'] = v)),
-              const SizedBox(width: 8),
-              Expanded(flex: 2, child: AppTextField(label: 'Вес / Класс', controller: TextEditingController(text: c['weight']), onChanged: (v) => c['weight'] = v)),
-            ]),
-          ])),
-        );
-      }),
-    ])));
-  }
 }
 
 /// Data class for checklist items on the dashboard.

@@ -8,7 +8,7 @@ import '../../../domain/event/event_config.dart';
 
 /// Screen: Управление трассами мероприятия
 ///
-/// CRUD: список трасс → tap → детали (дистанция, чекпоинты, GPX).
+/// CRUD: список трасс → tap → детали, long-press → Edit/Delete.
 /// Данные из `eventConfigProvider.courses`.
 class CoursesScreen extends ConsumerWidget {
   const CoursesScreen({super.key});
@@ -21,7 +21,13 @@ class CoursesScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppAppBar(
         title: const Text('Трассы'),
-        actions: [IconButton(icon: const Icon(Icons.add), tooltip: 'Добавить', onPressed: () {})],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            tooltip: 'Добавить трассу',
+            onPressed: () => _showCourseForm(context, ref),
+          ),
+        ],
       ),
       body: courses.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -30,6 +36,12 @@ class CoursesScreen extends ConsumerWidget {
               Text('Нет трасс', style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
               const SizedBox(height: 4),
               Text('Добавьте трассу для мероприятия', style: TextStyle(fontSize: 13, color: cs.outline)),
+              const SizedBox(height: 16),
+              AppButton.primary(
+                text: 'Добавить трассу',
+                icon: Icons.add,
+                onPressed: () => _showCourseForm(context, ref),
+              ),
             ]))
           : ListView.builder(
               padding: const EdgeInsets.all(12),
@@ -43,6 +55,7 @@ class CoursesScreen extends ConsumerWidget {
                     children: [
                       InkWell(
                         onTap: () => _showCourseDetail(context, ref, c),
+                        onLongPress: () => _showCourseActions(context, ref, c),
                         borderRadius: BorderRadius.circular(16),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -123,9 +136,173 @@ class CoursesScreen extends ConsumerWidget {
     );
   }
 
+  // ═══════════════════════════════════════
+  // CRUD: Add / Edit form
+  // ═══════════════════════════════════════
+
+  void _showCourseForm(BuildContext context, WidgetRef ref, {Course? existing}) {
+    final isEdit = existing != null;
+
+    final nameCtrl = TextEditingController(text: existing?.name ?? '');
+    final distCtrl = TextEditingController(text: existing?.distanceKm.toString() ?? '');
+    final elevCtrl = TextEditingController(text: existing?.elevationGainM?.toString() ?? '');
+    final descCtrl = TextEditingController(text: existing?.description ?? '');
+
+    AppBottomSheet.show(
+      context,
+      title: isEdit ? 'Редактировать трассу' : 'Новая трасса',
+      initialHeight: 0.6,
+      actions: [
+        AppButton.primary(
+          text: isEdit ? 'Сохранить' : 'Добавить',
+          icon: isEdit ? Icons.check : Icons.add,
+          onPressed: () {
+            final name = nameCtrl.text.trim();
+            final dist = double.tryParse(distCtrl.text.trim());
+
+            if (name.isEmpty || dist == null || dist <= 0) {
+              AppSnackBar.error(context, 'Укажите название и дистанцию');
+              return;
+            }
+
+            final elev = int.tryParse(elevCtrl.text.trim());
+            final desc = descCtrl.text.trim();
+
+            if (isEdit) {
+              // Update existing
+              ref.read(eventConfigProvider.notifier).update((c) {
+                final updated = c.courses.map((course) {
+                  if (course.id == existing.id) {
+                    return course.copyWith(
+                      name: name,
+                      distanceKm: dist,
+                      elevationGainM: elev,
+                      description: desc.isNotEmpty ? desc : null,
+                    );
+                  }
+                  return course;
+                }).toList();
+                return c.copyWith(courses: updated);
+              });
+              AppSnackBar.success(context, 'Трасса «$name» обновлена');
+            } else {
+              // Add new
+              final newCourse = Course(
+                id: 'course-${DateTime.now().millisecondsSinceEpoch}',
+                name: name,
+                distanceKm: dist,
+                elevationGainM: elev,
+                description: desc.isNotEmpty ? desc : null,
+              );
+              ref.read(eventConfigProvider.notifier).update(
+                (c) => c.copyWith(courses: [...c.courses, newCourse]),
+              );
+              AppSnackBar.success(context, 'Трасса «$name» добавлена');
+            }
+
+            Navigator.of(context, rootNavigator: true).pop();
+          },
+        ),
+      ],
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        AppTextField(
+          label: 'Название *',
+          hintText: 'Малый круг',
+          controller: nameCtrl,
+        ),
+        const SizedBox(height: 12),
+        Row(children: [
+          Expanded(
+            child: AppTextField(
+              label: 'Дистанция (км) *',
+              hintText: '5.0',
+              controller: distCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: AppTextField(
+              label: 'Набор высоты (м)',
+              hintText: '120',
+              controller: elevCtrl,
+              keyboardType: TextInputType.number,
+            ),
+          ),
+        ]),
+        const SizedBox(height: 12),
+        AppTextField(
+          label: 'Описание',
+          hintText: 'Лесная трасса с двумя подъёмами',
+          controller: descCtrl,
+          maxLines: 2,
+        ),
+        const SizedBox(height: 8),
+        AppInfoBanner.info(title: 'GPX-файлы и чекпоинты можно добавить после создания'),
+      ]),
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // Actions: Edit / Delete
+  // ═══════════════════════════════════════
+
+  void _showCourseActions(BuildContext context, WidgetRef ref, Course course) {
+    final cs = Theme.of(context).colorScheme;
+    AppBottomSheet.show(
+      context,
+      title: course.name,
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        ListTile(
+          leading: Icon(Icons.edit, color: cs.primary),
+          title: const Text('Редактировать'),
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            _showCourseForm(context, ref, existing: course);
+          },
+        ),
+        ListTile(
+          leading: Icon(Icons.delete, color: cs.error),
+          title: Text('Удалить', style: TextStyle(color: cs.error)),
+          onTap: () async {
+            Navigator.of(context, rootNavigator: true).pop();
+            final ok = await AppDialog.confirm(
+              context,
+              title: 'Удалить трассу?',
+              message: '«${course.name}» будет удалена. Дисциплины, использующие эту трассу, потеряют привязку.',
+              confirmText: 'Удалить',
+              isDanger: true,
+            );
+            if (ok == true) {
+              ref.read(eventConfigProvider.notifier).update(
+                (c) => c.copyWith(courses: c.courses.where((cr) => cr.id != course.id).toList()),
+              );
+              if (context.mounted) AppSnackBar.info(context, 'Трасса «${course.name}» удалена');
+            }
+          },
+        ),
+      ]),
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // Detail view
+  // ═══════════════════════════════════════
+
   void _showCourseDetail(BuildContext context, WidgetRef ref, Course course) {
     final cs = Theme.of(context).colorScheme;
-    AppBottomSheet.show(context, title: course.name, initialHeight: 0.7, child: Column(
+    AppBottomSheet.show(context, title: course.name, initialHeight: 0.7,
+      actions: [
+        AppButton.secondary(
+          text: 'Редактировать',
+          icon: Icons.edit,
+          onPressed: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            _showCourseForm(context, ref, existing: course);
+          },
+        ),
+      ],
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Info
