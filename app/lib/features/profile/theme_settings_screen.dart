@@ -240,7 +240,7 @@ class _AccentDot extends StatelessWidget {
                 : null,
           ),
           child: isSelected
-              ? const Icon(Icons.check, color: Colors.white, size: 20)
+              ? Icon(Icons.check, color: color.computeLuminance() > 0.5 ? Colors.black : Colors.white, size: 20)
               : null,
         ),
         const SizedBox(height: 4),

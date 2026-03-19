@@ -51,11 +51,11 @@ class AppTheme {
         isDense: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4)),
+          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -121,7 +121,7 @@ class AppTheme {
       // ── Switch: iOS/Telegram-like ──
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? Colors.white : cs.outline),
+          s.contains(WidgetState.selected) ? cs.onPrimary : cs.outline),
         trackColor: WidgetStateProperty.resolveWith((s) =>
           s.contains(WidgetState.selected) ? cs.primary : cs.surfaceContainerHighest),
         trackOutlineColor: WidgetStateProperty.resolveWith((s) =>
@@ -139,7 +139,7 @@ class AppTheme {
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((s) =>
           s.contains(WidgetState.selected) ? cs.primary : Colors.transparent),
-        checkColor: WidgetStateProperty.all(Colors.white),
+        checkColor: WidgetStateProperty.all(cs.onPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         visualDensity: VisualDensity.compact,
       ),
@@ -279,7 +279,7 @@ class AppTheme {
       // ── Switch: iOS/Telegram-like ──
       switchTheme: SwitchThemeData(
         thumbColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? Colors.white : cs.outline),
+          s.contains(WidgetState.selected) ? cs.onPrimary : cs.outline),
         trackColor: WidgetStateProperty.resolveWith((s) =>
           s.contains(WidgetState.selected) ? cs.primary : cs.surfaceContainerHighest),
         trackOutlineColor: WidgetStateProperty.resolveWith((s) =>
@@ -297,7 +297,7 @@ class AppTheme {
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((s) =>
           s.contains(WidgetState.selected) ? cs.primary : Colors.transparent),
-        checkColor: WidgetStateProperty.all(Colors.white),
+        checkColor: WidgetStateProperty.all(cs.onPrimary),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
         visualDensity: VisualDensity.compact,
       ),

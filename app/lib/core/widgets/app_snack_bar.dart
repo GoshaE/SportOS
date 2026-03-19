@@ -49,13 +49,14 @@ class AppSnackBar {
   }
 
   static void _show(BuildContext context, String message, IconData icon, Color color) {
+    final textColor = color.computeLuminance() > 0.5 ? Colors.black : Colors.white;
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(
       content: Row(
         children: [
-          Icon(icon, color: Colors.white, size: 20),
+          Icon(icon, color: textColor, size: 20),
           const SizedBox(width: 10),
-          Expanded(child: Text(message, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: Colors.white))),
+          Expanded(child: Text(message, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: textColor))),
         ],
       ),
       backgroundColor: color,

@@ -146,7 +146,7 @@ class AccentColor {
 }
 
 final accentColors = <AccentColor>[
-  const AccentColor(id: 'zinc',    name: 'Цинк',       color: Color(0xFF18181B), darkVariant: Color(0xFFFAFAFA)),
+  const AccentColor(id: 'zinc',    name: 'Цинк',       color: Color(0xFF18181B), darkVariant: Color(0xFFA1A1AA)),  // zinc-400 (visible on dark bg)
   const AccentColor(id: 'blue',    name: 'Синий',       color: Color(0xFF1D4ED8), darkVariant: Color(0xFF3B82F6)),   // blue-700 → blue-500
   const AccentColor(id: 'violet',  name: 'Фиолетовый', color: Color(0xFF6D28D9), darkVariant: Color(0xFF8B5CF6)),   // violet-700 → violet-500
   const AccentColor(id: 'rose',    name: 'Роза',        color: Color(0xFFBE123C), darkVariant: Color(0xFFF43F5E)),   // rose-700 → rose-500
