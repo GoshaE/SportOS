@@ -60,7 +60,6 @@ class _FinancesTransactionsTabState extends State<FinancesTransactionsTab> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
 
     return Column(
       children: [

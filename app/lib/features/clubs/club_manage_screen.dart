@@ -321,8 +321,6 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
 
   // ── Вкладка: Настройки ──
   Widget _settingsTab(String clubId) {
-    final theme = Theme.of(context);
-
     return ListView(padding: const EdgeInsets.all(16), children: [
       const AppTextField(label: 'Название клуба', prefixIcon: Icons.badge),
       const SizedBox(height: 12),

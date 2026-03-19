@@ -338,6 +338,9 @@ class _CreateEventWizardScreenState extends ConsumerState<CreateEventWizardScree
     // Сохранить дисциплины
     ref.read(eventConfigProvider.notifier).setDisciplines(disciplines);
 
+    // Очистить участников для нового мероприятия
+    ref.read(participantsProvider.notifier).clearAll();
+
     AppSnackBar.success(context, 'Мероприятие создано! Настройте дисциплины.');
     context.go('/manage/$eventId');
   }

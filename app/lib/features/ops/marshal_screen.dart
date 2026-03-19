@@ -116,7 +116,6 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
   // R3.1 — Нарушение
   // ═══════════════════════════════════════
   void _showViolation(String bib, String name) {
-    final cs = Theme.of(context).colorScheme;
     AppBottomSheet.show(
       context,
       title: 'Нарушение — BIB $bib $name',

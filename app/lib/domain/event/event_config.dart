@@ -990,6 +990,10 @@ class Participant {
   final String disciplineId;
   final String disciplineName;
   final String bib;
+  /// Стартовая позиция (результат жеребьёвки). null = жеребьёвка не проведена.
+  final int? startPosition;
+  /// Личный номер спортсмена (купленный на сезон). Имеет приоритет при назначении BIB.
+  final String? preferredBib;
   final String? category;
   final String? dogName;
   final PaymentStatus paymentStatus;
@@ -1018,6 +1022,8 @@ class Participant {
     required this.disciplineId,
     required this.disciplineName,
     required this.bib,
+    this.startPosition,
+    this.preferredBib,
     this.category,
     this.dogName,
     this.paymentStatus = PaymentStatus.unpaid,
@@ -1092,6 +1098,10 @@ class Participant {
     String? disciplineId,
     String? disciplineName,
     String? bib,
+    int? startPosition,
+    bool clearStartPosition = false,
+    String? preferredBib,
+    bool clearPreferredBib = false,
     String? category,
     String? dogName,
     PaymentStatus? paymentStatus,
@@ -1116,6 +1126,8 @@ class Participant {
       disciplineId: disciplineId ?? this.disciplineId,
       disciplineName: disciplineName ?? this.disciplineName,
       bib: bib ?? this.bib,
+      startPosition: clearStartPosition ? null : (startPosition ?? this.startPosition),
+      preferredBib: clearPreferredBib ? null : (preferredBib ?? this.preferredBib),
       category: category ?? this.category,
       dogName: dogName ?? this.dogName,
       paymentStatus: paymentStatus ?? this.paymentStatus,
@@ -1133,17 +1145,75 @@ class Participant {
       checkInTime: clearCheckInTime ? null : (checkInTime ?? this.checkInTime),
     );
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'phone': phone,
+        'email': email,
+        'disciplineId': disciplineId,
+        'disciplineName': disciplineName,
+        'bib': bib,
+        'startPosition': startPosition,
+        'preferredBib': preferredBib,
+        'category': category,
+        'dogName': dogName,
+        'paymentStatus': paymentStatus.name,
+        'applicationStatus': applicationStatus.name,
+        'priceRub': priceRub,
+        'registeredAt': registeredAt.toIso8601String(),
+        'gender': gender,
+        'birthDate': birthDate?.toIso8601String(),
+        'city': city,
+        'club': club,
+        'rank': rank,
+        'insuranceNo': insuranceNo,
+        'mandateStatus': mandateStatus.name,
+        'vetStatus': vetStatus.name,
+        'checkInTime': checkInTime?.toIso8601String(),
+      };
+
+  static Participant fromJson(Map<String, dynamic> j) {
+    return Participant(
+      id: j['id'] as String,
+      name: j['name'] as String,
+      phone: j['phone'] as String?,
+      email: j['email'] as String?,
+      disciplineId: j['disciplineId'] as String,
+      disciplineName: j['disciplineName'] as String,
+      bib: j['bib'] as String,
+      startPosition: j['startPosition'] as int?,
+      preferredBib: j['preferredBib'] as String?,
+      category: j['category'] as String?,
+      dogName: j['dogName'] as String?,
+      paymentStatus: PaymentStatus.values.firstWhere((e) => e.name == j['paymentStatus'], orElse: () => PaymentStatus.unpaid),
+      applicationStatus: ApplicationStatus.values.firstWhere((e) => e.name == j['applicationStatus'], orElse: () => ApplicationStatus.pending),
+      priceRub: j['priceRub'] as int?,
+      registeredAt: DateTime.parse(j['registeredAt'] as String),
+      gender: j['gender'] as String?,
+      birthDate: j['birthDate'] != null ? DateTime.parse(j['birthDate'] as String) : null,
+      city: j['city'] as String?,
+      club: j['club'] as String?,
+      rank: j['rank'] as String?,
+      insuranceNo: j['insuranceNo'] as String?,
+      mandateStatus: MandateStatus.values.firstWhere((e) => e.name == j['mandateStatus'], orElse: () => MandateStatus.pending),
+      vetStatus: VetStatus.values.firstWhere((e) => e.name == j['vetStatus'], orElse: () => VetStatus.pending),
+      checkInTime: j['checkInTime'] != null ? DateTime.parse(j['checkInTime'] as String) : null,
+    );
+  }
 }
 
 /// Демо-участники.
+/// BIB пуст — номера назначаются отдельно на экране BIB Assign.
+/// preferredBib — личный номер спортсмена, купленный на сезон.
 final List<Participant> demoParticipants = [
-  Participant(id: 'p-1', name: 'Петров Алексей', phone: '+7 912 111-11-11', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '07', category: 'М', gender: 'male', birthDate: DateTime(2000, 3, 15), city: 'Екатеринбург', club: 'Сноу Дог', dogName: 'Rex', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 1)),
-  Participant(id: 'p-2', name: 'Сидорова Мария', phone: '+7 912 222-22-22', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '12', category: 'Ж', gender: 'female', birthDate: DateTime(1998, 7, 22), city: 'Челябинск', club: 'Хаски клуб', dogName: 'Luna', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 3)),
-  Participant(id: 'p-3', name: 'Иванов Виктор', phone: '+7 912 333-33-33', disciplineId: 'd-skijor-20', disciplineName: 'Скидж. 10км', bib: '24', category: 'М', gender: 'male', birthDate: DateTime(1995, 1, 10), city: 'Пермь', club: 'Северный ветер', dogName: 'Storm', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 3500, registeredAt: DateTime(2026, 2, 5)),
-  Participant(id: 'p-4', name: 'Козлов Григорий', phone: '+7 912 444-44-44', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '31', category: 'М', gender: 'male', birthDate: DateTime(1988, 11, 5), city: 'Тюмень', club: 'Сноу Дог', dogName: 'Wolf', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.approved, priceRub: 3000, registeredAt: DateTime(2026, 2, 7)),
-  Participant(id: 'p-5', name: 'Морозова Дарья', email: 'morozova@mail.ru', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '42', category: 'Ж', gender: 'female', birthDate: DateTime(1993, 6, 18), city: 'Екатеринбург', club: 'Хаски клуб', dogName: 'Buddy', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.pending, priceRub: 1500, registeredAt: DateTime(2026, 2, 10)),
-  Participant(id: 'p-6', name: 'Волков Евгений', phone: '+7 912 666-66-66', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '55', category: 'М', gender: 'male', birthDate: DateTime(1985, 4, 30), city: 'Курган', club: 'Северный ветер', dogName: 'Alaska', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 12)),
-  Participant(id: 'p-7', name: 'Лебедев Жан', phone: '+7 912 777-77-77', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '63', category: 'М', gender: 'male', birthDate: DateTime(1982, 9, 12), city: 'Пермь', dogName: 'Max', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.pending, priceRub: 3000, registeredAt: DateTime(2026, 2, 14)),
-  Participant(id: 'p-8', name: 'Новикова Злата', phone: '+7 912 888-88-88', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '77', category: 'Ж', gender: 'female', birthDate: DateTime(2001, 12, 3), city: 'Екатеринбург', club: 'Сноу Дог', dogName: 'Rocky', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 1500, registeredAt: DateTime(2026, 2, 16)),
+  Participant(id: 'p-1', name: 'Петров Алексей', phone: '+7 912 111-11-11', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '', category: 'М', gender: 'male', birthDate: DateTime(2000, 3, 15), city: 'Екатеринбург', club: 'Сноу Дог', dogName: 'Rex', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 1)),
+  Participant(id: 'p-2', name: 'Сидорова Мария', phone: '+7 912 222-22-22', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '', category: 'Ж', gender: 'female', birthDate: DateTime(1998, 7, 22), city: 'Челябинск', club: 'Хаски клуб', dogName: 'Luna', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 3)),
+  Participant(id: 'p-3', name: 'Иванов Виктор', phone: '+7 912 333-33-33', disciplineId: 'd-skijor-20', disciplineName: 'Скидж. 10км', bib: '', category: 'М', gender: 'male', birthDate: DateTime(1995, 1, 10), city: 'Пермь', club: 'Северный ветер', dogName: 'Storm', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 3500, registeredAt: DateTime(2026, 2, 5)),
+  Participant(id: 'p-4', name: 'Козлов Григорий', phone: '+7 912 444-44-44', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '', category: 'М', gender: 'male', birthDate: DateTime(1988, 11, 5), city: 'Тюмень', club: 'Сноу Дог', dogName: 'Wolf', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.approved, priceRub: 3000, registeredAt: DateTime(2026, 2, 7)),
+  Participant(id: 'p-5', name: 'Морозова Дарья', email: 'morozova@mail.ru', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '', category: 'Ж', gender: 'female', birthDate: DateTime(1993, 6, 18), city: 'Екатеринбург', club: 'Хаски клуб', dogName: 'Buddy', preferredBib: '42', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.pending, priceRub: 1500, registeredAt: DateTime(2026, 2, 10)),
+  Participant(id: 'p-6', name: 'Волков Евгений', phone: '+7 912 666-66-66', disciplineId: 'd-skijor-6', disciplineName: 'Скидж. 5км', bib: '', category: 'М', gender: 'male', birthDate: DateTime(1985, 4, 30), city: 'Курган', club: 'Северный ветер', dogName: 'Alaska', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 2500, registeredAt: DateTime(2026, 2, 12)),
+  Participant(id: 'p-7', name: 'Лебедев Жан', phone: '+7 912 777-77-77', disciplineId: 'd-sled2-15', disciplineName: 'Нарты 15км', bib: '', category: 'М', gender: 'male', birthDate: DateTime(1982, 9, 12), city: 'Пермь', dogName: 'Max', paymentStatus: PaymentStatus.unpaid, applicationStatus: ApplicationStatus.pending, priceRub: 3000, registeredAt: DateTime(2026, 2, 14)),
+  Participant(id: 'p-8', name: 'Новикова Злата', phone: '+7 912 888-88-88', disciplineId: 'd-canicross-3', disciplineName: 'Каникросс', bib: '', preferredBib: '77', category: 'Ж', gender: 'female', birthDate: DateTime(2001, 12, 3), city: 'Екатеринбург', club: 'Сноу Дог', dogName: 'Rocky', paymentStatus: PaymentStatus.paid, applicationStatus: ApplicationStatus.approved, priceRub: 1500, registeredAt: DateTime(2026, 2, 16)),
 ];
 

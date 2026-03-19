@@ -212,7 +212,6 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
 
   // R2.3 — Вставка метки
   void _showInsertMark() {
-    final cs = Theme.of(context).colorScheme;
     AppBottomSheet.show(
       context,
       title: 'Вставить метку',

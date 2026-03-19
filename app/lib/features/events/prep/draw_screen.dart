@@ -152,15 +152,35 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     final intervalSec = disc.interval.inSeconds;
     final baseSeconds = hour * 3600 + minute * 60;
 
+    // Collect preferredBibs to skip during sequential assignment
+    final reservedBibs = participants
+        .where((p) => p.preferredBib != null)
+        .map((p) => int.tryParse(p.preferredBib!))
+        .whereType<int>()
+        .toSet();
+
     // Shuffle all
     final shuffled = List<Participant>.from(participants)..shuffle(Random());
 
+    // Generate sequential BIBs skipping reserved ones
+    int bibCounter = bibStart;
     return List.generate(shuffled.length, (i) {
       final p = shuffled[i];
       final t = baseSeconds + i * intervalSec;
+
+      // Use preferredBib if available, otherwise next free number
+      int entryBib;
+      if (p.preferredBib != null && int.tryParse(p.preferredBib!) != null) {
+        entryBib = int.parse(p.preferredBib!);
+      } else {
+        while (reservedBibs.contains(bibCounter)) { bibCounter++; }
+        entryBib = bibCounter;
+        bibCounter++;
+      }
+
       return DrawEntry(
         position: i + 1,
-        bib: bibStart + i,
+        bib: entryBib,
         participantId: p.id,
         name: p.name,
         gender: p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?',
@@ -238,19 +258,40 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   }
 
   void _approve(DisciplineConfig disc) {
-    // When approved — write BIBs back to participants
+    // When approved — write startPosition (NOT bib) back to participants
     final result = _results[disc.id];
     if (result == null) return;
     final notifier = ref.read(participantsProvider.notifier);
     for (final entry in result.entries) {
       notifier.update(entry.participantId, (p) => p.copyWith(
-        bib: entry.bib.toString(),
+        startPosition: entry.position,
       ));
     }
 
     setState(() => _results[disc.id] = result.copyWith(status: 'approved'));
-    AppSnackBar.success(context, '${disc.name} — жеребьёвка утверждена! BIB назначены.');
-    Future.delayed(const Duration(milliseconds: 600), _closeDiscipline);
+    AppSnackBar.success(context, '${disc.name} — жеребьёвка утверждена!');
+
+    // Check if ALL disciplines are approved -> prompt BIB assignment
+    final allApproved = _results.values.every((r) => r.status == 'approved');
+    Future.delayed(const Duration(milliseconds: 600), () {
+      _closeDiscipline();
+      if (allApproved && mounted) {
+        _showBibAssignPrompt();
+      }
+    });
+  }
+
+  void _showBibAssignPrompt() async {
+    final go = await AppDialog.confirm(
+      context,
+      title: 'Все жеребьёвки утверждены!',
+      message: 'Стартовый порядок назначен. Перейти к назначению стартовых номеров (BIB)?',
+      confirmText: 'Назначить BIB',
+      cancelText: 'Позже',
+    );
+    if (go && mounted) {
+      Navigator.of(context).pushReplacementNamed('/prep/bib-assign');
+    }
   }
 
   void _editPosition(DisciplineConfig disc, int index) {

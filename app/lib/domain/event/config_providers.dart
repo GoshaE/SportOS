@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'event_config.dart';
 import '../timing/models.dart';
 import '../../data/config_storage.dart';
-
+import '../../data/participants_storage.dart';
 // ─────────────────────────────────────────────────────────────────
 // EVENT CONFIG PROVIDER
 // ─────────────────────────────────────────────────────────────────
@@ -186,22 +186,53 @@ final displaySettingsForDisciplineProvider = Provider.family<DisplaySettings, St
 
 /// Управление списком участников мероприятия.
 class ParticipantsNotifier extends Notifier<List<Participant>> {
+  final _storage = ParticipantsStorage();
+
   @override
-  List<Participant> build() => List.from(demoParticipants);
+  List<Participant> build() {
+    _loadSaved();
+    return []; // Пустой список по умолчанию; данные из storage загрузятся асинхронно
+  }
+
+  Future<void> _loadSaved() async {
+    final saved = await _storage.load();
+    if (saved != null) {
+      state = saved;
+    }
+  }
+
+  void _save() {
+    _storage.save(state);
+  }
+
+  /// Очистить всех участников (в том числе демо).
+  void clearAll() {
+    state = [];
+    _storage.clear();
+  }
 
   /// Добавить участника.
   void add(Participant p) {
     state = [...state, p];
+    _save();
+  }
+
+  /// Добавить список участников (batch — одна запись на диск).
+  void addAll(List<Participant> participants) {
+    state = [...state, ...participants];
+    _save();
   }
 
   /// Удалить участника.
   void remove(String id) {
     state = state.where((p) => p.id != id).toList();
+    _save();
   }
 
   /// Обновить участника.
   void update(String id, Participant Function(Participant) updater) {
     state = state.map((p) => p.id == id ? updater(p) : p).toList();
+    _save();
   }
 
   /// Подтвердить заявку.
@@ -227,11 +258,13 @@ class ParticipantsNotifier extends Notifier<List<Participant>> {
   /// Массовое обновление нескольких участников.
   void bulkUpdate(Set<String> ids, Participant Function(Participant) updater) {
     state = state.map((p) => ids.contains(p.id) ? updater(p) : p).toList();
+    _save();
   }
 
   /// Массовое удаление.
   void bulkRemove(Set<String> ids) {
     state = state.where((p) => !ids.contains(p.id)).toList();
+    _save();
   }
 
   /// Переключить чек-ин (прибытие).

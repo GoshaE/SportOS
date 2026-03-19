@@ -162,9 +162,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
     }
 
     final notifier = ref.read(participantsProvider.notifier);
-    for (final p in unique) {
-      notifier.add(p);
-    }
+    notifier.addAll(unique);
 
     final msg = StringBuffer('Импортировано ${unique.length} участников');
     if (duplicates > 0) msg.write(' ($duplicates дублей пропущено)');
