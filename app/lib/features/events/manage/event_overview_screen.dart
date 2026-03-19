@@ -63,13 +63,16 @@ class EventOverviewScreen extends ConsumerWidget {
     final vetPassed = participants.where((p) => p.vetStatus == VetStatus.passed).length;
     final mandatePassed = participants.where((p) => p.mandateStatus == MandateStatus.passed).length;
 
-    // Checklist items
+    // Checklist items — computed from real participant data
+    final drawDone = participants.where((p) => p.startPosition != null).length;
+    final startListDone = participants.where((p) => p.startPosition != null && p.bib.isNotEmpty).length;
+
     final checkItems = [
-      _CheckItem('Жеребьёвка', 'Настроена', 1, 1, Icons.shuffle, '/manage/$eventId/draw'),
-      _CheckItem('Стартовый лист', 'Настроен', 1, 1, Icons.format_list_numbered, '/manage/$eventId/startlist'),
-      _CheckItem('BIB номера', '$bibAssigned из $totalParticipants', bibAssigned, totalParticipants, Icons.confirmation_number, '/manage/$eventId/bibs'),
-      _CheckItem('Ветконтроль', '$vetPassed из $totalParticipants', vetPassed, totalParticipants, Icons.pets, '/manage/$eventId/vetcheck'),
-      _CheckItem('Мандатная комиссия', '$mandatePassed из $totalParticipants', mandatePassed, totalParticipants, Icons.assignment_turned_in, '/manage/$eventId/mandate'),
+      _CheckItem('Жеребьёвка', totalParticipants == 0 ? 'Нет участников' : '$drawDone из $totalParticipants', drawDone, totalParticipants, Icons.shuffle, '/manage/$eventId/draw'),
+      _CheckItem('Стартовый лист', totalParticipants == 0 ? 'Нет участников' : '$startListDone из $totalParticipants', startListDone, totalParticipants, Icons.format_list_numbered, '/manage/$eventId/startlist'),
+      _CheckItem('BIB номера', totalParticipants == 0 ? 'Нет участников' : '$bibAssigned из $totalParticipants', bibAssigned, totalParticipants, Icons.confirmation_number, '/manage/$eventId/bibs'),
+      _CheckItem('Ветконтроль', totalParticipants == 0 ? 'Нет участников' : '$vetPassed из $totalParticipants', vetPassed, totalParticipants, Icons.pets, '/manage/$eventId/vetcheck'),
+      _CheckItem('Мандатная комиссия', totalParticipants == 0 ? 'Нет участников' : '$mandatePassed из $totalParticipants', mandatePassed, totalParticipants, Icons.assignment_turned_in, '/manage/$eventId/mandate'),
     ];
     final doneCount = checkItems.where((c) => c.done == c.total && c.total > 0).length;
     final totalChecks = checkItems.length;
