@@ -87,10 +87,14 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
     final disc = _currentDisc;
     if (disc == null) return;
 
+    final regConfig = ref.read(eventConfigProvider).registrationConfig;
+
     AppBottomSheet.show(context, title: 'Добавить спортсмена', child: Column(mainAxisSize: MainAxisSize.min, children: [
       AppTextField(label: 'ФИО *', controller: nameCtrl),
-      const SizedBox(height: 12),
-      AppTextField(label: 'Кличка собаки', controller: dogCtrl),
+      if (regConfig.fieldDogName != FieldVisibility.hidden) ...[
+        const SizedBox(height: 12),
+        AppTextField(label: regConfig.fieldDogName == FieldVisibility.required ? 'Кличка собаки *' : 'Кличка собаки', controller: dogCtrl),
+      ],
       const SizedBox(height: 16),
       AppButton.primary(
         text: 'Добавить',
@@ -288,11 +292,14 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
                   Text('Добавьте участников через Управлять → Участники', style: TextStyle(color: cs.outline, fontSize: 12)),
                 ]))
               : Builder(builder: (context) {
+                  final regConfig = ref.read(eventConfigProvider).registrationConfig;
+                  final showDog = regConfig.fieldDogName != FieldVisibility.hidden;
                   final columns = <ColumnDef>[
                     const ColumnDef(id: 'pos', label: '№', type: ColumnType.number, align: ColumnAlign.center, flex: 0.5, minWidth: 40),
                     const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.number, align: ColumnAlign.center, flex: 0.6, minWidth: 50),
                     const ColumnDef(id: 'name', label: 'ФИО', type: ColumnType.text, align: ColumnAlign.left, flex: 2.0, minWidth: 140),
-                    const ColumnDef(id: 'dog', label: 'Собака', type: ColumnType.text, align: ColumnAlign.left, flex: 1.2, minWidth: 100),
+                    if (showDog)
+                      const ColumnDef(id: 'dog', label: 'Собака', type: ColumnType.text, align: ColumnAlign.left, flex: 1.2, minWidth: 100),
                     const ColumnDef(id: 'time', label: 'Старт', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0, minWidth: 75),
                     const ColumnDef(id: 'status', label: 'Статус', type: ColumnType.text, align: ColumnAlign.center, flex: 0.8, minWidth: 60),
                   ];

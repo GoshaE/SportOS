@@ -417,6 +417,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
     String? selectedGender = p.gender;
     DateTime? birthDate = p.birthDate;
     final cs = Theme.of(context).colorScheme;
+    final regConfig = ref.read(eventConfigProvider).registrationConfig;
 
     AppBottomSheet.show(context, title: 'Редактировать', actions: [
       AppButton.primary(
@@ -424,6 +425,31 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         onPressed: () {
           if (nameCtrl.text.trim().isEmpty) {
             AppSnackBar.error(context, 'ФИО не может быть пустым');
+            return;
+          }
+          // Validate required fields from RegistrationConfig
+          if (regConfig.fieldGender == FieldVisibility.required && selectedGender == null) {
+            AppSnackBar.error(context, 'Укажите пол');
+            return;
+          }
+          if (regConfig.fieldBirthDate == FieldVisibility.required && birthDate == null) {
+            AppSnackBar.error(context, 'Укажите дату рождения');
+            return;
+          }
+          if (regConfig.fieldPhone == FieldVisibility.required && phoneCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите телефон / email');
+            return;
+          }
+          if (regConfig.fieldDogName == FieldVisibility.required && dogCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите кличку собаки');
+            return;
+          }
+          if (regConfig.fieldCity == FieldVisibility.required && cityCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите город');
+            return;
+          }
+          if (regConfig.fieldClub == FieldVisibility.required && clubCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите клуб');
             return;
           }
           ref.read(participantsProvider.notifier).update(p.id, (old) => old.copyWith(
@@ -442,57 +468,77 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
       ),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
       Row(children: [
-        Expanded(child: AppTextField(label: 'ФИО *', controller: nameCtrl)),
+        Expanded(child: AppTextField(label: _fieldLabel('ФИО', regConfig.fieldName), controller: nameCtrl)),
         const SizedBox(width: 12),
         SizedBox(width: 80, child: AppTextField(label: 'BIB', controller: bibCtrl)),
       ]),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: AppSelect<String>(
-          label: 'Пол',
-          value: selectedGender,
-          items: const [
-            SelectItem(value: 'male', label: 'Мужской'),
-            SelectItem(value: 'female', label: 'Женский'),
-          ],
-          onChanged: (v) => setModal(() => selectedGender = v),
-        )),
-        const SizedBox(width: 12),
-        Expanded(child: InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: ctx,
-              initialDate: birthDate ?? DateTime(2000),
-              firstDate: DateTime(1940),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) setModal(() => birthDate = picked);
-          },
-          child: InputDecorator(
-            decoration: const InputDecoration(labelText: 'Дата рождения', border: OutlineInputBorder()),
-            child: Text(
-              birthDate != null
-                  ? '${birthDate!.day.toString().padLeft(2, '0')}.${birthDate!.month.toString().padLeft(2, '0')}.${birthDate!.year}'
-                  : 'Выбрать',
-              style: TextStyle(color: birthDate != null ? cs.onSurface : cs.outline),
+      // Gender + BirthDate row (respect visibility)
+      if (regConfig.fieldGender != FieldVisibility.hidden || regConfig.fieldBirthDate != FieldVisibility.hidden) ...[
+        const SizedBox(height: 12),
+        Row(children: [
+          if (regConfig.fieldGender != FieldVisibility.hidden) ...[Expanded(child: AppSelect<String>(
+            label: _fieldLabel('Пол', regConfig.fieldGender),
+            value: selectedGender,
+            items: const [
+              SelectItem(value: 'male', label: 'Мужской'),
+              SelectItem(value: 'female', label: 'Женский'),
+            ],
+            onChanged: (v) => setModal(() => selectedGender = v),
+          ))],
+          if (regConfig.fieldGender != FieldVisibility.hidden && regConfig.fieldBirthDate != FieldVisibility.hidden)
+            const SizedBox(width: 12),
+          if (regConfig.fieldBirthDate != FieldVisibility.hidden) ...[Expanded(child: InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: ctx,
+                initialDate: birthDate ?? DateTime(2000),
+                firstDate: DateTime(1940),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) setModal(() => birthDate = picked);
+            },
+            child: InputDecorator(
+              decoration: InputDecoration(labelText: _fieldLabel('Дата рождения', regConfig.fieldBirthDate), border: const OutlineInputBorder()),
+              child: Text(
+                birthDate != null
+                    ? '${birthDate!.day.toString().padLeft(2, '0')}.${birthDate!.month.toString().padLeft(2, '0')}.${birthDate!.year}'
+                    : 'Выбрать',
+                style: TextStyle(color: birthDate != null ? cs.onSurface : cs.outline),
+              ),
             ),
-          ),
-        )),
-      ]),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: AppTextField(label: 'Телефон / Email', controller: phoneCtrl)),
-        const SizedBox(width: 12),
-        Expanded(child: AppTextField(label: 'Собака', controller: dogCtrl)),
-      ]),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: AppTextField(label: 'Город', controller: cityCtrl)),
-        const SizedBox(width: 12),
-        Expanded(child: AppTextField(label: 'Клуб', controller: clubCtrl)),
-      ]),
+          ))],
+        ]),
+      ],
+      // Phone + Dog row (respect visibility)
+      if (regConfig.fieldPhone != FieldVisibility.hidden || regConfig.fieldDogName != FieldVisibility.hidden) ...[
+        const SizedBox(height: 12),
+        Row(children: [
+          if (regConfig.fieldPhone != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Телефон / Email', regConfig.fieldPhone), controller: phoneCtrl)),
+          if (regConfig.fieldPhone != FieldVisibility.hidden && regConfig.fieldDogName != FieldVisibility.hidden)
+            const SizedBox(width: 12),
+          if (regConfig.fieldDogName != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Собака', regConfig.fieldDogName), controller: dogCtrl)),
+        ]),
+      ],
+      // City + Club row (respect visibility)
+      if (regConfig.fieldCity != FieldVisibility.hidden || regConfig.fieldClub != FieldVisibility.hidden) ...[
+        const SizedBox(height: 12),
+        Row(children: [
+          if (regConfig.fieldCity != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Город', regConfig.fieldCity), controller: cityCtrl)),
+          if (regConfig.fieldCity != FieldVisibility.hidden && regConfig.fieldClub != FieldVisibility.hidden)
+            const SizedBox(width: 12),
+          if (regConfig.fieldClub != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Клуб', regConfig.fieldClub), controller: clubCtrl)),
+        ]),
+      ],
     ])));
   }
+
+  // ─── Helper: field label with required marker ───
+  String _fieldLabel(String base, FieldVisibility v) =>
+      v == FieldVisibility.required ? '$base *' : base;
 
   // ─── Add participant ───
   void _showAddParticipant(BuildContext context) {
@@ -506,6 +552,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
     DateTime? birthDate;
     final disciplines = ref.read(disciplineConfigsProvider);
     final cs = Theme.of(context).colorScheme;
+    final regConfig = ref.read(eventConfigProvider).registrationConfig;
 
     AppBottomSheet.show(context, title: 'Добавить участника', actions: [
       AppButton.primary(
@@ -513,6 +560,31 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         onPressed: () {
           if (nameCtrl.text.trim().isEmpty) {
             AppSnackBar.error(context, 'Введите ФИО');
+            return;
+          }
+          // Validate required fields from RegistrationConfig
+          if (regConfig.fieldGender == FieldVisibility.required && selectedGender == null) {
+            AppSnackBar.error(context, 'Укажите пол');
+            return;
+          }
+          if (regConfig.fieldBirthDate == FieldVisibility.required && birthDate == null) {
+            AppSnackBar.error(context, 'Укажите дату рождения');
+            return;
+          }
+          if (regConfig.fieldPhone == FieldVisibility.required && phoneCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите телефон / email');
+            return;
+          }
+          if (regConfig.fieldDogName == FieldVisibility.required && dogCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите кличку собаки');
+            return;
+          }
+          if (regConfig.fieldCity == FieldVisibility.required && cityCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите город');
+            return;
+          }
+          if (regConfig.fieldClub == FieldVisibility.required && clubCtrl.text.trim().isEmpty) {
+            AppSnackBar.error(context, 'Укажите клуб');
             return;
           }
           final eventConfig = ref.read(eventConfigProvider);
@@ -545,59 +617,75 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         },
       ),
     ], child: StatefulBuilder(builder: (ctx, setModal) => Column(mainAxisSize: MainAxisSize.min, children: [
-      AppTextField(label: 'ФИО *', controller: nameCtrl),
+      AppTextField(label: _fieldLabel('ФИО', regConfig.fieldName), controller: nameCtrl),
       const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: AppSelect<String>(
-          label: 'Пол',
-          value: selectedGender,
-          items: const [
-            SelectItem(value: 'male', label: 'Мужской'),
-            SelectItem(value: 'female', label: 'Женский'),
-          ],
-          onChanged: (v) => setModal(() => selectedGender = v),
-        )),
-        const SizedBox(width: 12),
-        Expanded(child: InkWell(
-          onTap: () async {
-            final picked = await showDatePicker(
-              context: ctx,
-              initialDate: DateTime(2000),
-              firstDate: DateTime(1940),
-              lastDate: DateTime.now(),
-            );
-            if (picked != null) setModal(() => birthDate = picked);
-          },
-          child: InputDecorator(
-            decoration: const InputDecoration(labelText: 'Дата рождения', border: OutlineInputBorder()),
-            child: Text(
-              birthDate != null
-                  ? '${birthDate!.day.toString().padLeft(2, '0')}.${birthDate!.month.toString().padLeft(2, '0')}.${birthDate!.year}'
-                  : 'Выбрать',
-              style: TextStyle(color: birthDate != null ? cs.onSurface : cs.outline),
+      // Gender + BirthDate row (respect visibility)
+      if (regConfig.fieldGender != FieldVisibility.hidden || regConfig.fieldBirthDate != FieldVisibility.hidden)
+        Row(children: [
+          if (regConfig.fieldGender != FieldVisibility.hidden) ...[Expanded(child: AppSelect<String>(
+            label: _fieldLabel('Пол', regConfig.fieldGender),
+            value: selectedGender,
+            items: const [
+              SelectItem(value: 'male', label: 'Мужской'),
+              SelectItem(value: 'female', label: 'Женский'),
+            ],
+            onChanged: (v) => setModal(() => selectedGender = v),
+          ))],
+          if (regConfig.fieldGender != FieldVisibility.hidden && regConfig.fieldBirthDate != FieldVisibility.hidden)
+            const SizedBox(width: 12),
+          if (regConfig.fieldBirthDate != FieldVisibility.hidden) ...[Expanded(child: InkWell(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: ctx,
+                initialDate: DateTime(2000),
+                firstDate: DateTime(1940),
+                lastDate: DateTime.now(),
+              );
+              if (picked != null) setModal(() => birthDate = picked);
+            },
+            child: InputDecorator(
+              decoration: InputDecoration(labelText: _fieldLabel('Дата рождения', regConfig.fieldBirthDate), border: const OutlineInputBorder()),
+              child: Text(
+                birthDate != null
+                    ? '${birthDate!.day.toString().padLeft(2, '0')}.${birthDate!.month.toString().padLeft(2, '0')}.${birthDate!.year}'
+                    : 'Выбрать',
+                style: TextStyle(color: birthDate != null ? cs.onSurface : cs.outline),
+              ),
             ),
-          ),
-        )),
-      ]),
-      const SizedBox(height: 12),
+          ))],
+        ]),
+      if (regConfig.fieldGender != FieldVisibility.hidden || regConfig.fieldBirthDate != FieldVisibility.hidden)
+        const SizedBox(height: 12),
       AppSelect<String>(
         label: 'Дисциплина *',
         value: selectedDisc,
         items: disciplines.map((d) => SelectItem(value: d.id, label: d.name)).toList(),
         onChanged: (v) => setModal(() => selectedDisc = v),
       ),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: AppTextField(label: 'Телефон / Email', controller: phoneCtrl)),
-        const SizedBox(width: 12),
-        Expanded(child: AppTextField(label: 'Собака', controller: dogCtrl)),
-      ]),
-      const SizedBox(height: 12),
-      Row(children: [
-        Expanded(child: AppTextField(label: 'Город', controller: cityCtrl)),
-        const SizedBox(width: 12),
-        Expanded(child: AppTextField(label: 'Клуб', controller: clubCtrl)),
-      ]),
+      // Phone + Dog row (respect visibility)
+      if (regConfig.fieldPhone != FieldVisibility.hidden || regConfig.fieldDogName != FieldVisibility.hidden) ...[
+        const SizedBox(height: 12),
+        Row(children: [
+          if (regConfig.fieldPhone != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Телефон / Email', regConfig.fieldPhone), controller: phoneCtrl)),
+          if (regConfig.fieldPhone != FieldVisibility.hidden && regConfig.fieldDogName != FieldVisibility.hidden)
+            const SizedBox(width: 12),
+          if (regConfig.fieldDogName != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Собака', regConfig.fieldDogName), controller: dogCtrl)),
+        ]),
+      ],
+      // City + Club row (respect visibility)
+      if (regConfig.fieldCity != FieldVisibility.hidden || regConfig.fieldClub != FieldVisibility.hidden) ...[
+        const SizedBox(height: 12),
+        Row(children: [
+          if (regConfig.fieldCity != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Город', regConfig.fieldCity), controller: cityCtrl)),
+          if (regConfig.fieldCity != FieldVisibility.hidden && regConfig.fieldClub != FieldVisibility.hidden)
+            const SizedBox(width: 12),
+          if (regConfig.fieldClub != FieldVisibility.hidden)
+            Expanded(child: AppTextField(label: _fieldLabel('Клуб', regConfig.fieldClub), controller: clubCtrl)),
+        ]),
+      ],
     ])));
   }
 
