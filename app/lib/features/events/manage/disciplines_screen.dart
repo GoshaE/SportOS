@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:go_router/go_router.dart';
 import '../../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
@@ -136,53 +137,56 @@ class DisciplinesScreen extends ConsumerWidget {
 
           // ─── 2. Трасса ───
           _editSection(cs, 'Трасса', Icons.route),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: cs.secondaryContainer.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              // Course chips
-              Wrap(spacing: 6, runSpacing: 6, children: courses.map((c) => ChoiceChip(
-                label: Text('${c.name} (${c.distanceKm} км)', style: const TextStyle(fontSize: 12)),
-                selected: selectedCourseId == c.id,
-                onSelected: (_) => setModal(() => selectedCourseId = c.id),
-                avatar: Icon(Icons.route, size: 14, color: selectedCourseId == c.id ? cs.onPrimary : cs.onSurfaceVariant),
-                visualDensity: VisualDensity.compact,
-              )).toList()),
+          if (courses.isEmpty)
+            _emptyCourseHint(cs, context)
+          else
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: cs.secondaryContainer.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                // Course chips
+                Wrap(spacing: 6, runSpacing: 6, children: courses.map((c) => ChoiceChip(
+                  label: Text('${c.name} (${c.distanceKm} км)', style: const TextStyle(fontSize: 12)),
+                  selected: selectedCourseId == c.id,
+                  onSelected: (_) => setModal(() => selectedCourseId = c.id),
+                  avatar: Icon(Icons.route, size: 14, color: selectedCourseId == c.id ? cs.onPrimary : cs.onSurfaceVariant),
+                  visualDensity: VisualDensity.compact,
+                )).toList()),
 
-              // Course details
-              if (selectedCourse != null) ...[
-                const SizedBox(height: 8),
-                Row(children: [
-                  Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
-                  const SizedBox(width: 4),
-                  Text('${selectedCourse.checkpoints.length} КП', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                  if (selectedCourse.elevationGainM != null) ...[
-                    const SizedBox(width: 12),
-                    Icon(Icons.trending_up, size: 14, color: cs.onSurfaceVariant),
+                // Course details
+                if (selectedCourse != null) ...[
+                  const SizedBox(height: 8),
+                  Row(children: [
+                    Icon(Icons.location_on, size: 14, color: cs.onSurfaceVariant),
                     const SizedBox(width: 4),
-                    Text('D+ ${selectedCourse.elevationGainM} м', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                  ],
-                ]),
-                if (selectedCourse.checkpoints.isNotEmpty) ...[
-                  const SizedBox(height: 6),
-                  Wrap(spacing: 4, runSpacing: 4, children: selectedCourse.checkpoints.map((cp) =>
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                    Text('${selectedCourse.checkpoints.length} КП', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                    if (selectedCourse.elevationGainM != null) ...[
+                      const SizedBox(width: 12),
+                      Icon(Icons.trending_up, size: 14, color: cs.onSurfaceVariant),
+                      const SizedBox(width: 4),
+                      Text('D+ ${selectedCourse.elevationGainM} м', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                    ],
+                  ]),
+                  if (selectedCourse.checkpoints.isNotEmpty) ...[
+                    const SizedBox(height: 6),
+                    Wrap(spacing: 4, runSpacing: 4, children: selectedCourse.checkpoints.map((cp) =>
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                        ),
+                        child: Text(cp.name, style: const TextStyle(fontSize: 10)),
                       ),
-                      child: Text(cp.name, style: const TextStyle(fontSize: 10)),
-                    ),
-                  ).toList()),
+                    ).toList()),
+                  ],
                 ],
-              ],
-            ]),
-          ),
+              ]),
+            ),
           const SizedBox(height: 20),
 
           // ─── 3. Старт ───
@@ -538,15 +542,16 @@ class DisciplinesScreen extends ConsumerWidget {
           const SizedBox(height: 16),
 
           // Course + Day
-          if (courses.isNotEmpty) ...[
-            _editSection(cs, 'Трасса', Icons.route),
+          _editSection(cs, 'Трасса', Icons.route),
+          if (courses.isEmpty)
+            _emptyCourseHint(cs, context)
+          else
             Wrap(spacing: 6, runSpacing: 6, children: courses.map((c) => ChoiceChip(
               label: Text('${c.name} (${c.distanceKm} км)', style: const TextStyle(fontSize: 12)),
               selected: selectedCourseId == c.id,
               onSelected: (_) => setModal(() => selectedCourseId = c.id),
               visualDensity: VisualDensity.compact,
             )).toList()),
-          ],
           if (eventConfig.isMultiDay) ...[
             const SizedBox(height: 8),
             Wrap(spacing: 6, children: eventConfig.days.map((d) => ChoiceChip(
@@ -641,6 +646,39 @@ class DisciplinesScreen extends ConsumerWidget {
         }),
       ],
     ));
+  }
+
+  /// Подсказка, когда трасс ещё нет — с кнопкой перехода на экран трасс.
+  Widget _emptyCourseHint(ColorScheme cs, BuildContext context) {
+    final eventId = GoRouterState.of(context).pathParameters['eventId'] ?? 'evt-1';
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cs.secondaryContainer.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        Row(children: [
+          Icon(Icons.info_outline, size: 16, color: cs.onSurfaceVariant),
+          const SizedBox(width: 6),
+          Expanded(child: Text(
+            'Сначала создайте трассу в разделе «Трассы»,\nзатем она появится здесь для выбора.',
+            style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+          )),
+        ]),
+        const SizedBox(height: 10),
+        AppButton.small(
+          text: 'Создать трассу',
+          icon: Icons.add,
+          onPressed: () {
+            // Close current bottom sheet and navigate to courses
+            Navigator.of(context, rootNavigator: true).pop();
+            context.push('/manage/$eventId/courses');
+          },
+        ),
+      ]),
+    );
   }
 
   Widget _editSection(ColorScheme cs, String title, IconData icon) {
