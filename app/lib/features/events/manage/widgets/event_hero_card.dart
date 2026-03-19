@@ -20,6 +20,19 @@ class EventHeroCard extends ConsumerWidget {
 
     final eventConfig = ref.watch(eventConfigProvider);
     final participants = ref.watch(participantsProvider);
+
+    // ── Auto: Registration → Prep by deadline ──
+    if (eventConfig.status == EventStatus.registrationOpen) {
+      final deadline = eventConfig.registrationConfig.registrationDeadline;
+      if (deadline != null && DateTime.now().isAfter(deadline)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          ref.read(eventConfigProvider.notifier).update(
+            (c) => c.copyWith(status: EventStatus.registrationClosed),
+          );
+        });
+      }
+    }
+
     final totalParticipants = participants.length;
     final daysUntilStart = eventConfig.startDate.difference(DateTime.now()).inDays;
     final daysLabel = daysUntilStart > 0

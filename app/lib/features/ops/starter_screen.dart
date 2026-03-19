@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
+import 'package:sportos_app/domain/event/event_config.dart' hide TimeOfDay;
+import 'package:sportos_app/domain/event/config_providers.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
 
 /// Screen ID: R1 — Стартёр (раздельный + масс-старт)
@@ -97,13 +99,17 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
     );
   }
 
-  void _markStarted() {
+  void _markStarted() async {
     final session = ref.read(raceSessionProvider);
     if (session == null) return;
     final current = session.startList.currentAthlete;
     if (current == null) return;
+
+    // First start → confirm transition to Live
+    if (!await _confirmLiveTransition()) return;
+
     ref.read(raceSessionProvider.notifier).markStarted(current.bib);
-    AppSnackBar.success(context, 'BIB ${current.bib} — УШЁЛ! ✅');
+    if (mounted) AppSnackBar.success(context, 'BIB ${current.bib} — УШЁЛ! ✅');
   }
 
   void _markDns(String bib) {
@@ -150,6 +156,10 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
   }
 
   void _showGunStart() async {
+    // First start → confirm transition to Live
+    if (!await _confirmLiveTransition()) return;
+    if (!mounted) return;
+
     final confirm = await AppDialog.confirm(
       context,
       title: 'GUN START',
@@ -161,6 +171,31 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
       ref.read(raceSessionProvider.notifier).markStartedAll();
       AppSnackBar.success(context, 'GUN START! Все стартовали.');
     }
+  }
+
+  /// Check if event needs Live transition; show confirmation if first start.
+  /// Returns true if we can proceed, false if user cancelled.
+  Future<bool> _confirmLiveTransition() async {
+    final status = ref.read(eventConfigProvider).status;
+    if (status == EventStatus.inProgress) return true; // already live
+
+    final ok = await AppDialog.confirm(
+      context,
+      title: 'Переход в LIVE-режим',
+      message: 'Первый старт переведёт мероприятие в режим гонки.\n'
+          'Регистрация будет автоматически закрыта.',
+      confirmText: 'Стартовать',
+    );
+    if (ok != true || !mounted) return false;
+
+    // Transition to Live + auto-close registration
+    ref.read(eventConfigProvider.notifier).update(
+      (c) => c.copyWith(
+        status: EventStatus.inProgress,
+        registrationConfig: c.registrationConfig.copyWith(isOpen: false),
+      ),
+    );
+    return true;
   }
 
   void _showTimeSyncWizard() {
