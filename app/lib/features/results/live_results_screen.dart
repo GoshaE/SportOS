@@ -83,6 +83,11 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   Widget _buildBody(ThemeData theme, ColorScheme cs, RaceSessionState session) {
     final ds = session.config.displaySettings;
 
+    // ── Read Config Engine ──
+    final eventConfig = ref.watch(eventConfigProvider);
+    final disciplines = ref.watch(disciplineConfigsProvider);
+    final totalDays = eventConfig.isMultiDay ? eventConfig.days.length : 0;
+
     // ── Build ResultTable from engine ──
     final results = _resultCalc.calculate(
       config: session.config,
@@ -94,6 +99,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
       results: results,
       config: session.config,
       display: ds,
+      precision: eventConfig.timingConfig.precision,
       athletes: session.startList.all,
       marks: session.marking.officialMarks,
     );
@@ -105,11 +111,6 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     final dnsCount = table.rows.where((r) => r.type == RowType.dns).length;
     final dsqCount = table.rows.where((r) => r.type == RowType.dsq).length;
     final waitingCount = table.rows.where((r) => r.type == RowType.waiting).length;
-
-    // ── Read Config Engine ──
-    final eventConfig = ref.watch(eventConfigProvider);
-    final disciplines = ref.watch(disciplineConfigsProvider);
-    final totalDays = eventConfig.isMultiDay ? eventConfig.days.length : 0;
 
     _selectedDiscId ??= disciplines.isNotEmpty ? disciplines.first.id : null;
 

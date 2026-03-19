@@ -5,6 +5,7 @@ import '../../core/widgets/widgets.dart';
 import '../../ui/molecules/app_chip_group.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../core/widgets/app_podium_view.dart';
+import '../../domain/event/config_providers.dart';
 import '../../domain/timing/timing.dart';
 
 /// Screen ID: RS2 — Протоколы (данные из ResultCalculator или демо)
@@ -203,10 +204,12 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
           if (results.isNotEmpty)
             SliverToBoxAdapter(
               child: Builder(builder: (context) {
+                final eventConfig = ref.watch(eventConfigProvider);
                 final table = _tableBuilder.build(
                   results: results,
                   config: session.config,
                   display: session.config.displaySettings,
+                  precision: eventConfig.timingConfig.precision,
                   athletes: session.startList.all,
                   marks: session.marking.officialMarks,
                 );

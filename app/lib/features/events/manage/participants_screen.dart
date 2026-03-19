@@ -515,8 +515,14 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
             AppSnackBar.error(context, 'Введите ФИО');
             return;
           }
-          final disc = disciplines.where((d) => d.id == selectedDisc).firstOrNull ?? disciplines.first;
+          final eventConfig = ref.read(eventConfigProvider);
+          final maxP = eventConfig.registrationConfig.maxParticipants;
           final participants = ref.read(participantsProvider);
+          if (maxP != null && maxP > 0 && participants.length >= maxP) {
+            AppSnackBar.error(context, 'Лимит участников ($maxP) исчерпан. Измените в настройках регистрации.');
+            return;
+          }
+          final disc = disciplines.where((d) => d.id == selectedDisc).firstOrNull ?? disciplines.first;
           final nextBib = (participants.length + 1).toString().padLeft(2, '0');
 
           ref.read(participantsProvider.notifier).add(Participant(

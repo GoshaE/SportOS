@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import 'package:sportos_app/domain/timing/timing.dart';
+import '../../domain/event/config_providers.dart';
 
 /// Screen ID: R3 — Маршал (с модалками R3.1–R3.3)
 class MarshalScreen extends ConsumerStatefulWidget {
@@ -163,9 +164,27 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
           text: 'Подтвердить DNF',
           backgroundColor: cs.error,
           onPressed: () {
-            ref.read(raceSessionProvider.notifier).markDnf(bib);
-            Navigator.of(context, rootNavigator: true).pop();
-            AppSnackBar.error(context, 'BIB $bib — DNF');
+            final config = ref.read(eventConfigProvider);
+            if (config.timingConfig.doubleDnfConfirm) {
+              // Double confirmation required by TimingConfig setting
+              Navigator.of(context, rootNavigator: true).pop();
+              AppDialog.confirm(
+                context,
+                title: 'Вы уверены?',
+                message: 'BIB $bib $name будет отмечен как DNF. Это действие необратимо.',
+                confirmText: 'Да, DNF',
+                isDanger: true,
+              ).then((ok) {
+                if (ok == true && mounted) {
+                  ref.read(raceSessionProvider.notifier).markDnf(bib);
+                  AppSnackBar.error(context, 'BIB $bib — DNF');
+                }
+              });
+            } else {
+              ref.read(raceSessionProvider.notifier).markDnf(bib);
+              Navigator.of(context, rootNavigator: true).pop();
+              AppSnackBar.error(context, 'BIB $bib — DNF');
+            }
           },
         ),
       ],

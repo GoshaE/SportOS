@@ -2,7 +2,7 @@ import 'models.dart';
 import 'result_table.dart';
 import 'time_formatter.dart';
 import 'elapsed_calculator.dart';
-import '../event/event_config.dart';
+import '../event/event_config.dart' show DisplaySettings, TimingPrecision;
 
 /// Строит [ResultTable] из расчётных результатов.
 ///
@@ -36,11 +36,12 @@ class ResultTableBuilder {
     required List<RaceResult> results,
     required DisciplineConfig config,
     required DisplaySettings display,
+    TimingPrecision precision = TimingPrecision.tenths,
     List<StartEntry>? athletes,
     List<TimeMark>? marks,
   }) {
     final columns = _buildColumns(config, display);
-    final rows = _buildRows(results, config, display, athletes, marks);
+    final rows = _buildRows(results, config, display, precision, athletes, marks);
     return ResultTable(columns: columns, rows: rows);
   }
 
@@ -138,6 +139,7 @@ class ResultTableBuilder {
     List<RaceResult> results,
     DisciplineConfig config,
     DisplaySettings display,
+    TimingPrecision precision,
     List<StartEntry>? athletes,
     List<TimeMark>? marks,
   ) {
@@ -193,7 +195,7 @@ class ResultTableBuilder {
             final isBest = bestLaps[lap - 1] == lapDur;
             cells[key] = CellValue(
               raw: lapDur.inMilliseconds,
-              display: TimeFormatter.compact(lapDur),
+              display: TimeFormatter.result(lapDur, precision),
               style: isBest ? CellStyle.highlight : CellStyle.normal,
             );
           } else if (_isTerminal(r.status)) {
@@ -230,7 +232,7 @@ class ResultTableBuilder {
           // First split is checkpoint, last is finish
           cells['split'] = CellValue(
             raw: r.splitTimes.first.inMilliseconds,
-            display: TimeFormatter.compact(r.splitTimes.first),
+            display: TimeFormatter.result(r.splitTimes.first, precision),
           );
         } else {
           cells['split'] = CellValue.empty;
@@ -241,7 +243,7 @@ class ResultTableBuilder {
       if (r.status == AthleteStatus.finished) {
         cells['result_time'] = CellValue(
           raw: r.resultTime.inMilliseconds,
-          display: TimeFormatter.compact(r.resultTime),
+          display: TimeFormatter.result(r.resultTime, precision),
           style: CellStyle.bold,
         );
       } else if (r.status == AthleteStatus.started) {

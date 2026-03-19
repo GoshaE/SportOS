@@ -1,14 +1,17 @@
 /// Единый форматтер времени для всего приложения.
-///
-/// Заменяет дублирующиеся `_fmtDur` / `_fmtDurMs` хелперы
-/// из экранов. Чистый Dart, без зависимостей от Flutter.
+library;
+
+import '../event/event_config.dart' show TimingPrecision;
+
+/// Заменяет дублирующиеся `_fmtDur` / `_fmtDurMs` хелперы из экранов.
+/// Чистый Dart, без зависимостей от Flutter.
 ///
 /// ```dart
 /// TimeFormatter.full(dur);    // "01:23:45.678"
 /// TimeFormatter.compact(dur); // "23:45" or "1:05:30" (>60 min)
 /// TimeFormatter.hms(dur);     // "01:23:45"
 /// TimeFormatter.gap(dur);     // "+1:23.4"
-/// TimeFormatter.result(dur, precision); // respects TimingPrecision
+/// TimeFormatter.result(dur, TimingPrecision.tenths); // "23:45.6"
 /// ```
 class TimeFormatter {
   const TimeFormatter._();
@@ -61,13 +64,13 @@ class TimeFormatter {
 
   /// Result time formatted to the specified precision.
   ///
-  /// - `seconds`:    `"23:45"` or `"1:05:30"`
-  /// - `tenths`:     `"23:45.6"` or `"1:05:30.6"`
-  /// - `hundredths`: `"23:45.67"` or `"1:05:30.67"`
+  /// - `seconds`:      `"23:45"` or `"1:05:30"`
+  /// - `tenths`:       `"23:45.6"` or `"1:05:30.6"`
+  /// - `hundredths`:   `"23:45.67"` or `"1:05:30.67"`
   /// - `milliseconds`: `"23:45.678"` or `"1:05:30.678"`
   ///
-  /// Used in: ResultTableBuilder for official result times.
-  static String result(Duration d, {String precision = 'tenths'}) {
+  /// Used in: ResultTableBuilder, Protocol, Dictator screen.
+  static String result(Duration d, TimingPrecision precision) {
     final neg = d.isNegative;
     final abs = d.abs();
     final h = abs.inHours;
@@ -79,20 +82,17 @@ class TimeFormatter {
         : '${neg ? '-' : ''}$m:$s';
 
     switch (precision) {
-      case 'seconds':
+      case TimingPrecision.seconds:
         return base;
-      case 'tenths':
+      case TimingPrecision.tenths:
         final t = abs.inMilliseconds.remainder(1000) ~/ 100;
         return '$base.$t';
-      case 'hundredths':
+      case TimingPrecision.hundredths:
         final c = (abs.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
         return '$base.$c';
-      case 'milliseconds':
+      case TimingPrecision.milliseconds:
         final ms = abs.inMilliseconds.remainder(1000).toString().padLeft(3, '0');
         return '$base.$ms';
-      default:
-        final t = abs.inMilliseconds.remainder(1000) ~/ 100;
-        return '$base.$t';
     }
   }
 

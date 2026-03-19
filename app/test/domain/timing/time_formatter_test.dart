@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sportos_app/domain/timing/time_formatter.dart';
+import 'package:sportos_app/domain/event/event_config.dart' show TimingPrecision;
 
 void main() {
   group('TimeFormatter.full', () {
@@ -48,27 +49,27 @@ void main() {
   group('TimeFormatter.result', () {
     test('seconds precision', () {
       const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
-      expect(TimeFormatter.result(d, precision: 'seconds'), '05:30');
+      expect(TimeFormatter.result(d, TimingPrecision.seconds), '05:30');
     });
 
     test('tenths precision', () {
       const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
-      expect(TimeFormatter.result(d, precision: 'tenths'), '05:30.4');
+      expect(TimeFormatter.result(d, TimingPrecision.tenths), '05:30.4');
     });
 
     test('hundredths precision', () {
       const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
-      expect(TimeFormatter.result(d, precision: 'hundredths'), '05:30.45');
+      expect(TimeFormatter.result(d, TimingPrecision.hundredths), '05:30.45');
     });
 
     test('milliseconds precision', () {
       const d = Duration(minutes: 5, seconds: 30, milliseconds: 456);
-      expect(TimeFormatter.result(d, precision: 'milliseconds'), '05:30.456');
+      expect(TimeFormatter.result(d, TimingPrecision.milliseconds), '05:30.456');
     });
 
     test('includes hours when >=1h', () {
       const d = Duration(hours: 1, minutes: 5, seconds: 30, milliseconds: 100);
-      expect(TimeFormatter.result(d, precision: 'tenths'), '1:05:30.1');
+      expect(TimeFormatter.result(d, TimingPrecision.tenths), '1:05:30.1');
     });
   });
 

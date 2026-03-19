@@ -62,7 +62,12 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
       if (drawResults.containsKey(d.id)) continue;
 
       // Get real participants for this discipline
-      final discParticipants = participants.where((p) => p.disciplineId == d.id).toList();
+      // Respect DrawConfig.onlyApproved setting
+      final discParticipants = participants.where((p) {
+        if (p.disciplineId != d.id) return false;
+        if (config.drawConfig.onlyApproved && p.applicationStatus != ApplicationStatus.approved) return false;
+        return true;
+      }).toList();
 
       final entries = _buildEntries(discParticipants, d);
       notifier.setResult(d.id, DrawResultData(disciplineId: d.id, entries: entries));
