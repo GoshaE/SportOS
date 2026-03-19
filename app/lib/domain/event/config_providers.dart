@@ -4,6 +4,7 @@ import 'event_config.dart';
 import '../timing/models.dart';
 import '../../data/config_storage.dart';
 import '../../data/participants_storage.dart';
+import '../../data/draw_storage.dart';
 // ─────────────────────────────────────────────────────────────────
 // EVENT CONFIG PROVIDER
 // ─────────────────────────────────────────────────────────────────
@@ -280,6 +281,78 @@ class ParticipantsNotifier extends Notifier<List<Participant>> {
 
 final participantsProvider = NotifierProvider<ParticipantsNotifier, List<Participant>>(
   ParticipantsNotifier.new,
+);
+
+
+// ─────────────────────────────────────────────────────────────────
+// DRAW RESULTS PROVIDER
+// ─────────────────────────────────────────────────────────────────
+
+/// Управление результатами жеребьёвки.
+/// Персистентность через DrawStorage — данные сохраняются между навигациями.
+class DrawResultsNotifier extends Notifier<Map<String, DrawResultData>> {
+  @override
+  Map<String, DrawResultData> build() {
+    _loadSaved();
+    return {};
+  }
+
+  Future<void> _loadSaved() async {
+    final saved = await DrawStorage.load();
+    if (saved.isNotEmpty) {
+      state = saved;
+    }
+  }
+
+  void _save() {
+    DrawStorage.save(state);
+  }
+
+  /// Установить результат жеребьёвки для дисциплины.
+  void setResult(String disciplineId, DrawResultData result) {
+    final updated = Map<String, DrawResultData>.from(state);
+    updated[disciplineId] = result;
+    state = updated;
+    _save();
+  }
+
+  /// Утвердить жеребьёвку для дисциплины.
+  void approve(String disciplineId) {
+    final result = state[disciplineId];
+    if (result == null) return;
+    final updated = Map<String, DrawResultData>.from(state);
+    updated[disciplineId] = result.copyWith(status: 'approved');
+    state = updated;
+    _save();
+  }
+
+  /// Обновить записи (после reshuffle, drag-n-drop и т.д.).
+  void updateEntries(String disciplineId, List<DrawEntryData> entries, {String status = 'draft'}) {
+    final result = state[disciplineId];
+    if (result == null) return;
+    final updated = Map<String, DrawResultData>.from(state);
+    updated[disciplineId] = result.copyWith(status: status, entries: entries);
+    state = updated;
+    _save();
+  }
+
+  /// Очистить все результаты жеребьёвки (при создании нового мероприятия).
+  void clearAll() {
+    state = {};
+    DrawStorage.clear();
+  }
+
+  /// Удалить результат конкретной дисциплины.
+  void removeResult(String disciplineId) {
+    final updated = Map<String, DrawResultData>.from(state);
+    updated.remove(disciplineId);
+    state = updated;
+    _save();
+  }
+}
+
+final drawResultsProvider = NotifierProvider<DrawResultsNotifier, Map<String, DrawResultData>>(
+  DrawResultsNotifier.new,
 );
 
 

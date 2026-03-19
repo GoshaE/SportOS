@@ -300,10 +300,16 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
   }
 
   void _performAutoAssign(List<Participant> allParticipants, List<BibPool> pools) {
-    // Determine scope
-    final toAssignScope = _selectedDisc == 'Все' 
+    // Determine scope — sorted by startPosition (draw order) to match visible order
+    final toAssignScope = (_selectedDisc == 'Все' 
       ? allParticipants.where((p) => p.bib.isEmpty).toList()
-      : allParticipants.where((p) => p.bib.isEmpty && p.disciplineName == _selectedDisc).toList();
+      : allParticipants.where((p) => p.bib.isEmpty && p.disciplineName == _selectedDisc).toList())
+      ..sort((a, b) {
+        final aPos = a.startPosition ?? 999999;
+        final bPos = b.startPosition ?? 999999;
+        if (aPos != bPos) return aPos.compareTo(bPos);
+        return a.name.compareTo(b.name);
+      });
       
     if (toAssignScope.isEmpty) { 
       AppSnackBar.info(context, 'Нет участников без номеров для текущего фильтра'); 

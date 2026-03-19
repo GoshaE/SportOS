@@ -178,7 +178,16 @@ class RaceSessionNotifier extends Notifier<RaceSessionState?> {
     }
 
     final clock = RaceClock();
-    clock.start(config.firstStartTime);
+    // Use TODAY's date combined with time portion from config.
+    // This prevents the -740h countdown when config date is in the past.
+    final now = DateTime.now();
+    final adjustedStartTime = DateTime(
+      now.year, now.month, now.day,
+      config.firstStartTime.hour,
+      config.firstStartTime.minute,
+      config.firstStartTime.second,
+    );
+    clock.start(adjustedStartTime);
 
     final startList = StartListService(config: config, waves: waves);
     startList.buildStartList(athletes, pursuitGaps: pursuitGaps);

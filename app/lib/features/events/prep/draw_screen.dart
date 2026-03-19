@@ -7,68 +7,11 @@ import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../../domain/event/config_providers.dart';
 import '../../../domain/event/event_config.dart' hide TimeOfDay;
 import '../../../domain/timing/models.dart';
+import '../../../data/draw_storage.dart';
 
 // ─────────────────────────────────────────────────────────────────
-// DRAW STATE
+// DRAW STATE (local UI helpers)
 // ─────────────────────────────────────────────────────────────────
-
-/// One participant entry in the draw.
-class DrawEntry {
-  final int position;
-  final int bib;
-  final String participantId;
-  final String name;
-  final String gender;
-  final String dog;
-  final String startTime;
-  final String? category;
-  final String? city;
-
-  const DrawEntry({
-    required this.position,
-    required this.bib,
-    required this.participantId,
-    required this.name,
-    required this.gender,
-    required this.dog,
-    required this.startTime,
-    this.category,
-    this.city,
-  });
-
-  DrawEntry copyWith({int? position, int? bib, String? startTime}) =>
-      DrawEntry(
-        position: position ?? this.position,
-        bib: bib ?? this.bib,
-        participantId: participantId,
-        name: name,
-        gender: gender,
-        dog: dog,
-        startTime: startTime ?? this.startTime,
-        category: category,
-        city: city,
-      );
-}
-
-/// Draw result for one discipline.
-class DrawResult {
-  final String disciplineId;
-  final String status; // 'pending', 'draft', 'approved'
-  final List<DrawEntry> entries;
-
-  const DrawResult({
-    required this.disciplineId,
-    this.status = 'pending',
-    this.entries = const [],
-  });
-
-  DrawResult copyWith({String? status, List<DrawEntry>? entries}) =>
-      DrawResult(
-        disciplineId: disciplineId,
-        status: status ?? this.status,
-        entries: entries ?? this.entries,
-      );
-}
 
 /// Стартовая группа — блок участников с буфером перед ним.
 class StartGroup {
@@ -84,6 +27,8 @@ class StartGroup {
 // ─────────────────────────────────────────────────────────────────
 
 /// Screen P1: Жеребьёвка — connected to real participants.
+/// Uses [drawResultsProvider] for persistent storage of draw results.
+/// Draw assigns ONLY startPosition (order), NOT bib numbers.
 class DrawScreen extends ConsumerStatefulWidget {
   const DrawScreen({super.key});
 
@@ -92,7 +37,6 @@ class DrawScreen extends ConsumerStatefulWidget {
 }
 
 class _DrawScreenState extends ConsumerState<DrawScreen> {
-  final Map<String, DrawResult> _results = {};
   final Map<String, List<StartGroup>> _groups = {};
   String? _selectedDiscId;
   bool _useGroups = false;
@@ -111,22 +55,21 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     final participants = ref.read(participantsProvider);
     final config = ref.read(eventConfigProvider);
     final defaultBuffer = config.drawConfig.bufferMinutes;
+    final drawResults = ref.read(drawResultsProvider);
+    final notifier = ref.read(drawResultsProvider.notifier);
 
     for (final d in disciplines) {
-      if (_results.containsKey(d.id)) continue;
+      if (drawResults.containsKey(d.id)) continue;
 
       // Get real participants for this discipline
       final discParticipants = participants.where((p) => p.disciplineId == d.id).toList();
-      final pool = config.bibPools.where((p) => p.disciplineId == d.id).firstOrNull
-          ?? config.bibPools.firstOrNull;
 
-      final entries = _buildEntries(discParticipants, d, pool);
-      _results[d.id] = DrawResult(disciplineId: d.id, entries: entries);
+      final entries = _buildEntries(discParticipants, d);
+      notifier.setResult(d.id, DrawResultData(disciplineId: d.id, entries: entries));
 
       // Auto-detect groups from categories
       _groups[d.id] = _detectGroups(discParticipants, defaultBuffer);
     }
-    if (mounted) setState(() {});
   }
 
   /// Auto-detect start groups from participant categories.
@@ -145,42 +88,22 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   }
 
   /// Build draw entries from real participants.
-  List<DrawEntry> _buildEntries(List<Participant> participants, DisciplineConfig disc, BibPool? pool) {
-    final bibStart = pool?.rangeStart ?? 1;
+  /// NOTE: No BIB assigned here — only position and startTime.
+  List<DrawEntryData> _buildEntries(List<Participant> participants, DisciplineConfig disc) {
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
     final intervalSec = disc.interval.inSeconds;
     final baseSeconds = hour * 3600 + minute * 60;
 
-    // Collect preferredBibs to skip during sequential assignment
-    final reservedBibs = participants
-        .where((p) => p.preferredBib != null)
-        .map((p) => int.tryParse(p.preferredBib!))
-        .whereType<int>()
-        .toSet();
-
     // Shuffle all
     final shuffled = List<Participant>.from(participants)..shuffle(Random());
 
-    // Generate sequential BIBs skipping reserved ones
-    int bibCounter = bibStart;
     return List.generate(shuffled.length, (i) {
       final p = shuffled[i];
       final t = baseSeconds + i * intervalSec;
 
-      // Use preferredBib if available, otherwise next free number
-      int entryBib;
-      if (p.preferredBib != null && int.tryParse(p.preferredBib!) != null) {
-        entryBib = int.parse(p.preferredBib!);
-      } else {
-        while (reservedBibs.contains(bibCounter)) { bibCounter++; }
-        entryBib = bibCounter;
-        bibCounter++;
-      }
-
-      return DrawEntry(
+      return DrawEntryData(
         position: i + 1,
-        bib: entryBib,
         participantId: p.id,
         name: p.name,
         gender: p.gender == 'male' ? 'М' : p.gender == 'female' ? 'Ж' : '?',
@@ -203,9 +126,10 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   void _closeDiscipline() => setState(() => _selectedDiscId = null);
 
   void _reshuffle(DisciplineConfig disc) {
-    final result = _results[disc.id];
+    final drawResults = ref.read(drawResultsProvider);
+    final result = drawResults[disc.id];
     if (result == null) return;
-    final entries = List<DrawEntry>.from(result.entries)..shuffle();
+    final entries = List<DrawEntryData>.from(result.entries)..shuffle();
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
     final intervalSec = disc.interval.inSeconds;
@@ -214,17 +138,15 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     if (_useGroups) {
       final groups = _groups[disc.id] ?? [];
       // Group entries by category
-      final buckets = <String, List<DrawEntry>>{};
+      final buckets = <String, List<DrawEntryData>>{};
       for (final e in entries) {
         final key = e.category ?? e.gender;
         buckets.putIfAbsent(key, () => []).add(e);
       }
 
-      final sorted = <DrawEntry>[];
+      final sorted = <DrawEntryData>[];
       var currentSec = baseSeconds;
       var position = 1;
-      final bibStart = entries.isEmpty ? 1 : entries.map((e) => e.bib).reduce((a, b) => a < b ? a : b);
-      var bibCounter = bibStart;
 
       for (final group in groups) {
         final bucket = buckets.remove(group.name) ?? [];
@@ -232,26 +154,24 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         // Add buffer before group (per-group)
         currentSec += group.bufferMinutes * 60;
         for (final e in bucket) {
-          sorted.add(e.copyWith(position: position, bib: bibCounter, startTime: _fmtTime(currentSec)));
+          sorted.add(e.copyWith(position: position, startTime: _fmtTime(currentSec)));
           position++;
-          bibCounter++;
           currentSec += intervalSec;
         }
       }
       // Remaining not in any group
       for (final remaining in buckets.values) {
         for (final e in remaining) {
-          sorted.add(e.copyWith(position: position, bib: bibCounter, startTime: _fmtTime(currentSec)));
+          sorted.add(e.copyWith(position: position, startTime: _fmtTime(currentSec)));
           position++;
-          bibCounter++;
           currentSec += intervalSec;
         }
       }
 
-      setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: sorted));
+      ref.read(drawResultsProvider.notifier).updateEntries(disc.id, sorted);
     } else {
       _recalcTimes(entries, disc);
-      setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
+      ref.read(drawResultsProvider.notifier).updateEntries(disc.id, entries);
     }
 
     AppSnackBar.success(context, 'Жеребьёвка пересчитана — ${entries.length} участников');
@@ -259,7 +179,8 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 
   void _approve(DisciplineConfig disc) {
     // When approved — write startPosition (NOT bib) back to participants
-    final result = _results[disc.id];
+    final drawResults = ref.read(drawResultsProvider);
+    final result = drawResults[disc.id];
     if (result == null) return;
     final notifier = ref.read(participantsProvider.notifier);
     for (final entry in result.entries) {
@@ -268,11 +189,12 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
       ));
     }
 
-    setState(() => _results[disc.id] = result.copyWith(status: 'approved'));
+    ref.read(drawResultsProvider.notifier).approve(disc.id);
     AppSnackBar.success(context, '${disc.name} — жеребьёвка утверждена!');
 
     // Check if ALL disciplines are approved -> prompt BIB assignment
-    final allApproved = _results.values.every((r) => r.status == 'approved');
+    final allResults = ref.read(drawResultsProvider);
+    final allApproved = allResults.values.every((r) => r.status == 'approved');
     Future.delayed(const Duration(milliseconds: 600), () {
       _closeDiscipline();
       if (allApproved && mounted) {
@@ -295,28 +217,20 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   }
 
   void _editPosition(DisciplineConfig disc, int index) {
-    final result = _results[disc.id]!;
+    final drawResults = ref.read(drawResultsProvider);
+    final result = drawResults[disc.id]!;
     final entry = result.entries[index];
     final posCtrl = TextEditingController(text: '${entry.position}');
-    final bibCtrl = TextEditingController(text: '${entry.bib}');
     final timeCtrl = TextEditingController(text: entry.startTime);
 
     AppBottomSheet.show(context,
-      title: '${entry.name} — BIB ${entry.bib}',
+      title: '${entry.name} — Позиция ${entry.position}',
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Row(children: [
-          Expanded(child: AppTextField(
-            label: 'Позиция',
-            controller: posCtrl,
-            keyboardType: TextInputType.number,
-          )),
-          const SizedBox(width: 12),
-          Expanded(child: AppTextField(
-            label: 'BIB',
-            controller: bibCtrl,
-            keyboardType: TextInputType.number,
-          )),
-        ]),
+        AppTextField(
+          label: 'Позиция',
+          controller: posCtrl,
+          keyboardType: TextInputType.number,
+        ),
         const SizedBox(height: 12),
         AppTextField(
           label: 'Время старта',
@@ -328,14 +242,13 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
           icon: Icons.save,
           onPressed: () {
             Navigator.pop(context);
-            final entries = List<DrawEntry>.from(result.entries);
+            final entries = List<DrawEntryData>.from(result.entries);
             entries[index] = entries[index].copyWith(
               position: int.tryParse(posCtrl.text) ?? entry.position,
-              bib: int.tryParse(bibCtrl.text) ?? entry.bib,
               startTime: timeCtrl.text,
             );
             entries.sort((a, b) => a.position.compareTo(b.position));
-            setState(() => _results[disc.id] = result.copyWith(status: 'draft', entries: entries));
+            ref.read(drawResultsProvider.notifier).updateEntries(disc.id, entries);
           },
         ),
         const SizedBox(height: 8),
@@ -344,21 +257,22 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   }
 
   void _removeFromDraw(DisciplineConfig disc, int index) async {
-    final result = _results[disc.id]!;
+    final drawResults = ref.read(drawResultsProvider);
+    final result = drawResults[disc.id]!;
     final entry = result.entries[index];
     final confirm = await AppDialog.confirm(
       context,
       title: 'Убрать ${entry.name}?',
-      message: 'BIB ${entry.bib} будет исключён из жеребьёвки.',
+      message: 'Позиция ${entry.position} будет исключена из жеребьёвки.',
       confirmText: 'Убрать',
       isDanger: true,
     );
     if (confirm == true && mounted) {
-      final entries = List<DrawEntry>.from(result.entries)..removeAt(index);
+      final entries = List<DrawEntryData>.from(result.entries)..removeAt(index);
       for (var i = 0; i < entries.length; i++) {
         entries[i] = entries[i].copyWith(position: i + 1);
       }
-      setState(() => _results[disc.id] = result.copyWith(entries: entries));
+      ref.read(drawResultsProvider.notifier).updateEntries(disc.id, entries);
     }
   }
 
@@ -366,6 +280,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
   Widget build(BuildContext context) {
     final disciplines = ref.watch(disciplineConfigsProvider);
     final participants = ref.watch(participantsProvider);
+    final drawResults = ref.watch(drawResultsProvider);
     final cs = Theme.of(context).colorScheme;
 
     final disc = _selectedDiscId != null
@@ -381,7 +296,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
             ? 'Жеребьёвка'
             : disc?.name ?? ''),
         actions: [
-          if (disc != null && _results[disc.id]?.status == 'approved')
+          if (disc != null && drawResults[disc.id]?.status == 'approved')
             Padding(
               padding: const EdgeInsets.only(right: 8),
               child: Chip(
@@ -394,7 +309,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               icon: const Icon(Icons.refresh),
               tooltip: 'Обновить из участников',
               onPressed: () {
-                _results.clear();
+                ref.read(drawResultsProvider.notifier).clearAll();
                 _initResults();
                 AppSnackBar.info(context, 'Список обновлён из участников (${participants.length})');
               },
@@ -402,15 +317,15 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         ],
       ),
       body: _selectedDiscId == null
-          ? _buildGroupList(cs, disciplines, participants)
+          ? _buildGroupList(cs, disciplines, participants, drawResults)
           : disc != null
-              ? _buildEditor(cs, disc)
+              ? _buildEditor(cs, disc, drawResults)
               : const SizedBox(),
     );
   }
 
-  Widget _buildGroupList(ColorScheme cs, List<DisciplineConfig> disciplines, List<Participant> participants) {
-    final approvedCount = _results.values.where((r) => r.status == 'approved').length;
+  Widget _buildGroupList(ColorScheme cs, List<DisciplineConfig> disciplines, List<Participant> participants, Map<String, DrawResultData> drawResults) {
+    final approvedCount = drawResults.values.where((r) => r.status == 'approved').length;
     final totalCount = disciplines.length;
 
     return Column(children: [
@@ -449,7 +364,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, i) {
           final d = disciplines[i];
-          final result = _results[d.id];
+          final result = drawResults[d.id];
           final status = result?.status ?? 'pending';
           final count = result?.entries.length ?? 0;
           final regCount = participants.where((p) => p.disciplineId == d.id).length;
@@ -503,8 +418,9 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     ]);
   }
 
-  Widget _buildEditor(ColorScheme cs, DisciplineConfig disc) {
-    final result = _results[disc.id]!;
+  Widget _buildEditor(ColorScheme cs, DisciplineConfig disc, Map<String, DrawResultData> drawResults) {
+    final result = drawResults[disc.id];
+    if (result == null) return const Center(child: CircularProgressIndicator());
     final isApproved = result.status == 'approved';
     final entries = result.entries;
 
@@ -549,7 +465,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               items: const [
                 SelectItem(value: 'random', label: 'Случайный'),
                 SelectItem(value: 'rating', label: 'По рейтингу'),
-                SelectItem(value: 'bib', label: 'По номеру BIB'),
+                SelectItem(value: 'position', label: 'По позиции'),
               ],
               onChanged: (v) => setState(() => _seeding = v),
             )),
@@ -610,13 +526,11 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         itemCount: entries.length,
         onReorder: (oldIndex, newIndex) {
           if (newIndex > oldIndex) newIndex--;
-          setState(() {
-            final list = List<DrawEntry>.from(entries);
-            final item = list.removeAt(oldIndex);
-            list.insert(newIndex, item);
-            _recalcTimes(list, disc);
-            _results[disc.id] = result.copyWith(status: 'draft', entries: list);
-          });
+          final list = List<DrawEntryData>.from(entries);
+          final item = list.removeAt(oldIndex);
+          list.insert(newIndex, item);
+          _recalcTimes(list, disc);
+          ref.read(drawResultsProvider.notifier).updateEntries(disc.id, list);
         },
         itemBuilder: (context, i) {
           final entry = entries[i];
@@ -634,7 +548,6 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             subtitle: Text(
               [
-                'BIB ${entry.bib}',
                 if (entry.dog.isNotEmpty) entry.dog,
                 entry.startTime,
                 if (entry.city != null && entry.city!.isNotEmpty) entry.city,
@@ -760,7 +673,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
     ]));
   }
 
-  void _recalcTimes(List<DrawEntry> list, DisciplineConfig disc) {
+  void _recalcTimes(List<DrawEntryData> list, DisciplineConfig disc) {
     final hour = disc.firstStartTime.hour;
     final minute = disc.firstStartTime.minute;
     final intervalSec = disc.interval.inSeconds;
