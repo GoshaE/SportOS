@@ -18,6 +18,7 @@ class QuickTimerSetupScreen extends ConsumerStatefulWidget {
 class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
   QuickStartMode _mode = QuickStartMode.mass;
   int _laps = 1;
+  int _intervalSeconds = 30;
 
   /// Пары (имя, номер). Минимум 1 строка.
   final List<_AthleteEntry> _entries = [
@@ -152,6 +153,7 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
     ref.read(quickSessionProvider.notifier).createSession(
       mode: _mode,
       totalLaps: _laps,
+      intervalSeconds: _intervalSeconds,
       athletes: athletes
           .map((e) => (name: e.nameCtrl.text.trim(), bib: e.bibCtrl.text.trim()))
           .toList(),
@@ -226,6 +228,31 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
             ],
           ),
           const SizedBox(height: 16),
+
+          // ── Интервал (только разделка) ──
+          if (_mode == QuickStartMode.individual) ...[
+            AppSectionHeader(title: 'Интервал между стартами', icon: Icons.schedule),
+            AppCard(
+              padding: const EdgeInsets.all(12),
+              children: [
+                Row(
+                  children: [
+                    for (final sec in [15, 30, 45, 60])
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          // ignore: unnecessary_brace_in_string_interps
+                          label: Text('${sec}с'),
+                          selected: _intervalSeconds == sec,
+                          onSelected: (_) => setState(() => _intervalSeconds = sec),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
 
           // ── Участники ──
           AppSectionHeader(

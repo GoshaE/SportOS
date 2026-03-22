@@ -12,6 +12,7 @@ class QuickAthlete {
   final String id;
   final String name;
   final String bib;
+  final int startOrder;            // порядок старта (для разделки)
   final List<DateTime> splits;     // timestamps каждого сплита (круга)
   final DateTime? startTime;       // индивидуальный старт (для разделки)
   final DateTime? finishTime;
@@ -20,6 +21,7 @@ class QuickAthlete {
     required this.id,
     required this.name,
     required this.bib,
+    this.startOrder = 0,
     this.splits = const [],
     this.startTime,
     this.finishTime,
@@ -54,6 +56,7 @@ class QuickAthlete {
   QuickAthlete copyWith({
     String? name,
     String? bib,
+    int? startOrder,
     List<DateTime>? splits,
     DateTime? startTime,
     DateTime? finishTime,
@@ -61,6 +64,7 @@ class QuickAthlete {
     id: id,
     name: name ?? this.name,
     bib: bib ?? this.bib,
+    startOrder: startOrder ?? this.startOrder,
     splits: splits ?? this.splits,
     startTime: startTime ?? this.startTime,
     finishTime: finishTime ?? this.finishTime,
@@ -70,6 +74,7 @@ class QuickAthlete {
     'id': id,
     'name': name,
     'bib': bib,
+    'startOrder': startOrder,
     'splits': splits.map((s) => s.toIso8601String()).toList(),
     'startTime': startTime?.toIso8601String(),
     'finishTime': finishTime?.toIso8601String(),
@@ -79,6 +84,7 @@ class QuickAthlete {
     id: j['id'] as String,
     name: j['name'] as String,
     bib: j['bib'] as String,
+    startOrder: j['startOrder'] as int? ?? 0,
     splits: (j['splits'] as List).map((s) => DateTime.parse(s as String)).toList(),
     startTime: j['startTime'] != null ? DateTime.parse(j['startTime'] as String) : null,
     finishTime: j['finishTime'] != null ? DateTime.parse(j['finishTime'] as String) : null,
@@ -93,8 +99,9 @@ class QuickSession {
   final String? title;
   final QuickStartMode mode;
   final int totalLaps;
+  final int intervalSeconds;        // интервал между стартами (разделка)
   final List<QuickAthlete> athletes;
-  final DateTime? globalStartTime;  // для масс-старта
+  final DateTime? globalStartTime;  // время первого старта
   final QuickSessionStatus status;
 
   const QuickSession({
@@ -103,6 +110,7 @@ class QuickSession {
     this.title,
     required this.mode,
     this.totalLaps = 1,
+    this.intervalSeconds = 30,
     this.athletes = const [],
     this.globalStartTime,
     this.status = QuickSessionStatus.setup,
@@ -117,10 +125,26 @@ class QuickSession {
   /// Все ли финишировали.
   bool get allFinished => athletes.every((a) => a.isFinished(totalLaps));
 
+  /// Плановое время старта атлета (для разделки).
+  DateTime? plannedStartTime(QuickAthlete a) {
+    if (globalStartTime == null) return null;
+    return globalStartTime!.add(Duration(seconds: a.startOrder * intervalSeconds));
+  }
+
+  /// Следующий на старте (для разделки): первый без startTime.
+  QuickAthlete? get currentStarter {
+    final sorted = [...athletes]..sort((a, b) => a.startOrder.compareTo(b.startOrder));
+    return sorted.where((a) => a.startTime == null).firstOrNull;
+  }
+
+  /// Кол-во стартовавших.
+  int get startedCount => athletes.where((a) => a.startTime != null).length;
+
   QuickSession copyWith({
     String? title,
     QuickStartMode? mode,
     int? totalLaps,
+    int? intervalSeconds,
     List<QuickAthlete>? athletes,
     DateTime? globalStartTime,
     QuickSessionStatus? status,
@@ -130,6 +154,7 @@ class QuickSession {
     title: title ?? this.title,
     mode: mode ?? this.mode,
     totalLaps: totalLaps ?? this.totalLaps,
+    intervalSeconds: intervalSeconds ?? this.intervalSeconds,
     athletes: athletes ?? this.athletes,
     globalStartTime: globalStartTime ?? this.globalStartTime,
     status: status ?? this.status,
@@ -141,6 +166,7 @@ class QuickSession {
     'title': title,
     'mode': mode.name,
     'totalLaps': totalLaps,
+    'intervalSeconds': intervalSeconds,
     'athletes': athletes.map((a) => a.toJson()).toList(),
     'globalStartTime': globalStartTime?.toIso8601String(),
     'status': status.name,
@@ -152,6 +178,7 @@ class QuickSession {
     title: j['title'] as String?,
     mode: QuickStartMode.values.byName(j['mode'] as String),
     totalLaps: j['totalLaps'] as int? ?? 1,
+    intervalSeconds: j['intervalSeconds'] as int? ?? 30,
     athletes: (j['athletes'] as List).map((a) => QuickAthlete.fromJson(a as Map<String, dynamic>)).toList(),
     globalStartTime: j['globalStartTime'] != null ? DateTime.parse(j['globalStartTime'] as String) : null,
     status: QuickSessionStatus.values.byName(j['status'] as String? ?? 'finished'),

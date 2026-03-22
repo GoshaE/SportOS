@@ -15,6 +15,7 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
     required QuickStartMode mode,
     required int totalLaps,
     required List<({String name, String bib})> athletes,
+    int intervalSeconds = 30,
     String? title,
   }) {
     final now = DateTime.now();
@@ -24,10 +25,12 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
       title: title,
       mode: mode,
       totalLaps: totalLaps,
+      intervalSeconds: intervalSeconds,
       athletes: athletes.asMap().entries.map((e) => QuickAthlete(
         id: 'qa-${e.key}',
         name: e.value.name,
         bib: e.value.bib,
+        startOrder: e.key,
       )).toList(),
       status: QuickSessionStatus.setup,
     );
@@ -53,11 +56,17 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
       return a;
     }).toList();
 
+    // Первый старт → записать globalStartTime
+    final isFirstStart = state!.globalStartTime == null;
     final newStatus = state!.status == QuickSessionStatus.setup
         ? QuickSessionStatus.running
         : state!.status;
 
-    state = state!.copyWith(athletes: updated, status: newStatus);
+    state = state!.copyWith(
+      athletes: updated,
+      status: newStatus,
+      globalStartTime: isFirstStart ? now : state!.globalStartTime,
+    );
   }
 
   /// Записать сплит/финиш для атлета (тап по плитке).
