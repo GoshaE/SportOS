@@ -298,8 +298,9 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 2b: + .withOpacity + _rowTint + Column layout ──
-    final cs = Theme.of(context).colorScheme;
+    // ── Phase 2c: + monoTiming.copyWith + theme.textTheme.copyWith ──
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     final name = row.cells['name']?.display ?? '';
     final time = row.cells['result_time']?.display ?? '—';
@@ -323,7 +324,8 @@ class _CardRow extends StatelessWidget {
           // ── Top row ──
           Row(children: [
             SizedBox(width: 28, child: Text(place, textAlign: TextAlign.center,
-              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700))),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700))),
             const SizedBox(width: 6),
             if (bib.isNotEmpty) ...[
               Container(
@@ -332,17 +334,18 @@ class _CardRow extends StatelessWidget {
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(bib, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
+                child: Text(bib, style: theme.textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 8),
             ],
             Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: cs.onSurface, fontSize: 14, fontWeight: FontWeight.w600))),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: cs.onSurface, fontSize: 14, fontWeight: FontWeight.w600))),
           ]),
           const SizedBox(height: 6),
           // ── Bottom row ──
           Row(children: [
-            // Lap chips placeholder — iterate columns
             Expanded(child: Wrap(
               spacing: 4, runSpacing: 3,
               children: [
@@ -356,18 +359,19 @@ class _CardRow extends StatelessWidget {
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: Text('${col.label}: ${row.cells[col.id]!.display}',
-                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11,
-                            fontFamily: 'monospace')),
+                          style: AppTypography.monoTiming.copyWith(
+                            fontSize: 11, color: cs.onSurfaceVariant)),
                       ),
               ],
             )),
             if (gap.isNotEmpty) ...[
               const SizedBox(width: 4),
-              Text(gap, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11, fontFamily: 'monospace')),
+              Text(gap, style: AppTypography.monoTiming.copyWith(
+                fontSize: 11, color: cs.onSurfaceVariant)),
             ],
             const SizedBox(width: 6),
-            Text(time, style: TextStyle(color: cs.onSurface, fontSize: 15,
-              fontWeight: FontWeight.w700, fontFamily: 'monospace')),
+            Text(time, style: AppTypography.monoTiming.copyWith(
+              fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
           ]),
         ],
       ),
