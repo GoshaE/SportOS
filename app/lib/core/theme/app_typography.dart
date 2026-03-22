@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:google_fonts/google_fonts.dart';
 
 /// AppTypography: The centralized source of truth for all text styles in SportOS.
@@ -33,11 +34,33 @@ class AppTypography {
   static const TextStyle labelMedium = TextStyle(fontFamily: _fontFamily, fontSize: 14, fontWeight: FontWeight.w500, letterSpacing: 0.4, height: 1.2, fontFeatures: _tabularFeatures);
   static const TextStyle labelSmall = TextStyle(fontFamily: _fontFamily, fontSize: 12, fontWeight: FontWeight.w500, letterSpacing: 0.5, height: 1.2, fontFeatures: _tabularFeatures);
 
-  /// Specific token for Chronometry (Split times, Finish times)
-  static TextStyle get monoTiming => GoogleFonts.jetBrainsMono(
-    fontSize: 24, // Configurable per use-case, but base weight/spacing defined here
-    fontWeight: FontWeight.w700, // JetBrains Mono looks highly technical in bold
-    letterSpacing: 1.5, 
+  /// Mono timing base style — used as the base for copy.
+  /// Safe fallback for duration/gap/lap cells.
+  static const TextStyle _monoFallback = TextStyle(
+    fontFamily: 'monospace',
+    fontFamilyFallback: ['Courier New', 'Courier', 'SF Mono', 'Menlo'],
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    letterSpacing: 1.5,
     fontFeatures: _tabularFeatures,
   );
+
+  /// Specific token for Chronometry (Split times, Finish times).
+  ///
+  /// On web release builds, GoogleFonts can cause NoSuchMethodError
+  /// due to dart2js minification + async font loading.
+  /// We use a safe const fallback on web.
+  static TextStyle get monoTiming {
+    if (kIsWeb) return _monoFallback;
+    try {
+      return GoogleFonts.jetBrainsMono(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 1.5,
+        fontFeatures: _tabularFeatures,
+      );
+    } catch (_) {
+      return _monoFallback;
+    }
+  }
 }
