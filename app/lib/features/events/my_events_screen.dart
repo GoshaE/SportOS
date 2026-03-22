@@ -26,7 +26,7 @@ class MyEventsScreen extends ConsumerWidget {
             tabs: ['Предстоящие', 'Прошедшие', 'Организую'],
           ),
           actions: [
-            IconButton(icon: const Icon(Icons.add), tooltip: 'Создать мероприятие', onPressed: () => context.push('/my/create')),
+            IconButton(icon: const Icon(Icons.add), tooltip: 'Создать', onPressed: () => _showCreateSheet(context)),
           ],
         ),
         body: TabBarView(children: [
@@ -150,6 +150,44 @@ class MyEventsScreen extends ConsumerWidget {
     );
   }
 
+  void _showCreateSheet(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+
+    AppBottomSheet.show(
+      context,
+      title: 'Что создаём?',
+      initialHeight: 0.38,
+      child: Column(children: [
+        // ── Мероприятие ──
+        _CreateOptionCard(
+          icon: Icons.emoji_events,
+          color: cs.primary,
+          title: 'Мероприятие',
+          subtitle: 'Полный процесс: регистрация, дисциплины, хронометраж',
+          textTheme: textTheme,
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            context.push('/my/create');
+          },
+        ),
+        const SizedBox(height: 12),
+        // ── Быстрый старт ──
+        _CreateOptionCard(
+          icon: Icons.timer,
+          color: cs.tertiary,
+          title: '⚡ Быстрый старт',
+          subtitle: 'Секундомер для тренировок. Без регистрации, сразу таймер',
+          textTheme: textTheme,
+          onTap: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            context.push('/quick-timer');
+          },
+        ),
+      ]),
+    );
+  }
+
   String _fmtDate(DateTime d) =>
       '${d.day.toString().padLeft(2, '0')}.${d.month.toString().padLeft(2, '0')}.${d.year}';
 
@@ -179,4 +217,61 @@ class MyEventsScreen extends ConsumerWidget {
     EventStatus.completed => cs.secondary,
     EventStatus.archived => cs.outline,
   };
+}
+
+/// Карточка выбора действия (для BottomSheet «Что создаём?»).
+class _CreateOptionCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final TextTheme textTheme;
+  final VoidCallback onTap;
+
+  const _CreateOptionCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.textTheme,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: color.withValues(alpha: 0.06),
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(children: [
+            Container(
+              width: 48, height: 48,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.08)],
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(icon, size: 26, color: color),
+            ),
+            const SizedBox(width: 14),
+            Expanded(child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800)),
+                const SizedBox(height: 4),
+                Text(subtitle, style: textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+              ],
+            )),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+          ]),
+        ),
+      ),
+    );
+  }
 }
