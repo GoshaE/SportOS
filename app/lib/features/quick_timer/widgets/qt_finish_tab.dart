@@ -35,15 +35,6 @@ class QtFinishTab extends ConsumerWidget {
       ref.read(quickSessionProvider.notifier).finishSession();
       ref.read(quickSessionProvider.notifier).saveToHistory();
       ref.read(quickHistoryProvider.notifier).refresh();
-    } else if (context.mounted) {
-      AppSnackBar.withUndo(
-        context,
-        '⏱ Отсечка: $displayName',
-        onUndo: () {
-          ref.read(quickSessionProvider.notifier).undoLastSplit(athleteId);
-          HapticFeedback.mediumImpact();
-        },
-      );
     }
   }
 
