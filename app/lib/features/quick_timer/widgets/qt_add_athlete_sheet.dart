@@ -93,13 +93,11 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ── Переключатель (Табы) ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: AppPillTabBar(
-            controller: _tabCtrl,
-            tabs: const ['Новый', 'Недавние'],
-          ),
+        AppPillTabBar(
+          controller: _tabCtrl,
+          tabs: const ['Новый', 'Недавние'],
         ),
+        const SizedBox(height: 16),
 
         // ── Контент вкладок ──
         AnimatedSwitcher(
@@ -116,35 +114,23 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(children: [
-            Expanded(child: AppTextField(label: 'Имя', controller: nameCtrl, hintText: 'Алексей', autofocus: true)),
-            const SizedBox(width: 12),
-            Expanded(child: AppTextField(label: 'Фамилия', controller: surnameCtrl, hintText: 'Иванов')),
-          ]),
-        ),
+        Row(children: [
+          Expanded(child: AppTextField(label: 'Имя', controller: nameCtrl, hintText: 'Алексей', autofocus: true)),
+          const SizedBox(width: 12),
+          Expanded(child: AppTextField(label: 'Фамилия', controller: surnameCtrl, hintText: 'Иванов')),
+        ]),
         const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: AppTextField(
-            label: 'BIB (номер)',
-            controller: bibCtrl,
-            hintText: '1',
-            keyboardType: TextInputType.number,
-          ),
+        AppTextField(
+          label: 'BIB (номер)',
+          controller: bibCtrl,
+          hintText: '1',
+          keyboardType: TextInputType.number,
         ),
-        const SizedBox(height: 32),
-        SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-            child: AppButton.primary(
-              text: 'Добавить',
-              icon: Icons.add,
-              onPressed: _addNewAthlete,
-            ),
-          ),
+        const SizedBox(height: 16),
+        AppButton.primary(
+          text: 'Добавить',
+          icon: Icons.add,
+          onPressed: _addNewAthlete,
         ),
       ],
     );
@@ -251,15 +237,12 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
         
         // Кнопка множественного добавления
         if (_selectedRecent.isNotEmpty)
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: AppButton.primary(
-                text: 'Добавить выбранных (${_selectedRecent.length})',
-                icon: Icons.group_add,
-                onPressed: _addSelectedRecentAthletes,
-              ),
+          Padding(
+            padding: const EdgeInsets.only(top: 16),
+            child: AppButton.primary(
+              text: 'Добавить выбранных (${_selectedRecent.length})',
+              icon: Icons.group_add,
+              onPressed: _addSelectedRecentAthletes,
             ),
           )
         else
