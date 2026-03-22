@@ -188,6 +188,27 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
     state = state!.copyWith(athletes: reordered);
   }
 
+  /// Полностью изменить порядок участников (для drag-and-drop).
+  void reorderFullList(List<String> orderedIds) {
+    if (state == null) return;
+    
+    final currentMap = {for (var a in state!.athletes) a.id: a};
+    final newAthletes = <QuickAthlete>[];
+    
+    for (var id in orderedIds) {
+      if (currentMap.containsKey(id)) {
+        newAthletes.add(currentMap[id]!);
+      }
+    }
+    
+    // Назначаем новые startOrder
+    final reordered = newAthletes.asMap().entries.map((e) {
+      return e.value.copyWith(startOrder: e.key);
+    }).toList();
+
+    state = state!.copyWith(athletes: reordered);
+  }
+
   /// Сбросить сессию.
   void reset() => state = null;
 }

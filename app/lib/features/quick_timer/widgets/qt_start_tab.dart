@@ -143,12 +143,32 @@ class QtStartTab extends ConsumerWidget {
 
       // ── Список участников ──
       Expanded(
-        child: ListView.builder(
+        child: ReorderableListView.builder(
+          buildDefaultDragHandles: false,
           padding: const EdgeInsets.only(top: 4, bottom: 8),
           itemCount: totalCount == 0 ? 1 : sorted.length,
+          onReorder: (oldIndex, newIndex) {
+            if (totalCount == 0) return;
+            if (oldIndex < newIndex) newIndex -= 1;
+            
+            final item = sorted[oldIndex];
+            final hasStarted = isMass ? (isRunning || isFinished) : item.startTime != null;
+            if (hasStarted) {
+               AppSnackBar.warning(context, 'Нельзя перемещать уже стартовавших участников');
+               return; 
+            }
+            
+            final newList = List.of(sorted);
+            newList.removeAt(oldIndex);
+            newList.insert(newIndex, item);
+            
+            final newIds = newList.map((a) => a.id).toList();
+            ref.read(quickSessionProvider.notifier).reorderFullList(newIds);
+          },
           itemBuilder: (context, i) {
             if (totalCount == 0) {
               return Padding(
+                key: const ValueKey('empty_list'),
                 padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
                 child: AppInfoBanner.info(
                   title: 'Добавьте участников',
@@ -166,11 +186,27 @@ class QtStartTab extends ConsumerWidget {
             final icon = finished ? Icons.flag : hasStarted ? Icons.check_circle : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
             final statusText = finished ? 'Финиш' : hasStarted ? 'На трассе' : isCurrent ? 'Текущий' : 'Ожидает';
 
+            final canReorder = !hasStarted && !isFinished;
+
             return AppQueueItem(
+              key: ValueKey(a.id),
               leading: Icon(icon, color: color, size: 24),
               title: Text('${a.bib} — ${a.name.isNotEmpty ? a.name : "BIB ${a.bib}"}', style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: cs.onSurface)),
               subtitle: Text('#${i + 1} · $statusText', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-              trailing: !isMass && !isInterval && !hasStarted && !isFinished ? Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)) : null,
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (!isMass && !isInterval && !hasStarted && !isFinished) 
+                    Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                  if (canReorder) ...[
+                    if (!isMass && !isInterval && !hasStarted && !isFinished) const SizedBox(width: 8),
+                    ReorderableDragStartListener(
+                      index: i,
+                      child: Icon(Icons.drag_indicator, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                    ),
+                  ],
+                ],
+              ),
               backgroundColor: isCurrent ? cs.tertiaryContainer.withValues(alpha: 0.1) : finished ? cs.primaryContainer.withValues(alpha: 0.05) : hasStarted ? cs.tertiaryContainer.withValues(alpha: 0.05) : null,
               onTap: !isMass && !isInterval && !hasStarted && !finished && !isFinished ? () => _startIndividual(ref, a.id) : null,
               onLongPress: !hasStarted && !finished && !isFinished ? () => _removeAthleteWithConfirm(context, ref, a.id) : null,
