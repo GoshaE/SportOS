@@ -213,14 +213,12 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
           icons: const [Icons.play_arrow, Icons.flag, Icons.leaderboard],
         ),
       ),
-      body: IndexedStack(
-        index: _selectedTab,
-        children: [
-          QtStartTab(session: session, isRunning: isRunning, isFinished: isFinished),
-          QtFinishTab(session: session, isRunning: isRunning, elapsed: _elapsed),
-          QtTableTab(session: session),
-        ],
-      ),
+      body: switch (_selectedTab) {
+        0 => QtStartTab(session: session, isRunning: isRunning, isFinished: isFinished),
+        1 => QtFinishTab(session: session, isRunning: isRunning, elapsed: _elapsed),
+        2 => QtTableTab(session: session),
+        _ => const SizedBox.shrink(),
+      },
     );
   }
 }

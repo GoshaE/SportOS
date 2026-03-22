@@ -202,9 +202,9 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
       }
     }
     
-    // Назначаем новые startOrder
+    // Назначаем новые startOrder и BIB
     final reordered = newAthletes.asMap().entries.map((e) {
-      return e.value.copyWith(startOrder: e.key);
+      return e.value.copyWith(startOrder: e.key, bib: '${e.key + 1}');
     }).toList();
 
     state = state!.copyWith(athletes: reordered);

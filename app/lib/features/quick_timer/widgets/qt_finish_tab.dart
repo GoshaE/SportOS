@@ -146,9 +146,12 @@ class QtFinishTab extends ConsumerWidget {
               state = BibState.available;
             }
 
+            // Имя крупно, BIB мелко (тренеры знают всех в лицо)
+            final displayName = a.name.isNotEmpty ? a.name.split(' ').first : a.bib;
+
             return AppBibTile(
-              bib: a.bib,
-              name: a.name.isNotEmpty ? a.name : null,
+              bib: displayName,
+              name: a.name.isNotEmpty ? '#${a.bib}' : null,
               lapInfo: lapInfo,
               state: state,
               onTap: () {
