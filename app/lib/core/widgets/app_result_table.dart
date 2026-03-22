@@ -302,12 +302,27 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Обёрнуто в try-catch чтобы не ломать весь экран при ошибке одной карточки
+    try {
+      return _buildContent();
+    } catch (e) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: cs.errorContainer.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text('Ошибка: $e', style: TextStyle(fontSize: 12, color: cs.error)),
+      );
+    }
+  }
+
+  Widget _buildContent() {
     final place = row.cells['place'];
     final bib = row.cells['bib'];
     final name = row.cells['name'];
     final time = row.cells['result_time'];
     final category = row.cells['category'];
-    final penalty = row.cells['penalty'];
 
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
@@ -359,28 +374,42 @@ class _CardRow extends StatelessWidget {
               ),
           ]),
           const SizedBox(height: 6),
-          // ── Bottom: lap times + penalties + result time ──
-          Row(children: [
-            Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: _lapChips())),
-            if (penalty != null && penalty.display.isNotEmpty && penalty.display != '—') ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cs.tertiaryContainer.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text('Штр: ${penalty.display}',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 11, fontWeight: FontWeight.w600, color: cs.tertiary)),
-              ),
-              const SizedBox(width: 4),
-            ],
-            Text(time?.display ?? '',
-              style: AppTypography.monoTiming.copyWith(
-                fontSize: 15, fontWeight: FontWeight.w700, color: _timeColor(row, cs))),
-          ]),
+          // ── Bottom: lap chips row ──
+          _buildBottomRow(time),
         ],
       ),
+    );
+  }
+
+  /// Bottom section: laps + gap + total time.
+  /// 
+  /// Uses Wrap for all elements to avoid overflow on narrow screens.
+  Widget _buildBottomRow(CellValue? time) {
+    final gap = row.cells['gap_leader'] ?? row.cells['gap_prev'];
+    final lapChips = _lapChips();
+
+    return Row(
+      children: [
+        // Lap chips — shrinkable
+        if (lapChips.isNotEmpty)
+          Expanded(
+            child: Wrap(spacing: 4, runSpacing: 3, children: lapChips),
+          ),
+        if (lapChips.isEmpty)
+          const Spacer(),
+        // Gap
+        if (gap != null && gap.display.isNotEmpty) ...[
+          const SizedBox(width: 4),
+          Text(gap.display,
+            style: AppTypography.monoTiming.copyWith(
+              fontSize: 11, color: cs.onSurfaceVariant)),
+        ],
+        // Total time
+        const SizedBox(width: 6),
+        Text(time?.display ?? '',
+          style: AppTypography.monoTiming.copyWith(
+            fontSize: 15, fontWeight: FontWeight.w700, color: _timeColor(row, cs))),
+      ],
     );
   }
 
@@ -424,11 +453,6 @@ class _CardRow extends StatelessWidget {
           ));
         }
       }
-    }
-    final gap = row.cells['gap_leader'] ?? row.cells['gap_prev'];
-    if (gap != null && gap.display.isNotEmpty) {
-      chips.add(Text('Δ ${gap.display}',
-        style: AppTypography.monoTiming.copyWith(fontSize: 11, color: cs.onSurfaceVariant)));
     }
     return chips;
   }
