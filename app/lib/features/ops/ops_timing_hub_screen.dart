@@ -22,7 +22,6 @@ class OpsTimingHubScreen extends ConsumerStatefulWidget {
 
 class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
   String? _selectedDisciplineId;
-  final Set<String> _completedChecklistItems = {};
 
   @override
   void initState() {
@@ -248,10 +247,6 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
 
           const SizedBox(height: 12),
 
-          // Prestart checklist (from EventConfig)
-          _buildChecklistCard(cs, theme),
-
-          const SizedBox(height: 12),
 
           Text(
             'Выберите вашу роль на текущую смену. Данные синхронизируются между всеми постами.',
@@ -349,117 +344,6 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
     );
   }
 
-  // ═══════════════════════════════════════
-  // Prestart Checklist
-  // ═══════════════════════════════════════
-
-  Widget _buildChecklistCard(ColorScheme cs, ThemeData theme) {
-    final eventConfig = ref.watch(eventConfigProvider);
-    final items = eventConfig.checklistItems;
-    if (items.isEmpty) return const SizedBox.shrink();
-
-    final requiredItems = items.where((i) => i.required).toList();
-    final completedRequired = requiredItems.where((i) => _completedChecklistItems.contains(i.id)).length;
-    final allRequiredDone = completedRequired == requiredItems.length;
-
-    return AppCard(
-      padding: const EdgeInsets.all(14),
-      backgroundColor: allRequiredDone
-          ? cs.primaryContainer.withValues(alpha: 0.1)
-          : cs.tertiaryContainer.withValues(alpha: 0.12),
-      borderColor: allRequiredDone
-          ? cs.primary.withValues(alpha: 0.2)
-          : cs.tertiary.withValues(alpha: 0.3),
-      borderRadius: BorderRadius.circular(14),
-      children: [
-        Row(children: [
-          Icon(
-            allRequiredDone ? Icons.check_circle : Icons.checklist,
-            size: 20,
-            color: allRequiredDone ? cs.primary : cs.tertiary,
-          ),
-          const SizedBox(width: 8),
-          Expanded(child: Text(
-            'Предстартовый чек-лист ($completedRequired/${requiredItems.length})',
-            style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
-          )),
-          if (allRequiredDone)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Text('Готово', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
-            ),
-        ]),
-        const SizedBox(height: 10),
-        ...items.map((item) {
-          final done = _completedChecklistItems.contains(item.id);
-          return InkWell(
-            onTap: () => setState(() {
-              if (done) {
-                _completedChecklistItems.remove(item.id);
-              } else {
-                _completedChecklistItems.add(item.id);
-              }
-            }),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(children: [
-                Icon(
-                  done ? Icons.check_box : Icons.check_box_outline_blank,
-                  size: 20,
-                  color: done ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: done ? cs.onSurface : cs.onSurfaceVariant,
-                        decoration: done ? TextDecoration.lineThrough : null,
-                      ),
-                    ),
-                    if (item.description != null)
-                      Text(item.description!, style: TextStyle(fontSize: 11, color: cs.outline)),
-                  ],
-                )),
-                if (item.required)
-                  Text('*', style: TextStyle(color: cs.error, fontWeight: FontWeight.bold, fontSize: 14)),
-              ]),
-            ),
-          );
-        }),
-      ],
-    );
-  }
-
-  /// Check if all required checklist items are completed.
-  /// If not, show a warning dialog and optionally let the user proceed.
-  Future<bool> _checklistGuard() async {
-    final eventConfig = ref.read(eventConfigProvider);
-    final items = eventConfig.checklistItems;
-    final requiredItems = items.where((i) => i.required).toList();
-    final unchecked = requiredItems.where((i) => !_completedChecklistItems.contains(i.id)).toList();
-
-    if (unchecked.isEmpty) return true;
-
-    final result = await AppDialog.confirm(
-      context,
-      title: 'Чек-лист не завершён',
-      message: 'Не выполнено ${unchecked.length} обязательных пунктов:\n'
-          '${unchecked.map((i) => '• ${i.title}').join('\n')}\n\n'
-          'Продолжить без выполнения?',
-      confirmText: 'Продолжить',
-      isDanger: true,
-    );
-    return result == true;
-  }
 
   Widget _buildPostCard(
     BuildContext context, ColorScheme cs, ThemeData theme, {
@@ -474,13 +358,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
-        onTap: () async {
-          final ok = await _checklistGuard();
-          if (ok && mounted) {
-            // ignore: use_build_context_synchronously
-            context.push(route);
-          }
-        },
+        onTap: () => context.push(route),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
