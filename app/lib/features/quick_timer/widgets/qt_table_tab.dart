@@ -110,7 +110,8 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
     final cs = Theme.of(context).colorScheme;
     
     // ДЕЛЕГИРУЕМ логику доменному калькулятору
-    final table = QuickResultCalculator.buildTable(widget.session);
+    final displaySettings = ref.watch(qtDisplaySettingsProvider);
+    final table = QuickResultCalculator.buildTable(widget.session, displaySettings);
 
     if (table.rows.isEmpty) {
       return Center(

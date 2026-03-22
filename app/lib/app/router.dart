@@ -67,6 +67,7 @@ import '../features/coach/coach_timing_screen.dart';
 import '../features/quick_timer/quick_timer_screen.dart';
 import '../features/quick_timer/quick_timer_results_screen.dart';
 import '../features/quick_timer/quick_timer_history_screen.dart';
+import '../features/quick_timer/qt_settings_screen.dart';
 
 // Results
 import '../features/results/live_results_screen.dart';
@@ -618,6 +619,12 @@ final GoRouter router = GoRouter(
       path: '/quick-timer/history',
       name: 'quick-timer-history',
       builder: (context, state) => const QuickTimerHistoryScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quick-timer/settings',
+      name: 'quick-timer-settings',
+      builder: (context, state) => const QtSettingsScreen(),
     ),
   ],
 

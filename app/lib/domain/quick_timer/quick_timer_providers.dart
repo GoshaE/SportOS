@@ -1,6 +1,20 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'quick_timer_models.dart';
 import 'quick_timer_storage.dart';
+import 'qt_display_settings.dart';
+
+/// Нотификатор настроек отображения таблицы.
+class QtDisplaySettingsNotifier extends Notifier<QtDisplaySettings> {
+  @override
+  QtDisplaySettings build() => const QtDisplaySettings();
+
+  void update(QtDisplaySettings settings) => state = settings;
+}
+
+/// Провайдер настроек отображения таблицы.
+final qtDisplaySettingsProvider = NotifierProvider<QtDisplaySettingsNotifier, QtDisplaySettings>(
+  QtDisplaySettingsNotifier.new,
+);
 
 // ═══════════════════════════════════════
 // Текущая сессия

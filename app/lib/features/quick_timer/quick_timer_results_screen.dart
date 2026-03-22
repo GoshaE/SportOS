@@ -117,7 +117,8 @@ class _QuickTimerResultsScreenState extends ConsumerState<QuickTimerResultsScree
     }
 
     final isMass = session.mode == QuickStartMode.mass;
-    final table = QuickResultCalculator.buildTable(session);
+    final displaySettings = ref.watch(qtDisplaySettingsProvider);
+    final table = QuickResultCalculator.buildTable(session, displaySettings);
 
     return Scaffold(
       appBar: AppAppBar(

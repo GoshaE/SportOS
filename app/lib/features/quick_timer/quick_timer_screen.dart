@@ -13,7 +13,7 @@ import '../../domain/timing/time_formatter.dart';
 import 'widgets/qt_start_tab.dart';
 import 'widgets/qt_finish_tab.dart';
 import 'widgets/qt_table_tab.dart';
-import 'widgets/qt_settings_sheet.dart';
+import 'qt_settings_screen.dart';
 import 'widgets/qt_add_athlete_sheet.dart';
 
 /// QT — Единый экран быстрого секундомера.
@@ -107,18 +107,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     }
   }
 
-  void _resetSession() {
-    ref.read(quickSessionProvider.notifier).createSession(
-      mode: QuickStartMode.mass,
-      totalLaps: 1,
-      athletes: [],
-    );
-    _elapsed = Duration.zero;
-    setState(() {});
-    _tabCtrl.animateTo(0);
-    AppSnackBar.info(context, 'Новая сессия создана');
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -152,7 +140,9 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
           IconButton(
             icon: const Icon(Icons.settings),
             tooltip: 'Настройки',
-            onPressed: () => showQtSettingsSheet(context, ref, _resetSession),
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const QtSettingsScreen()),
+            ),
           ),
           
           // Общий таймер сессии
