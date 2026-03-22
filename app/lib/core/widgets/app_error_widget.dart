@@ -97,7 +97,7 @@ class AppErrorWidget extends StatelessWidget {
                         child: Text(
                           details!.exceptionAsString(),
                           style: theme.textTheme.labelSmall?.copyWith(
-                            fontFamily: 'monospace',
+                            fontFeatures: const [FontFeature.tabularFigures()],
                             color: cs.error,
                             fontSize: 10,
                           ),

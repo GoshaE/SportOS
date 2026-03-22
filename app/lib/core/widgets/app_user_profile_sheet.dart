@@ -282,7 +282,7 @@ class AppUserProfileSheet {
                     time,
                     style: TextStyle(
                       fontSize: 14,
-                      fontFamily: 'monospace',
+                      fontFeatures: const [FontFeature.tabularFigures()],
                       fontWeight: isCompleted
                           ? FontWeight.bold
                           : FontWeight.normal,

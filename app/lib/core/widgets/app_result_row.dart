@@ -79,7 +79,7 @@ class AppResultRow extends StatelessWidget {
             time,
             style: theme.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              fontFamily: 'monospace',
+              fontFeatures: const [FontFeature.tabularFigures()],
               color: place == 1 ? cs.primary : null,
             ),
           ),

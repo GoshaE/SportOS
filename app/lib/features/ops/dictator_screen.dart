@@ -202,7 +202,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
                 const SizedBox(width: 12),
                 Icon(Icons.timer, size: 16, color: cs.primary),
                 const SizedBox(width: 4),
-                Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.bold, color: cs.primary)),
+                Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], fontSize: 13, fontWeight: FontWeight.bold, color: cs.primary)),
               ]),
             ],
           ),
@@ -252,7 +252,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
                     Expanded(child: Text(result.name, style: TextStyle(fontWeight: isTop3 ? FontWeight.bold : FontWeight.normal))),
                   ]),
                   subtitle: Row(children: [
-                    Text(netStr, style: TextStyle(fontFamily: 'monospace', fontSize: 13, fontWeight: FontWeight.bold, color: i == 0 ? cs.primary : null)),
+                    Text(netStr, style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], fontSize: 13, fontWeight: FontWeight.bold, color: i == 0 ? cs.primary : null)),
                     if (gapStr != '—') ...[const SizedBox(width: 8), Text(gapStr, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant))],
                   ]),
                   trailing: Icon(Icons.info_outline, size: 18, color: cs.onSurfaceVariant),

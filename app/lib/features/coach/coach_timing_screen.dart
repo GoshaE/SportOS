@@ -216,7 +216,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 6, height: 6, decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle)),
               const SizedBox(width: 6),
-              Text(TimeFormatter.hms(_elapsed), style: TextStyle(fontSize: 14, fontFamily: 'monospace', fontWeight: FontWeight.w900, color: cs.error)),
+              Text(TimeFormatter.hms(_elapsed), style: TextStyle(fontSize: 14, fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, color: cs.error)),
             ]),
           ),
           IconButton(
@@ -602,7 +602,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                             ),
                             const SizedBox(width: 12),
                             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(TimeFormatter.full(raceTime), style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
+                              Text(TimeFormatter.full(raceTime), style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
                               Text('🕐 ${TimeFormatter.clockTime(mark.correctedTime)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                             ])),
                             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
@@ -750,9 +750,9 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   // Имя
                   Expanded(child: Text(r.name, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface), overflow: TextOverflow.ellipsis)),
                   // Elapsed от старта
-                  SizedBox(width: 50, child: Text(TimeFormatter.compact(r.elapsed), style: TextStyle(fontSize: 11, fontFamily: 'monospace', fontWeight: FontWeight.w600, color: cs.onSurface), textAlign: TextAlign.center)),
+                  SizedBox(width: 50, child: Text(TimeFormatter.compact(r.elapsed), style: TextStyle(fontSize: 11, fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w600, color: cs.onSurface), textAlign: TextAlign.center)),
                   // Сплит круга
-                  SizedBox(width: 45, child: Text(r.gapToPrev != null ? TimeFormatter.compact(r.gapToPrev!) : '—', style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
+                  SizedBox(width: 45, child: Text(r.gapToPrev != null ? TimeFormatter.compact(r.gapToPrev!) : '—', style: TextStyle(fontSize: 10, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurfaceVariant), textAlign: TextAlign.center)),
                   // Разрыв от лидера + тренд
                   SizedBox(width: 60, child: Row(mainAxisAlignment: MainAxisAlignment.end, children: [
                     if (trendIcon.isNotEmpty) Text(trendIcon, style: TextStyle(fontSize: 10, color: trendColor)),
@@ -894,7 +894,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                 for (int lap = 1; lap <= session.config.laps; lap++)
                   SizedBox(width: 55, child: () {
                     if (lap <= splits.length) {
-                      return Text(TimeFormatter.compact(splits[lap - 1]), style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurface), textAlign: TextAlign.center);
+                      return Text(TimeFormatter.compact(splits[lap - 1]), style: TextStyle(fontSize: 11, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurface), textAlign: TextAlign.center);
                     }
                     return Text('—', style: TextStyle(fontSize: 11, color: cs.outline), textAlign: TextAlign.center);
                   }()),

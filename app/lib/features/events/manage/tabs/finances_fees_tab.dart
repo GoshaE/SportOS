@@ -346,7 +346,7 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
         Icon(icon, size: 20, color: cs.primary),
         const SizedBox(width: 12),
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, fontFamily: 'monospace')),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, fontFeatures: [FontFeature.tabularFigures()])),
           Text(label, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
         ])),
         IconButton(icon: const Icon(Icons.copy, size: 16), visualDensity: VisualDensity.compact, onPressed: () {}, color: cs.primary),

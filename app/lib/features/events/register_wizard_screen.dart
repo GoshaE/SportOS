@@ -171,7 +171,7 @@ class _RegisterWizardScreenState extends State<RegisterWizardScreen> {
                       Row(children: [
                         Expanded(child: Text(
                           'Карта: 2200 7007 1234 5678\nПолучатель: Иванов И.И.\nНазначение: Рег BIB+Фио',
-                          style: theme.textTheme.bodySmall?.copyWith(fontFamily: 'monospace'),
+                          style: theme.textTheme.bodySmall?.copyWith(fontFeatures: const [FontFeature.tabularFigures()]),
                         )),
                         IconButton(
                           icon: const Icon(Icons.copy, size: 20),

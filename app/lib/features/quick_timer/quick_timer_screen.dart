@@ -542,7 +542,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             ),
             child: Text(
               TimeFormatter.full(_elapsed),
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: cs.error),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()], color: cs.error),
             ),
           ),
           // Счётчик финиша
@@ -660,7 +660,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
                   ),
                   Text(
                     _fmtCountdown(countdown),
-                    style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: isOverdue || isUrgent ? cs.error : cs.primary, height: 1.1),
+                    style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()], color: isOverdue || isUrgent ? cs.error : cs.primary, height: 1.1),
                   ),
                 ]),
                 Icon(isOverdue ? Icons.error : isUrgent ? Icons.volume_up : Icons.schedule, size: 36,
@@ -1107,7 +1107,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             Text('Круг ${a.completedLaps}/${session.totalLaps}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
           ]),
           const Spacer(),
-          Text(totalTime, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: finished ? cs.primary : cs.onSurface)),
+          Text(totalTime, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()], color: finished ? cs.primary : cs.onSurface)),
         ]),
         const SizedBox(height: 16),
         if (lapDurations.isNotEmpty) ...[
@@ -1130,7 +1130,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
                   decoration: BoxDecoration(color: isLast ? cs.primary.withValues(alpha: 0.1) : cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
                   child: Text('L${lapIdx + 1}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: isLast ? cs.primary : cs.onSurfaceVariant)),
                 ),
-                title: Text(TimeFormatter.compact(lapTime), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.onSurface)),
+                title: Text(TimeFormatter.compact(lapTime), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurface)),
                 subtitle: Text('Общее: ${TimeFormatter.compact(cumulative)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
                 trailing: isLast ? Icon(Icons.flag, size: 18, color: cs.primary) : null,
               ),
@@ -1155,7 +1155,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       child: Column(children: [
         if (isRunning) ...[
           Text(TimeFormatter.full(_elapsed),
-            style: TextStyle(fontSize: 42, fontFamily: 'monospace', fontWeight: FontWeight.w900, color: cs.error, letterSpacing: 2)),
+            style: TextStyle(fontSize: 42, fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, color: cs.error, letterSpacing: 2)),
           const SizedBox(height: 4),
           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
             Container(width: 8, height: 8, decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle)),
@@ -1163,7 +1163,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             Text('LIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.error)),
           ]),
         ] else
-          Text('00:00.0', style: TextStyle(fontSize: 42, fontFamily: 'monospace', fontWeight: FontWeight.w900, color: cs.onSurfaceVariant.withValues(alpha: 0.3), letterSpacing: 2)),
+          Text('00:00.0', style: TextStyle(fontSize: 42, fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, color: cs.onSurfaceVariant.withValues(alpha: 0.3), letterSpacing: 2)),
       ]),
     );
   }

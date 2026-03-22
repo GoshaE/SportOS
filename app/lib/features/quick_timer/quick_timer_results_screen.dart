@@ -147,7 +147,7 @@ class QuickTimerResultsScreen extends ConsumerWidget {
                             const SizedBox(height: 4),
                             Text(
                               laps.asMap().entries.map((e) => 'L${e.key + 1}: ${TimeFormatter.compact(e.value)}').join(' · '),
-                              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontFamily: 'monospace'),
+                              style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant, fontFeatures: const [FontFeature.tabularFigures()]),
                             ),
                           ],
                         ])),
@@ -156,7 +156,7 @@ class QuickTimerResultsScreen extends ConsumerWidget {
                         Text(
                           result != null ? TimeFormatter.full(result) : 'DNF',
                           style: TextStyle(
-                            fontFamily: 'monospace',
+                            fontFeatures: const [FontFeature.tabularFigures()],
                             fontSize: 16,
                             fontWeight: FontWeight.w900,
                             color: result != null ? cs.onSurface : cs.error,

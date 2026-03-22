@@ -124,7 +124,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
               leading: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
-                child: Text(r['code']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFamily: 'monospace', color: cs.primary)),
+                child: Text(r['code']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFeatures: const [FontFeature.tabularFigures()], color: cs.primary)),
               ),
               title: Text(r['name']!, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
               trailing: StatusBadge(
@@ -380,7 +380,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
                   ),
                   child: ListTile(
                     dense: true,
-                    leading: Text(r['code']!, style: const TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.bold)),
+                    leading: Text(r['code']!, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()], fontWeight: FontWeight.bold)),
                     title: Text(r['name']!),
                     trailing: StatusBadge(text: r['penalty']!, type: r['penalty']!.contains('DSQ') ? BadgeType.error : BadgeType.warning),
                     onTap: () => setS(() => selectedViolation = i),
@@ -428,7 +428,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
                 mainAxisSize: MainAxisSize.min,
                 children: _penaltyRegistry.take(5).map((r) => ListTile(
                   dense: true,
-                  leading: Text(r['code']!, style: const TextStyle(fontFamily: 'monospace', fontSize: 12)),
+                  leading: Text(r['code']!, style: const TextStyle(fontFeatures: [FontFeature.tabularFigures()], fontSize: 12)),
                   title: Text(r['name']!, style: const TextStyle(fontSize: 13)),
                   trailing: StatusBadge(text: r['penalty']!, type: r['penalty']!.contains('DSQ') ? BadgeType.error : BadgeType.warning),
                   onTap: () { Navigator.of(context, rootNavigator: true).pop(); AppSnackBar.success(context, '${r['code']} ${r['penalty']} → BIB $bib'); },

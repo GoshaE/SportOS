@@ -383,7 +383,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                   ],
                 ),
               ),
-              Text(timeStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFamily: 'monospace', color: Theme.of(context).colorScheme.primary)),
+              Text(timeStr, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, fontFeatures: const [FontFeature.tabularFigures()], color: Theme.of(context).colorScheme.primary)),
             ],
           ),
           const SizedBox(height: 24),

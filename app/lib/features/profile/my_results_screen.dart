@@ -230,7 +230,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
                 color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5), 
                 borderRadius: BorderRadius.circular(8)
               ),
-              child: Text(time, style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, fontSize: 16, fontFamily: 'monospace')),
+              child: Text(time, style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, fontSize: 16, fontFeatures: const [FontFeature.tabularFigures()])),
             ),
           ]),
           if (bars.isNotEmpty) ...[

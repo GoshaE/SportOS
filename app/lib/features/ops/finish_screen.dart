@@ -347,7 +347,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                 Row(children: [
                   Icon(Icons.timer, size: 14, color: cs.primary),
                   const SizedBox(width: 6),
-                  Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: cs.primary)),
+                  Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()], color: cs.primary)),
                 ]),
               ],
             ),
@@ -420,7 +420,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Text(timeStr, style: TextStyle(fontFamily: 'monospace', fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
+                                Text(timeStr, style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], fontSize: 18, fontWeight: FontWeight.w900, color: cs.onSurface)),
                                 const SizedBox(height: 4),
                                 if (assigned)
                                   Row(children: [

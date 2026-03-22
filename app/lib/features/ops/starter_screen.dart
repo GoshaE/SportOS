@@ -292,7 +292,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
             ),
             child: Text(
               _fmtElapsed(_elapsed),
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.onSurface),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurface),
             ),
           ),
           IconButton(icon: Icon(Icons.bluetooth_connected, color: _isSynced ? cs.primary : cs.onSurfaceVariant), onPressed: () {}),
@@ -450,7 +450,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                             style: TextStyle(
                               fontSize: 48,
                               fontWeight: FontWeight.w800,
-                              fontFamily: 'monospace',
+                              fontFeatures: const [FontFeature.tabularFigures()],
                               color: isOverdue || isUrgent ? cs.error : cs.primary,
                               height: 1.1,
                             ),

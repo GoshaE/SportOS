@@ -114,23 +114,23 @@ class AppBibTile extends StatelessWidget {
 
   (Color bg, Color text, Color border, TextDecoration?, IconData?) _style(ColorScheme cs) => switch (state) {
     BibState.available => (
-      cs.primaryContainer.withValues(alpha: 0.15),
+      cs.primaryContainer.withValues(alpha: 0.2),
       cs.primary,
-      cs.primary.withValues(alpha: 0.4),
+      cs.primary.withValues(alpha: 0.6),
       null,
       null,
     ),
     BibState.assigned => (
-      cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      cs.surfaceContainerHighest.withValues(alpha: 0.4),
       cs.onSurfaceVariant,
-      cs.outlineVariant.withValues(alpha: 0.3),
+      cs.outlineVariant.withValues(alpha: 0.5),
       null,
       Icons.check_circle_outline,
     ),
     BibState.finished => (
-      cs.surfaceContainerHighest.withValues(alpha: 0.5),
+      cs.surfaceContainerHighest.withValues(alpha: 0.6),
       cs.outline,
-      cs.outlineVariant.withValues(alpha: 0.1),
+      cs.outlineVariant.withValues(alpha: 0.3),
       TextDecoration.lineThrough,
       Icons.done_all,
     ),
@@ -142,9 +142,9 @@ class AppBibTile extends StatelessWidget {
       Icons.block,
     ),
     BibState.current => (
-      cs.tertiaryContainer.withValues(alpha: 0.2),
+      cs.tertiaryContainer.withValues(alpha: 0.3),
       cs.tertiary,
-      cs.tertiary.withValues(alpha: 0.5),
+      cs.tertiary.withValues(alpha: 0.7),
       null,
       Icons.play_circle_outline,
     ),

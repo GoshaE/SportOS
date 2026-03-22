@@ -346,7 +346,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
                 Row(children: [
                   Icon(Icons.timer, size: 14, color: cs.primary),
                   const SizedBox(width: 6),
-                  Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: cs.primary)),
+                  Text(TimeFormatter.compact(_elapsed), style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, fontFeatures: const [FontFeature.tabularFigures()], color: cs.primary)),
                 ]),
               ],
             ),

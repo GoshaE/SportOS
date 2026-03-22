@@ -80,7 +80,7 @@ class FinancesPromosTab extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           decoration: BoxDecoration(color: promoColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                          child: Text(promo.code, style: TextStyle(fontWeight: FontWeight.w800, fontFamily: 'monospace', fontSize: 16, letterSpacing: 1.5, color: promo.isActive ? promoColor : cs.outline)),
+                          child: Text(promo.code, style: TextStyle(fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()], fontSize: 16, letterSpacing: 1.5, color: promo.isActive ? promoColor : cs.outline)),
                         ),
                         const SizedBox(width: 12),
                         Container(

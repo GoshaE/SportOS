@@ -254,7 +254,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
                   Text(
                     'ФИО | Пол | Дисциплина | Город | Клуб | Собака\n'
                     'Петров Алексей | М | Скиджоринг | Екатеринбург | Сноу Дог | Rex',
-                    style: TextStyle(fontSize: 11, color: cs.outline, fontFamily: 'monospace', height: 1.6),
+                    style: TextStyle(fontSize: 11, color: cs.outline, fontFeatures: const [FontFeature.tabularFigures()], height: 1.6),
                   ),
                 ],
               ),

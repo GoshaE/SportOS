@@ -184,7 +184,7 @@ class _FinancesTransactionsTabState extends State<FinancesTransactionsTab> {
                         const SizedBox(width: 8),
                         Text(
                           'ID: ${t['id']}',
-                          style: TextStyle(fontSize: 11, fontFamily: 'monospace', color: cs.onSurfaceVariant.withValues(alpha: 0.8)),
+                          style: TextStyle(fontSize: 11, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurfaceVariant.withValues(alpha: 0.8)),
                         ),
                       ],
                     ),

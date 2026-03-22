@@ -867,7 +867,7 @@ class _TeamScreenState extends State<TeamScreen>
                     child: Text(
                       'sportos.app/invite/evt-1/abc123',
                       style: TextStyle(
-                        fontFamily: 'monospace',
+                        fontFeatures: [FontFeature.tabularFigures()],
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),

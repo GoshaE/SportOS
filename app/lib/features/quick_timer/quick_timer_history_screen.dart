@@ -110,7 +110,7 @@ class QuickTimerHistoryScreen extends ConsumerWidget {
                             // Лучшее время
                             if (best != null) ...[
                               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                                Text(TimeFormatter.compact(best), style: TextStyle(fontFamily: 'monospace', fontWeight: FontWeight.w900, fontSize: 14, color: cs.primary)),
+                                Text(TimeFormatter.compact(best), style: TextStyle(fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, fontSize: 14, color: cs.primary)),
                                 Text('лучший', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant)),
                               ]),
                             ],
