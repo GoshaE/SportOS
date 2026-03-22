@@ -96,6 +96,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
         AppPillTabBar(
           controller: _tabCtrl,
           tabs: const ['Новый', 'Недавние'],
+          padding: EdgeInsets.zero,
         ),
         const SizedBox(height: 16),
 
