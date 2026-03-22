@@ -69,6 +69,18 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
     );
   }
 
+  /// Авто-старт по плановому времени (для интервального режима).
+  void startIndividualAt(String athleteId, DateTime at) {
+    if (state == null) return;
+    final updated = state!.athletes.map((a) {
+      if (a.id == athleteId && a.startTime == null) {
+        return a.copyWith(startTime: at);
+      }
+      return a;
+    }).toList();
+    state = state!.copyWith(athletes: updated);
+  }
+
   /// Записать сплит/финиш для атлета (тап по плитке).
   void recordSplit(String athleteId) {
     if (state == null) return;
@@ -79,8 +91,8 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
       if (a.id != athleteId) return a;
       if (a.isFinished(totalLaps)) return a;
 
-      // Для разделки: не стартовал → ignore
-      if (state!.mode == QuickStartMode.individual && a.startTime == null) return a;
+      // Для ручного старта: не стартовал → ignore
+      if (state!.mode == QuickStartMode.manual && a.startTime == null) return a;
 
       final newSplits = [...a.splits, now];
       final isNowFinished = newSplits.length >= totalLaps;

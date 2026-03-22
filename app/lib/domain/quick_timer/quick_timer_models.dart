@@ -1,7 +1,11 @@
 import 'package:flutter/foundation.dart';
 
 /// Режим старта быстрой сессии.
-enum QuickStartMode { mass, individual }
+///
+/// - [mass] — масс-старт (все одновременно)
+/// - [interval] — интервальный (авто-старт после первого)
+/// - [manual] — ручной (тренер запускает каждого)
+enum QuickStartMode { mass, interval, manual }
 
 /// Статус сессии.
 enum QuickSessionStatus { setup, running, finished }

@@ -197,11 +197,34 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
             children: [
               SegmentedButton<QuickStartMode>(
                 segments: const [
-                  ButtonSegment(value: QuickStartMode.mass, label: Text('Масс-старт'), icon: Icon(Icons.groups)),
-                  ButtonSegment(value: QuickStartMode.individual, label: Text('Разделка'), icon: Icon(Icons.person)),
+                  ButtonSegment(value: QuickStartMode.mass, label: Text('Масс'), icon: Icon(Icons.groups)),
+                  ButtonSegment(value: QuickStartMode.interval, label: Text('Интервал'), icon: Icon(Icons.timer)),
+                  ButtonSegment(value: QuickStartMode.manual, label: Text('Ручной'), icon: Icon(Icons.touch_app)),
                 ],
                 selected: {_mode},
                 onSelectionChanged: (s) => setState(() => _mode = s.first),
+              ),
+              const SizedBox(height: 10),
+              // Подсказка по режиму
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Icon(Icons.info_outline, size: 16, color: cs.primary),
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(
+                    _mode == QuickStartMode.mass
+                        ? 'Все спортсмены стартуют одновременно по нажатию кнопки «Старт».'
+                        : _mode == QuickStartMode.interval
+                            ? 'Нажмите «Старт» — первый спортсмен уйдёт, далее остальные стартуют автоматически через заданный интервал.'
+                            : 'Вы вручную нажимаете на каждого спортсмена, когда он готов к старту.',
+                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.4),
+                  )),
+                ]),
               ),
             ],
           ),
@@ -229,8 +252,8 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
           ),
           const SizedBox(height: 16),
 
-          // ── Интервал (только разделка) ──
-          if (_mode == QuickStartMode.individual) ...[
+          // ── Интервал (только интервальный режим) ──
+          if (_mode == QuickStartMode.interval) ...[
             AppSectionHeader(title: 'Интервал между стартами', icon: Icons.schedule),
             AppCard(
               padding: const EdgeInsets.all(12),
