@@ -31,6 +31,7 @@ class AppBibTile extends StatelessWidget {
   final String? lapInfo;
   final BibState state;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
 
   const AppBibTile({
     super.key,
@@ -39,6 +40,7 @@ class AppBibTile extends StatelessWidget {
     this.lapInfo,
     this.state = BibState.available,
     this.onTap,
+    this.onLongPress,
   });
 
   @override
@@ -49,6 +51,7 @@ class AppBibTile extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(16),
       onTap: onTap,
+      onLongPress: onLongPress,
       child: Container(
         decoration: BoxDecoration(
           color: bgColor,

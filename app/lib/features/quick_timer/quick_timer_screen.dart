@@ -113,13 +113,70 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     HapticFeedback.heavyImpact();
     ref.read(quickSessionProvider.notifier).recordSplit(athleteId);
     final session = ref.read(quickSessionProvider);
-    if (session != null && session.allFinished) {
+    if (session == null) return;
+
+    final athlete = session.athletes.firstWhere((a) => a.id == athleteId);
+    final displayName = athlete.name.isNotEmpty ? athlete.name : 'BIB ${athlete.bib}';
+
+    if (session.allFinished) {
       ref.read(quickSessionProvider.notifier).finishSession();
       ref.read(quickSessionProvider.notifier).saveToHistory();
       ref.read(quickHistoryProvider.notifier).refresh();
       if (mounted) {
-        _tabCtrl.animateTo(2); // Таблица
+        _tabCtrl.animateTo(2);
         AppSnackBar.success(context, 'Все финишировали! Результаты сохранены.');
+      }
+    } else if (mounted) {
+      // SnackBar с кнопкой Отменить
+      AppSnackBar.withUndo(
+        context,
+        '⏱ Отсечка: $displayName',
+        onUndo: () {
+          ref.read(quickSessionProvider.notifier).undoLastSplit(athleteId);
+          HapticFeedback.mediumImpact();
+        },
+      );
+    }
+  }
+
+  void _undoSplitWithConfirm(String athleteId) async {
+    final session = ref.read(quickSessionProvider);
+    if (session == null) return;
+    final athlete = session.athletes.firstWhere((a) => a.id == athleteId);
+    final displayName = athlete.name.isNotEmpty ? athlete.name : 'BIB ${athlete.bib}';
+    final laps = athlete.completedLaps;
+
+    final confirm = await AppDialog.confirm(
+      context,
+      title: 'Отменить отсечку?',
+      message: '$displayName — круг $laps/${session.totalLaps}\nПоследняя отсечка будет удалена.',
+    );
+    if (confirm == true) {
+      HapticFeedback.mediumImpact();
+      ref.read(quickSessionProvider.notifier).undoLastSplit(athleteId);
+      if (mounted) {
+        AppSnackBar.info(context, 'Отсечка $displayName отменена');
+      }
+    }
+  }
+
+  void _removeAthleteWithConfirm(String athleteId) async {
+    final session = ref.read(quickSessionProvider);
+    if (session == null) return;
+    final athlete = session.athletes.firstWhere((a) => a.id == athleteId);
+    final displayName = athlete.name.isNotEmpty ? athlete.name : 'BIB ${athlete.bib}';
+
+    final confirm = await AppDialog.confirm(
+      context,
+      title: 'Удалить участника?',
+      message: '$displayName будет удалён из сессии.',
+    );
+    if (confirm == true) {
+      HapticFeedback.mediumImpact();
+      ref.read(quickSessionProvider.notifier).removeAthlete(athleteId);
+      setState(() {});
+      if (mounted) {
+        AppSnackBar.info(context, '$displayName удалён');
       }
     }
   }
@@ -697,6 +754,10 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
               onTap: !isMass && !isInterval && !hasStarted && !finished && !isFinished
                   ? () => _startIndividual(a.id)
                   : null,
+              // Long-press → удалить участника (до старта)
+              onLongPress: !hasStarted && !finished && !isFinished
+                  ? () => _removeAthleteWithConfirm(a.id)
+                  : null,
             );
           },
         ),
@@ -822,6 +883,10 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
                 if (finished || !hasStarted) return;
                 _recordSplit(a.id);
               },
+              // Long-press → отменить последнюю отсечку
+              onLongPress: (finished || laps > 0)
+                  ? () => _undoSplitWithConfirm(a.id)
+                  : null,
             );
           }).toList(),
         ),

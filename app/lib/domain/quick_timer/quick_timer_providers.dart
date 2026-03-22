@@ -152,6 +152,42 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
     );
   }
 
+  /// Откатить последний сплит/финиш атлета.
+  ///
+  /// Убирает последний элемент из splits и сбрасывает finishTime.
+  /// Если все были finished и сессия завершена — возвращает running.
+  void undoLastSplit(String athleteId) {
+    if (state == null) return;
+    final updated = state!.athletes.map((a) {
+      if (a.id != athleteId) return a;
+      if (a.splits.isEmpty) return a;
+      final newSplits = [...a.splits]..removeLast();
+      return a.copyWith(
+        splits: newSplits,
+        finishTime: null, // сбросить финиш
+      );
+    }).toList();
+
+    // Если сессия была finished → вернуть running
+    final newStatus = state!.status == QuickSessionStatus.finished
+        ? QuickSessionStatus.running
+        : state!.status;
+
+    state = state!.copyWith(athletes: updated, status: newStatus);
+  }
+
+  /// Удалить участника (и пересчитать BIB по порядку).
+  void removeAthlete(String athleteId) {
+    if (state == null) return;
+    final filtered = state!.athletes.where((a) => a.id != athleteId).toList();
+    // Пересчитать startOrder и BIB
+    final reordered = filtered.asMap().entries.map((e) {
+      final a = e.value;
+      return a.copyWith(startOrder: e.key, bib: '${e.key + 1}');
+    }).toList();
+    state = state!.copyWith(athletes: reordered);
+  }
+
   /// Сбросить сессию.
   void reset() => state = null;
 }
