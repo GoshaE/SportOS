@@ -66,74 +66,52 @@ class AppBottomSheet {
       backgroundColor: Colors.transparent,
       elevation: 0,
       builder: (ctx) {
-        // Высота клавиатуры — ключевое значение
-        final viewInsets = MediaQuery.of(ctx).viewInsets.bottom;
-        final screenHeight = MediaQuery.of(ctx).size.height;
-        // Если клавиатура открыта — автоматически расширяем sheet
-        final keyboardOpen = viewInsets > 0;
-        final effectiveInitial = keyboardOpen
-            ? maxHeight.clamp(0.0, 1.0)
-            : initialHeight.clamp(0.0, 1.0);
+        // Flutter сам учитывает клавиатуру при isScrollControlled: true.
+        // Мы просто задаём максимальную фракцию высоты экрана.
+        final screenHeight = MediaQuery.sizeOf(ctx).height;
 
         return BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
-          child: Padding(
-            // ← Поднимаем контент над клавиатурой
-            padding: EdgeInsets.only(bottom: viewInsets),
-            child: Container(
-              // Ограничиваем высоту чтобы не уехать за экран
-              constraints: BoxConstraints(
-                maxHeight: screenHeight - viewInsets - MediaQuery.of(ctx).padding.top,
-              ),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-                border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2))),
-              ),
-              child: DraggableScrollableSheet(
-                initialChildSize: effectiveInitial,
-                maxChildSize: maxHeight,
-                minChildSize: minHeight,
-                snap: true,
-                snapSizes: {minHeight, initialHeight, maxHeight}
-                    .where((s) => s >= minHeight && s <= maxHeight)
-                    .toList()
-                  ..sort(),
-                expand: false,
-                builder: (ctx, scrollController) {
-                  return Column(
-                    children: [
-                      // Drag handle
-                      Center(
-                        child: Container(
-                          margin: const EdgeInsets.only(top: 8, bottom: 4),
-                          width: 36,
-                          height: 4,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                      ),
-                      // Title bar
-                      _buildTitleBar(context, ctx, title),
-                      const Divider(height: 1),
-                      // Scrollable content
-                      Expanded(
-                        child: ListView(
-                          controller: scrollController,
-                          padding: const EdgeInsets.all(20),
-                          keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                          children: [child],
-                        ),
-                      ),
-                      // Optional actions bar
-                      if (actions != null && actions.isNotEmpty)
-                        _buildActions(actions),
-                    ],
-                  );
-                },
-              ),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: screenHeight * maxHeight,
+            ),
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2))),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Drag handle
+                Center(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 8, bottom: 4),
+                    width: 36,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                // Title bar
+                _buildTitleBar(context, ctx, title),
+                const Divider(height: 1),
+                // Scrollable content
+                Flexible(
+                  child: ListView(
+                    shrinkWrap: true,
+                    padding: const EdgeInsets.all(20),
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+                    children: [child],
+                  ),
+                ),
+                // Optional actions bar
+                if (actions != null && actions.isNotEmpty)
+                  _buildActions(actions),
+              ],
             ),
           ),
         );
