@@ -63,6 +63,12 @@ import '../features/ops/dictator_screen.dart';
 import '../features/ops/gps_map_screen.dart';
 import '../features/coach/coach_timing_screen.dart';
 
+// Quick Timer
+import '../features/quick_timer/quick_timer_setup_screen.dart';
+import '../features/quick_timer/quick_timer_screen.dart';
+import '../features/quick_timer/quick_timer_results_screen.dart';
+import '../features/quick_timer/quick_timer_history_screen.dart';
+
 // Results
 import '../features/results/live_results_screen.dart';
 import '../features/results/protocol_screen.dart';
@@ -585,6 +591,34 @@ final GoRouter router = GoRouter(
       path: '/series/:seriesId',
       name: 'series',
       builder: (context, state) => const SeriesScreen(),
+    ),
+
+    // ═══════════════════════════════════════════════
+    // Быстрый Секундомер (QT1-QT4)
+    // ═══════════════════════════════════════════════
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quick-timer',
+      name: 'quick-timer-setup',
+      builder: (context, state) => const QuickTimerSetupScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quick-timer/live',
+      name: 'quick-timer-live',
+      builder: (context, state) => const QuickTimerScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quick-timer/results',
+      name: 'quick-timer-results',
+      builder: (context, state) => const QuickTimerResultsScreen(),
+    ),
+    GoRoute(
+      parentNavigatorKey: _rootNavigatorKey,
+      path: '/quick-timer/history',
+      name: 'quick-timer-history',
+      builder: (context, state) => const QuickTimerHistoryScreen(),
     ),
   ],
 

@@ -73,8 +73,44 @@ class MyEventsScreen extends ConsumerWidget {
             ),
           ]),
 
-          // ── Организую (из провайдера) ──
+          // ── Организую ──
           ListView(padding: const EdgeInsets.fromLTRB(16, 12, 16, 100), children: [
+            // ── Quick Timer CTA ──
+            AppCard(
+              padding: EdgeInsets.zero,
+              backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.08),
+              borderColor: cs.tertiary.withValues(alpha: 0.2),
+              children: [
+                InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () => context.push('/quick-timer'),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(children: [
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [cs.tertiary.withValues(alpha: 0.15), cs.tertiary.withValues(alpha: 0.05)],
+                          ),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(Icons.timer, size: 28, color: cs.tertiary),
+                      ),
+                      const SizedBox(width: 14),
+                      Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text('⚡ Быстрый Секундомер', style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        const SizedBox(height: 4),
+                        Text('Засечь тренировку без создания мероприятия', style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
+                      ])),
+                      Icon(Icons.chevron_right, color: cs.onSurfaceVariant),
+                    ]),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
             // Красивая карточка из провайдера
             AppEventCard(
               title: config.name,
