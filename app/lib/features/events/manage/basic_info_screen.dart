@@ -63,7 +63,7 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
                 Container(
                   width: 40, height: 40,
                   decoration: BoxDecoration(
-                    color: _statusColor(config.status, cs).withValues(alpha: 0.15),
+                    color: _statusColor(config.status, cs).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(_statusIcon(config.status), size: 20, color: _statusColor(config.status, cs)),
@@ -121,7 +121,7 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
             height: 140,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
               image: config.logoUrl != null
                   ? DecorationImage(image: AssetImage(config.logoUrl!), fit: BoxFit.cover)
                   : null,
@@ -129,7 +129,7 @@ class _BasicInfoScreenState extends ConsumerState<BasicInfoScreen> {
             ),
             child: config.logoUrl == null
                 ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.add_photo_alternate, size: 36, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                    Icon(Icons.add_photo_alternate, size: 36, color: cs.onSurfaceVariant.withOpacity(0.4)),
                     const SizedBox(height: 6),
                     Text('Выбрать обложку', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)),
                   ]))
@@ -539,7 +539,7 @@ class _LifecycleStepper extends StatelessWidget {
             final done = stageIdx < currentIdx;
             return Expanded(child: Container(
               height: 2,
-              color: done ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3),
+              color: done ? cs.primary : cs.outlineVariant.withOpacity(0.3),
             ));
           }
           final stageIdx = i ~/ 2;
@@ -555,17 +555,17 @@ class _LifecycleStepper extends StatelessWidget {
                 color: isCurrent
                     ? cs.primary
                     : isDone
-                        ? cs.primary.withValues(alpha: 0.2)
+                        ? cs.primary.withOpacity(0.2)
                         : cs.surfaceContainerHigh,
                 border: Border.all(
-                  color: isCurrent || isDone ? cs.primary : cs.outlineVariant.withValues(alpha: 0.4),
+                  color: isCurrent || isDone ? cs.primary : cs.outlineVariant.withOpacity(0.4),
                   width: isCurrent ? 2 : 1,
                 ),
               ),
               child: Icon(
                 isDone ? Icons.check : icon,
                 size: 14,
-                color: isCurrent ? cs.onPrimary : isDone ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                color: isCurrent ? cs.onPrimary : isDone ? cs.primary : cs.onSurfaceVariant.withOpacity(0.5),
               ),
             ),
             const SizedBox(height: 4),
@@ -574,7 +574,7 @@ class _LifecycleStepper extends StatelessWidget {
               style: theme.textTheme.labelSmall?.copyWith(
                 fontSize: 9,
                 fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-                color: isCurrent ? cs.primary : isDone ? cs.onSurface : cs.onSurfaceVariant.withValues(alpha: 0.5),
+                color: isCurrent ? cs.primary : isDone ? cs.onSurface : cs.onSurfaceVariant.withOpacity(0.5),
               ),
               textAlign: TextAlign.center,
             ),
@@ -606,13 +606,13 @@ class _DeadlineRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: isExpired
-              ? cs.error.withValues(alpha: 0.08)
-              : cs.primaryContainer.withValues(alpha: 0.15),
+              ? cs.error.withOpacity(0.08)
+              : cs.primaryContainer.withOpacity(0.15),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isExpired
-                ? cs.error.withValues(alpha: 0.3)
-                : cs.primary.withValues(alpha: 0.2),
+                ? cs.error.withOpacity(0.3)
+                : cs.primary.withOpacity(0.2),
           ),
         ),
         child: Row(children: [

@@ -65,7 +65,7 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
                   Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [Colors.transparent, Colors.black.withValues(alpha: 0.8)],
+                        colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
                         begin: Alignment.topCenter,
                         end: Alignment.bottomCenter,
                       ),
@@ -88,7 +88,7 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
                               border: Border.all(color: Colors.white, width: 3),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.2), 
+                                  color: Colors.black.withOpacity(0.2), 
                                   blurRadius: 8,
                                 ),
                               ],
@@ -111,13 +111,13 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  Icon(Icons.location_on, size: 14, color: Colors.white.withValues(alpha: 0.8)),
+                                  Icon(Icons.location_on, size: 14, color: Colors.white.withOpacity(0.8)),
                                   const SizedBox(width: 4),
-                                  Text('Санкт-Петербург', style: theme.textTheme.labelMedium?.copyWith(color: Colors.white.withValues(alpha: 0.8))),
+                                  Text('Санкт-Петербург', style: theme.textTheme.labelMedium?.copyWith(color: Colors.white.withOpacity(0.8))),
                                   const SizedBox(width: 12),
-                                  Icon(Icons.people, size: 14, color: Colors.white.withValues(alpha: 0.8)),
+                                  Icon(Icons.people, size: 14, color: Colors.white.withOpacity(0.8)),
                                   const SizedBox(width: 4),
-                                  Text('45 участников', style: theme.textTheme.labelMedium?.copyWith(color: Colors.white.withValues(alpha: 0.8))),
+                                  Text('45 участников', style: theme.textTheme.labelMedium?.copyWith(color: Colors.white.withOpacity(0.8))),
                                 ],
                               ),
                             ],
@@ -160,8 +160,8 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
     return ListView(padding: const EdgeInsets.all(16), children: [
       // Виды спорта
       Wrap(spacing: 6, children: [
-        Chip(label: const Text('🐕 Ездовой спорт'), backgroundColor: cs.primary.withValues(alpha: 0.1)),
-        Chip(label: const Text('🏔 Трейл'), backgroundColor: cs.tertiary.withValues(alpha: 0.1)),
+        Chip(label: const Text('🐕 Ездовой спорт'), backgroundColor: cs.primary.withOpacity(0.1)),
+        Chip(label: const Text('🏔 Трейл'), backgroundColor: cs.tertiary.withOpacity(0.1)),
       ]),
       const SizedBox(height: 12),
 
@@ -366,7 +366,7 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
         return Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
           decoration: BoxDecoration(
-            border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2))),
+            border: Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.2))),
           ),
           child: Row(children: [
             SizedBox(width: 28, child: Text(e['rank']!, style: TextStyle(fontSize: isTop3 ? 18 : 14, fontWeight: FontWeight.bold))),
@@ -391,9 +391,9 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
     return Container(
       height: height,
       decoration: BoxDecoration(
-        color: isFirst ? cs.primary.withValues(alpha: 0.1) : cs.surfaceContainerHighest,
+        color: isFirst ? cs.primary.withOpacity(0.1) : cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
-        border: isFirst ? Border.all(color: cs.primary.withValues(alpha: 0.3), width: 1.5) : null,
+        border: isFirst ? Border.all(color: cs.primary.withOpacity(0.3), width: 1.5) : null,
       ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
         Text(rank, style: TextStyle(fontSize: isFirst ? 28 : 22)),
@@ -415,7 +415,7 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
         padding: EdgeInsets.zero,
         children: [
           Container(
-            decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.06)),
+            decoration: BoxDecoration(color: cs.primary.withOpacity(0.06)),
             child: Padding(
               padding: const EdgeInsets.all(14),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -573,7 +573,7 @@ class _ClubProfileScreenState extends State<ClubProfileScreen> with SingleTicker
             padding: EdgeInsets.zero,
             children: [
               Container(
-                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.05)),
+                decoration: BoxDecoration(color: cs.primary.withOpacity(0.05)),
                 padding: const EdgeInsets.all(12),
                 child: Row(
                   children: [

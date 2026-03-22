@@ -87,7 +87,7 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
         // ─── List ───
         Expanded(child: filtered.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.pets, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              Icon(Icons.pets, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
               const SizedBox(height: 8),
               Text(
                 participants.isEmpty ? 'Нет участников' : 'Нет совпадений',
@@ -115,9 +115,9 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
 
   Widget _vetCard(BuildContext context, ColorScheme cs, Participant p) {
     final status = p.vetStatus;
-    final borderColor = status == VetStatus.passed ? cs.primary.withValues(alpha: 0.3)
-        : status == VetStatus.failed ? cs.error.withValues(alpha: 0.3)
-        : cs.outlineVariant.withValues(alpha: 0.2);
+    final borderColor = status == VetStatus.passed ? cs.primary.withOpacity(0.3)
+        : status == VetStatus.failed ? cs.error.withOpacity(0.3)
+        : cs.outlineVariant.withOpacity(0.2);
     final statusIcon = status == VetStatus.passed ? Icons.check_circle
         : status == VetStatus.failed ? Icons.cancel
         : Icons.hourglass_empty;
@@ -141,7 +141,7 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
           // Dog avatar
           CircleAvatar(
             radius: 24,
-            backgroundColor: statusColor.withValues(alpha: 0.1),
+            backgroundColor: statusColor.withOpacity(0.1),
             child: Icon(Icons.pets, color: statusColor, size: 24),
           ),
           const SizedBox(width: 12),
@@ -151,7 +151,7 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
               if (p.bib.isNotEmpty) ...[
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                  decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
                   child: Text(p.bib, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: cs.primary)),
                 ),
                 const SizedBox(width: 8),
@@ -236,9 +236,9 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: (vetPassed ? cs.primary : cs.error).withValues(alpha: 0.08),
+              color: (vetPassed ? cs.primary : cs.error).withOpacity(0.08),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: (vetPassed ? cs.primary : cs.error).withValues(alpha: 0.3)),
+              border: Border.all(color: (vetPassed ? cs.primary : cs.error).withOpacity(0.3)),
             ),
             child: Row(children: [
               Icon(vetPassed ? Icons.check_circle : Icons.cancel, color: vetPassed ? cs.primary : cs.error),
@@ -332,8 +332,8 @@ class _VetCheckScreenState extends ConsumerState<VetCheckScreen> {
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: selectedReason == r.$1 ? cs.error : cs.outlineVariant.withValues(alpha: 0.3)),
-                color: selectedReason == r.$1 ? cs.error.withValues(alpha: 0.05) : null,
+                border: Border.all(color: selectedReason == r.$1 ? cs.error : cs.outlineVariant.withOpacity(0.3)),
+                color: selectedReason == r.$1 ? cs.error.withOpacity(0.05) : null,
               ),
               child: Row(children: [
                 Icon(r.$3, size: 20, color: selectedReason == r.$1 ? cs.error : cs.onSurfaceVariant),

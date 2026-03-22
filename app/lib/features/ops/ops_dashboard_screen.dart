@@ -58,7 +58,7 @@ class OpsDashboardScreen extends ConsumerWidget {
           Row(children: [
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
               child: Text(statusLabel, style: TextStyle(color: cs.primary, fontWeight: FontWeight.bold, fontSize: 12)),
             ),
             const SizedBox(width: 8),
@@ -90,17 +90,17 @@ class OpsDashboardScreen extends ConsumerWidget {
               '${participants.where((p) => p.mandateStatus == MandateStatus.passed).length} из $total допущено',
               participants.every((p) => p.mandateStatus == MandateStatus.passed),
             ),
-            Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Divider(height: 24, color: cs.outlineVariant.withOpacity(0.3)),
             _readinessRow(cs, 'Ветконтроль',
               '${participants.where((p) => p.vetStatus == VetStatus.passed).length} из $total прошли',
               participants.every((p) => p.vetStatus == VetStatus.passed),
             ),
-            Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Divider(height: 24, color: cs.outlineVariant.withOpacity(0.3)),
             _readinessRow(cs, 'BIB номера',
               '${participants.where((p) => p.bib.isNotEmpty).length} из $total назначено',
               participants.every((p) => p.bib.isNotEmpty),
             ),
-            Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Divider(height: 24, color: cs.outlineVariant.withOpacity(0.3)),
             _readinessRow(cs, 'Оплата',
               '${participants.where((p) => p.paymentStatus == PaymentStatus.paid).length} из $total оплачено',
               participants.every((p) => p.paymentStatus == PaymentStatus.paid),
@@ -112,9 +112,9 @@ class OpsDashboardScreen extends ConsumerWidget {
           AppSectionHeader(title: 'Связь и синхронизация', icon: Icons.cell_tower),
           Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
             AppSyncRow(name: 'Мастер-Нода (Финиш)', status: 'Ожидание', detail: '—', color: cs.onSurfaceVariant),
-            Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Divider(height: 24, color: cs.outlineVariant.withOpacity(0.3)),
             AppSyncRow(name: 'Пост Старт', status: 'Ожидание', detail: '—', color: cs.onSurfaceVariant),
-            Divider(height: 24, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Divider(height: 24, color: cs.outlineVariant.withOpacity(0.3)),
             AppSyncRow(name: 'Облако (Supabase)', status: 'Ожидание', detail: '—', color: cs.onSurfaceVariant),
           ]))),
           const SizedBox(height: 16),
@@ -166,7 +166,7 @@ class OpsDashboardScreen extends ConsumerWidget {
       decoration: BoxDecoration(
         gradient: LinearGradient(colors: [
           isLive ? cs.primary : cs.surfaceContainerHighest,
-          isLive ? cs.primary.withValues(alpha: 0.8) : cs.surfaceContainerHighest.withValues(alpha: 0.8),
+          isLive ? cs.primary.withOpacity(0.8) : cs.surfaceContainerHighest.withOpacity(0.8),
         ]),
         borderRadius: BorderRadius.circular(16),
       ),
@@ -176,7 +176,7 @@ class OpsDashboardScreen extends ConsumerWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(label, style: TextStyle(color: isLive ? cs.onPrimary : cs.onSurface, fontWeight: FontWeight.bold, fontSize: 18, letterSpacing: 1)),
           const SizedBox(height: 2),
-          Text(subtitle, style: TextStyle(color: (isLive ? cs.onPrimary : cs.onSurfaceVariant).withValues(alpha: 0.7), fontSize: 13)),
+          Text(subtitle, style: TextStyle(color: (isLive ? cs.onPrimary : cs.onSurfaceVariant).withOpacity(0.7), fontSize: 13)),
         ])),
       ]),
     );

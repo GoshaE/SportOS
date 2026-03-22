@@ -66,7 +66,7 @@ class _AppShimmerState extends State<AppShimmer> with SingleTickerProviderStateM
     
     // Default to high-contrast surface colors
     final base = widget.baseColor ?? cs.surfaceContainerHighest;
-    final highlight = widget.highlightColor ?? cs.surfaceContainerHighest.withValues(alpha: 0.5); // A slightly lighter/darker variant
+    final highlight = widget.highlightColor ?? cs.surfaceContainerHighest.withOpacity(0.5); // A slightly lighter/darker variant
 
     return AnimatedBuilder(
       animation: _controller,

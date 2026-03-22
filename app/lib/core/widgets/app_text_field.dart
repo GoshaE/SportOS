@@ -105,7 +105,7 @@ class AppTextField extends StatelessWidget {
             helperText!,
             style: TextStyle(
               fontSize: 12,
-              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+              color: cs.onSurfaceVariant.withOpacity(0.6),
             ),
           ),
         ],

@@ -78,8 +78,8 @@ class MyEventsScreen extends ConsumerWidget {
             // ── Quick Timer CTA ──
             AppCard(
               padding: EdgeInsets.zero,
-              backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.08),
-              borderColor: cs.tertiary.withValues(alpha: 0.2),
+              backgroundColor: cs.tertiaryContainer.withOpacity(0.08),
+              borderColor: cs.tertiary.withOpacity(0.2),
               children: [
                 InkWell(
                   borderRadius: BorderRadius.circular(16),
@@ -91,7 +91,7 @@ class MyEventsScreen extends ConsumerWidget {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [cs.tertiary.withValues(alpha: 0.15), cs.tertiary.withValues(alpha: 0.05)],
+                            colors: [cs.tertiary.withOpacity(0.15), cs.tertiary.withOpacity(0.05)],
                           ),
                           borderRadius: BorderRadius.circular(14),
                         ),
@@ -241,7 +241,7 @@ class _CreateOptionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return Material(
-      color: color.withValues(alpha: 0.06),
+      color: color.withOpacity(0.06),
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
@@ -253,7 +253,7 @@ class _CreateOptionCard extends StatelessWidget {
               width: 48, height: 48,
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [color.withValues(alpha: 0.2), color.withValues(alpha: 0.08)],
+                  colors: [color.withOpacity(0.2), color.withOpacity(0.08)],
                 ),
                 borderRadius: BorderRadius.circular(14),
               ),
@@ -268,7 +268,7 @@ class _CreateOptionCard extends StatelessWidget {
                 Text(subtitle, style: textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
               ],
             )),
-            Icon(Icons.chevron_right, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+            Icon(Icons.chevron_right, color: cs.onSurfaceVariant.withOpacity(0.5)),
           ]),
         ),
       ),

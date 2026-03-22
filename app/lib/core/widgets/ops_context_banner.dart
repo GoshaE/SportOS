@@ -57,7 +57,7 @@ class OpsContextBanner extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: cs.onErrorContainer.withValues(alpha: 0.1),
+                      color: cs.onErrorContainer.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(

@@ -128,7 +128,7 @@ class AppEventCard extends StatelessWidget {
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: cs.onSurfaceVariant.withValues(alpha: 0.2)),
+        side: BorderSide(color: cs.onSurfaceVariant.withOpacity(0.2)),
       ),
           child: InkWell(
             onTap: onTap,
@@ -212,7 +212,7 @@ class AppEventCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: cs.onSurfaceVariant.withValues(alpha: 0.2)),
+        border: Border.all(color: cs.onSurfaceVariant.withOpacity(0.2)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -229,7 +229,7 @@ class AppEventCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(2),
                 child: LinearProgressIndicator(
                   value: slotsProgress,
-                  backgroundColor: cs.outlineVariant.withValues(alpha: 0.3),
+                  backgroundColor: cs.outlineVariant.withOpacity(0.3),
                   valueColor: AlwaysStoppedAnimation(slotsProgress! >= 1.0 ? cs.error : cs.primary),
                 ),
               ),
@@ -254,7 +254,7 @@ class AppEventCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.2),
+      shadowColor: Colors.black.withOpacity(0.2),
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
@@ -297,7 +297,7 @@ class AppEventCard extends StatelessWidget {
                           color: color, // Solid color
                           borderRadius: BorderRadius.circular(6), // RoundedSquare
                           boxShadow: [
-                            BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 4), // Generic shadow for depth
+                            BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 4), // Generic shadow for depth
                           ]
                         ),
                         child: Text(
@@ -333,7 +333,7 @@ class AppEventCard extends StatelessWidget {
                           Expanded(
                             child: AppIconLabel(
                               Icons.calendar_today, subtitle!,
-                              color: Colors.white.withValues(alpha: 0.9),
+                              color: Colors.white.withOpacity(0.9),
                             ),
                           ),
                         ],
@@ -341,7 +341,7 @@ class AppEventCard extends StatelessWidget {
                           const SizedBox(width: 12),
                           AppIconLabel(
                             Icons.directions_run, sport!,
-                            color: Colors.white.withValues(alpha: 0.9),
+                            color: Colors.white.withOpacity(0.9),
                           ),
                         ]
                       ],
@@ -357,7 +357,7 @@ class AppEventCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: Colors.black.withOpacity(0.4),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.white),

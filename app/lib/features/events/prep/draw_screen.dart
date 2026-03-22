@@ -340,12 +340,12 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
         margin: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: approvedCount == totalCount
-              ? const Color(0xFF2E7D32).withValues(alpha: 0.08)
-              : cs.primaryContainer.withValues(alpha: 0.3),
+              ? const Color(0xFF2E7D32).withOpacity(0.08)
+              : cs.primaryContainer.withOpacity(0.3),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: approvedCount == totalCount
-              ? const Color(0xFF2E7D32).withValues(alpha: 0.2)
-              : cs.primary.withValues(alpha: 0.2)),
+              ? const Color(0xFF2E7D32).withOpacity(0.2)
+              : cs.primary.withOpacity(0.2)),
         ),
         child: Row(children: [
           Icon(approvedCount == totalCount ? Icons.check_circle : Icons.casino, color: approvedCount == totalCount ? const Color(0xFF2E7D32) : cs.primary),
@@ -383,17 +383,17 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
 
           return Card(
             elevation: isApproved ? 0 : 2,
-            color: isApproved ? const Color(0xFF2E7D32).withValues(alpha: 0.05) : null,
+            color: isApproved ? const Color(0xFF2E7D32).withOpacity(0.05) : null,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
-              side: isApproved ? BorderSide(color: const Color(0xFF2E7D32).withValues(alpha: 0.3)) : BorderSide.none,
+              side: isApproved ? BorderSide(color: const Color(0xFF2E7D32).withOpacity(0.3)) : BorderSide.none,
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(12),
               onTap: () => _openDiscipline(d.id),
               child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
                 CircleAvatar(
-                  backgroundColor: statusColor.withValues(alpha: 0.1),
+                  backgroundColor: statusColor.withOpacity(0.1),
                   child: Icon(statusIcon, color: statusColor),
                 ),
                 const SizedBox(width: 16),
@@ -436,7 +436,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
       // Stats bar
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        color: cs.primaryContainer.withValues(alpha: 0.1),
+        color: cs.primaryContainer.withOpacity(0.1),
         child: Row(children: [
           Icon(Icons.people, size: 16, color: cs.primary),
           const SizedBox(width: 6),
@@ -498,7 +498,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
                 decoration: BoxDecoration(
                   border: Border.all(color: _useGroups ? cs.primary : cs.outlineVariant),
                   borderRadius: BorderRadius.circular(4),
-                  color: _useGroups ? cs.primaryContainer.withValues(alpha: 0.15) : null,
+                  color: _useGroups ? cs.primaryContainer.withOpacity(0.15) : null,
                 ),
                 child: Row(children: [
                   Icon(_useGroups ? Icons.view_list : Icons.view_stream, size: 16, color: _useGroups ? cs.primary : cs.outline),
@@ -545,7 +545,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
           return ListTile(
             key: ValueKey('draw-${entry.participantId}'),
             leading: CircleAvatar(
-              backgroundColor: color.withValues(alpha: 0.12),
+              backgroundColor: color.withOpacity(0.12),
               child: Text('${entry.position}',
                 style: TextStyle(fontWeight: FontWeight.bold, color: color)),
             ),
@@ -629,7 +629,7 @@ class _DrawScreenState extends ConsumerState<DrawScreen> {
               dense: true,
               leading: CircleAvatar(
                 radius: 14,
-                backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
+                backgroundColor: cs.primaryContainer.withOpacity(0.3),
                 child: Text('${i + 1}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
               ),
               title: Text(g.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),

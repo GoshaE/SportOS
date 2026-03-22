@@ -144,7 +144,7 @@ class _CreateEventWizardScreenState extends ConsumerState<CreateEventWizardScree
         decoration: BoxDecoration(
           border: Border.all(color: sel ? cs.primary : cs.outlineVariant, width: sel ? 2 : 1),
           borderRadius: BorderRadius.circular(12),
-          color: sel ? cs.primaryContainer.withValues(alpha: 0.3) : null,
+          color: sel ? cs.primaryContainer.withOpacity(0.3) : null,
         ),
         child: Row(children: [
           Icon(icon, size: 24, color: sel ? cs.primary : cs.onSurfaceVariant),
@@ -243,7 +243,7 @@ class _CreateEventWizardScreenState extends ConsumerState<CreateEventWizardScree
               duration: const Duration(milliseconds: 200),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                color: sel ? cs.primaryContainer.withValues(alpha: 0.3) : null,
+                color: sel ? cs.primaryContainer.withOpacity(0.3) : null,
                 border: Border.all(color: sel ? cs.primary : cs.outlineVariant, width: sel ? 2 : 1),
                 borderRadius: BorderRadius.circular(12),
               ),

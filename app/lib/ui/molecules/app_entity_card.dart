@@ -103,7 +103,7 @@ class AppEntityCard extends StatelessWidget {
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: cs.onSurfaceVariant.withValues(alpha: 0.2)),
+        side: BorderSide(color: cs.onSurfaceVariant.withOpacity(0.2)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -198,7 +198,7 @@ class AppEntityCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
       ),
       elevation: 4,
-      shadowColor: Colors.black.withValues(alpha: 0.2),
+      shadowColor: Colors.black.withOpacity(0.2),
       child: InkWell(
         onTap: onTap,
         child: SizedBox(
@@ -245,7 +245,7 @@ class AppEntityCard extends StatelessWidget {
                               child: AppIconLabel(
                                 Icons.calendar_today,
                                 subtitle!,
-                                color: Colors.white.withValues(alpha: 0.9),
+                                color: Colors.white.withOpacity(0.9),
                               ),
                             ),
                           ],
@@ -266,7 +266,7 @@ class AppEntityCard extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.4),
+                    color: Colors.black.withOpacity(0.4),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

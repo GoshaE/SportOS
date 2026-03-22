@@ -30,7 +30,7 @@ class FloatingNavBar extends StatelessWidget {
         color: isDark ? cs.surfaceContainerHigh : cs.surface,
         border: Border(
           top: BorderSide(
-            color: cs.onSurfaceVariant.withValues(alpha: 0.2),
+            color: cs.onSurfaceVariant.withOpacity(0.2),
             width: 1,
           ),
         ),
@@ -46,11 +46,11 @@ class FloatingNavBar extends StatelessWidget {
                   onTap: () => onTap(i),
                   activeColor: isDark ? cs.primary : cs.primary,
                   activeContainerColor: isDark 
-                      ? cs.primary.withValues(alpha: 0.2) 
-                      : cs.primaryContainer.withValues(alpha: 0.7),
+                      ? cs.primary.withOpacity(0.2) 
+                      : cs.primaryContainer.withOpacity(0.7),
                   inactiveColor: isDark 
-                      ? Colors.white.withValues(alpha: 0.4) 
-                      : cs.onSurfaceVariant.withValues(alpha: 0.6),
+                      ? Colors.white.withOpacity(0.4) 
+                      : cs.onSurfaceVariant.withOpacity(0.6),
                 ),
               );
             }),
@@ -141,7 +141,7 @@ class _NavItem extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: Theme.of(context).colorScheme.error,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 0.5),
+                          border: Border.all(color: Colors.white.withOpacity(0.5), width: 0.5),
                         ),
                         child: Text(
                           item.badge!,

@@ -61,9 +61,9 @@ class EventDetailScreen extends ConsumerWidget {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withValues(alpha: 0.1),
-                              Colors.black.withValues(alpha: 0.7),
-                              Colors.black.withValues(alpha: 0.95),
+                              Colors.black.withOpacity(0.1),
+                              Colors.black.withOpacity(0.7),
+                              Colors.black.withOpacity(0.95),
                             ],
                             stops: const [0.0, 0.4, 0.75, 1.0],
                           ),
@@ -86,29 +86,29 @@ class EventDetailScreen extends ConsumerWidget {
                               )),
                               const SizedBox(height: 4),
                               Row(children: [
-                                Icon(Icons.calendar_today, size: 14, color: Colors.white.withValues(alpha: 0.7)),
+                                Icon(Icons.calendar_today, size: 14, color: Colors.white.withOpacity(0.7)),
                                 const SizedBox(width: 4),
                                 Text(_fmtDate(config.startDate), style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: Colors.white.withValues(alpha: 0.85),
+                                  color: Colors.white.withOpacity(0.85),
                                 )),
                                 if (config.location != null) ...[
                                   const SizedBox(width: 12),
-                                  Icon(Icons.location_on, size: 14, color: Colors.white.withValues(alpha: 0.7)),
+                                  Icon(Icons.location_on, size: 14, color: Colors.white.withOpacity(0.7)),
                                   const SizedBox(width: 4),
                                   Flexible(child: Text(config.location!, style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.85),
+                                    color: Colors.white.withOpacity(0.85),
                                   ), overflow: TextOverflow.ellipsis)),
                                 ],
                               ]),
                               if (disciplines.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Row(children: [
-                                  Icon(Icons.sports, size: 16, color: Colors.white.withValues(alpha: 0.8)),
+                                  Icon(Icons.sports, size: 16, color: Colors.white.withOpacity(0.8)),
                                   const SizedBox(width: 6),
                                   Flexible(child: Text(
                                     '${disciplines.length} ${_discWord(disciplines.length)}',
                                     style: theme.textTheme.bodySmall?.copyWith(
-                                      color: Colors.white.withValues(alpha: 0.85),
+                                      color: Colors.white.withOpacity(0.85),
                                     ),
                                   )),
                                 ]),
@@ -329,7 +329,7 @@ class _ActionTile extends StatelessWidget {
     return SizedBox(
       width: width,
       child: Material(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+        color: cs.surfaceContainerHighest.withOpacity(0.35),
         borderRadius: BorderRadius.circular(12),
         child: InkWell(
           borderRadius: BorderRadius.circular(12),
@@ -342,7 +342,7 @@ class _ActionTile extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.12),
+                    color: color.withOpacity(0.12),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(icon, size: 18, color: color),
@@ -409,7 +409,7 @@ class _BentoItem extends StatelessWidget {
     return Expanded(
       child: AppCard(
         padding: EdgeInsets.zero,
-        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.4),
         children: [
           InkWell(
             borderRadius: BorderRadius.circular(10),
@@ -424,7 +424,7 @@ class _BentoItem extends StatelessWidget {
                     child: Icon(icon, size: 16, color: cs.onPrimaryContainer),
                   ),
                   const Spacer(),
-                  Icon(Icons.open_in_new, size: 14, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                  Icon(Icons.open_in_new, size: 14, color: cs.onSurfaceVariant.withOpacity(0.5)),
                 ]),
                 const SizedBox(height: 12),
                 Text(value, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, height: 1.3),
@@ -464,8 +464,8 @@ class _RegisterCard extends StatelessWidget {
     return AppCard(
       padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(24),
-      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-      borderColor: cs.primary.withValues(alpha: 0.3),
+      backgroundColor: cs.surfaceContainerHighest.withOpacity(0.3),
+      borderColor: cs.primary.withOpacity(0.3),
       children: [
         InkWell(
           borderRadius: BorderRadius.circular(24),
@@ -586,7 +586,7 @@ class _DisciplineRow extends StatelessWidget {
           Container(
             width: 36, height: 36,
             decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.1),
+              color: cs.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(_icon(), size: 18, color: cs.primary),
@@ -603,7 +603,7 @@ class _DisciplineRow extends StatelessWidget {
             )),
         ]),
       ),
-      if (!isLast) Divider(height: 1, indent: 62, endIndent: 14, color: cs.outlineVariant.withValues(alpha: 0.3)),
+      if (!isLast) Divider(height: 1, indent: 62, endIndent: 14, color: cs.outlineVariant.withOpacity(0.3)),
     ]);
   }
 

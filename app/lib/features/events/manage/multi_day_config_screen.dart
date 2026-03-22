@@ -81,7 +81,7 @@ class MultiDayConfigScreen extends ConsumerWidget {
                       Row(children: [
                         Container(
                           width: 36, height: 36,
-                          decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)),
+                          decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
                           child: Center(child: Text('${day.dayNumber}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: cs.primary))),
                         ),
                         const SizedBox(width: 12),
@@ -177,7 +177,7 @@ class MultiDayConfigScreen extends ConsumerWidget {
               return RadioListTile<StartOrder>(
                 dense: true,
                 value: order,
-                title: Text(_startOrderLabel(order), style: TextStyle(fontSize: 14, color: disabledForDay1 ? cs.onSurface.withValues(alpha: 0.3) : null)),
+                title: Text(_startOrderLabel(order), style: TextStyle(fontSize: 14, color: disabledForDay1 ? cs.onSurface.withOpacity(0.3) : null)),
                 subtitle: Text(_startOrderDesc(order), style: TextStyle(fontSize: 11, color: cs.outline)),
                 toggleable: !disabledForDay1,
               );
@@ -231,7 +231,7 @@ class MultiDayConfigScreen extends ConsumerWidget {
         ...config.days.map((day) => ListTile(
           leading: Container(
             width: 28, height: 28,
-            decoration: BoxDecoration(color: cs.secondary.withValues(alpha: 0.1), shape: BoxShape.circle),
+            decoration: BoxDecoration(color: cs.secondary.withOpacity(0.1), shape: BoxShape.circle),
             child: Center(child: Text('${day.dayNumber}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.secondary))),
           ),
           title: Text('Копировать из дня ${day.dayNumber}'),

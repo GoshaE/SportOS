@@ -47,7 +47,7 @@ class AppSplitRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
             decoration: BoxDecoration(
-              color: (faster ? cs.primary : cs.error).withValues(alpha: 0.1),
+              color: (faster ? cs.primary : cs.error).withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

@@ -77,7 +77,7 @@ class AppResultTable extends StatelessWidget {
         padding: EdgeInsets.zero,
         separatorBuilder: (context, index) => Divider(
           height: 1,
-          color: cs.outlineVariant.withValues(alpha: 0.08),
+          color: cs.outlineVariant.withOpacity(0.08),
         ),
         itemBuilder: (ctx, i) => _TableRow(
           columns: table.columns,
@@ -97,7 +97,7 @@ class AppResultTable extends StatelessWidget {
           children: [
             // ── Header ──
             _TableHeader(columns: table.columns),
-            Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.25)),
+            Divider(height: 1, color: cs.outlineVariant.withOpacity(0.25)),
             // ── Body ──
             if (isUnbounded)
               listView
@@ -120,8 +120,8 @@ class AppResultTable extends StatelessWidget {
         decoration: BoxDecoration(
           color: theme.cardTheme.color ?? cs.surfaceContainerHigh,
           border: Border(
-            top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
-            bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2)),
+            top: BorderSide(color: cs.outlineVariant.withOpacity(0.2)),
+            bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.2)),
           ),
         ),
         child: tableContent,
@@ -192,7 +192,7 @@ class _TableHeader extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+      color: cs.surfaceContainerHighest.withOpacity(0.35),
       child: Row(
         children: columns.map((col) => Expanded(
           flex: (col.flex * 10).round(),
@@ -244,10 +244,10 @@ class _TableRow extends StatelessWidget {
 
     // Zebra
     final bgColor = isSelected
-        ? cs.primaryContainer.withValues(alpha: 0.25)
+        ? cs.primaryContainer.withOpacity(0.25)
         : index.isEven
             ? Colors.transparent
-            : cs.surfaceContainerLowest.withValues(alpha: 0.4);
+            : cs.surfaceContainerLowest.withOpacity(0.4);
 
     final rowTint = isSelected ? null : _rowTint(row.type, cs);
 
@@ -261,7 +261,7 @@ class _TableRow extends StatelessWidget {
             Icon(
               isSelected ? Icons.check_circle : Icons.radio_button_unchecked,
               size: 20,
-              color: isSelected ? cs.primary : cs.onSurfaceVariant.withValues(alpha: 0.4),
+              color: isSelected ? cs.primary : cs.onSurfaceVariant.withOpacity(0.4),
             ),
             const SizedBox(width: 8),
           ],
@@ -300,20 +300,7 @@ class _CardRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-
-    // Обёрнуто в try-catch чтобы не ломать весь экран при ошибке одной карточки
-    try {
-      return _buildContent(theme, cs);
-    } catch (e) {
-      return Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: cs.errorContainer.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Text('Ошибка: $e', style: TextStyle(fontSize: 12, color: cs.error)),
-      );
-    }
+    return _buildContent(theme, cs);
   }
 
   Widget _buildContent(ThemeData theme, ColorScheme cs) {
@@ -331,7 +318,7 @@ class _CardRow extends StatelessWidget {
       decoration: BoxDecoration(
         color: rowTint ?? (theme.cardTheme.color ?? cs.surfaceContainerHigh),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.15)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -364,7 +351,7 @@ class _CardRow extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.25),
+                  color: cs.primaryContainer.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(category.display,
@@ -438,8 +425,8 @@ class _CardRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
               color: cell.style == CellStyle.highlight
-                  ? cs.primaryContainer.withValues(alpha: 0.3)
-                  : cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  ? cs.primaryContainer.withOpacity(0.3)
+                  : cs.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: BorderRadius.circular(3),
             ),
             child: Text('${col.label}: ${cell.display}',
@@ -483,7 +470,7 @@ class _CellWidget extends StatelessWidget {
     // Empty cell
     if (cell.display.isEmpty) {
       return Text('—', textAlign: _textAlign(col.align),
-        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.3)));
+        style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withOpacity(0.3)));
     }
 
     final style = _baseStyle(col.type, theme, cs).copyWith(
@@ -505,8 +492,8 @@ class _CellWidget extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 1),
         decoration: BoxDecoration(
-          color: isError ? cs.errorContainer.withValues(alpha: 0.2)
-              : (isLive ? cs.primaryContainer.withValues(alpha: 0.2) : Colors.transparent),
+          color: isError ? cs.errorContainer.withOpacity(0.2)
+              : (isLive ? cs.primaryContainer.withOpacity(0.2) : Colors.transparent),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(cell.display, textAlign: TextAlign.center,
@@ -535,7 +522,7 @@ class _CellWidget extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.6),
+          color: cs.surfaceContainerHighest.withOpacity(0.6),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(cell.display,
@@ -570,7 +557,7 @@ class _CellWidget extends StatelessWidget {
     switch (style) {
       case CellStyle.highlight: return cs.primary;
       case CellStyle.error: return cs.error;
-      case CellStyle.muted: return cs.onSurfaceVariant.withValues(alpha: 0.6);
+      case CellStyle.muted: return cs.onSurfaceVariant.withOpacity(0.6);
       case CellStyle.success: return AppColors.success;
       case CellStyle.bold: return null;
       case CellStyle.normal: return null;
@@ -605,12 +592,12 @@ Color? _rowTint(RowType type, ColorScheme cs) {
   switch (type) {
     case RowType.dnf:
     case RowType.dsq:
-      return cs.errorContainer.withValues(alpha: 0.08);
+      return cs.errorContainer.withOpacity(0.08);
     case RowType.dns:
     case RowType.waiting:
-      return cs.onSurface.withValues(alpha: 0.03);
+      return cs.onSurface.withOpacity(0.03);
     case RowType.onTrack:
-      return cs.primaryContainer.withValues(alpha: 0.06);
+      return cs.primaryContainer.withOpacity(0.06);
     case RowType.finished:
       return null;
   }

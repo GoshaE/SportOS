@@ -115,8 +115,8 @@ class _ProfileDocumentsScreenState extends State<ProfileDocumentsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 24),
             decoration: BoxDecoration(
-              color: cs.primary.withValues(alpha: 0.05),
-              border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+              color: cs.primary.withOpacity(0.05),
+              border: Border.all(color: cs.primary.withOpacity(0.3)),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Column(children: [

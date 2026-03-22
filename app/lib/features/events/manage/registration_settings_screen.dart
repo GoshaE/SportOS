@@ -352,7 +352,7 @@ class _FieldRow extends StatelessWidget {
       trailing: locked
           ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(color: Colors.red.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+              decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
               child: const Text('Обяз.', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.red)),
             )
           : SegmentedButton<FieldVisibility>(

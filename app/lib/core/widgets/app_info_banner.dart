@@ -42,10 +42,10 @@ class AppInfoBanner extends StatelessWidget {
       AppInfoBanner(key: key, title: title, subtitle: subtitle, type: BannerType.error, icon: Icons.error_outline, action: action, onTap: onTap);
 
   (Color bg, Color accent, Color border) _colors(ColorScheme cs) => switch (type) {
-    BannerType.info    => (cs.primaryContainer.withValues(alpha: 0.3), cs.primary, cs.primary.withValues(alpha: 0.3)),
-    BannerType.success => (cs.tertiaryContainer.withValues(alpha: 0.3), cs.tertiary, cs.tertiary.withValues(alpha: 0.3)),
-    BannerType.warning => (cs.secondaryContainer.withValues(alpha: 0.3), cs.secondary, cs.secondary.withValues(alpha: 0.3)),
-    BannerType.error   => (cs.errorContainer.withValues(alpha: 0.3), cs.error, cs.error.withValues(alpha: 0.3)),
+    BannerType.info    => (cs.primaryContainer.withOpacity(0.3), cs.primary, cs.primary.withOpacity(0.3)),
+    BannerType.success => (cs.tertiaryContainer.withOpacity(0.3), cs.tertiary, cs.tertiary.withOpacity(0.3)),
+    BannerType.warning => (cs.secondaryContainer.withOpacity(0.3), cs.secondary, cs.secondary.withOpacity(0.3)),
+    BannerType.error   => (cs.errorContainer.withOpacity(0.3), cs.error, cs.error.withOpacity(0.3)),
   };
 
   @override
@@ -79,7 +79,7 @@ class AppInfoBanner extends StatelessWidget {
                   if (subtitle != null) ...[
                     const SizedBox(height: 2),
                     Text(subtitle!, style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: accent.withValues(alpha: 0.8),
+                      color: accent.withOpacity(0.8),
                     )),
                   ],
                 ],

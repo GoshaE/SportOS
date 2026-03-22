@@ -135,7 +135,7 @@ class _AppCardItem extends StatelessWidget {
           if (badge != null) Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
             decoration: BoxDecoration(
-              color: theme.colorScheme.primary.withValues(alpha: 0.1),
+              color: theme.colorScheme.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(badge!, style: theme.textTheme.labelMedium?.copyWith(
@@ -143,7 +143,7 @@ class _AppCardItem extends StatelessWidget {
             )),
           ),
           const SizedBox(width: 4),
-          Icon(Icons.chevron_right, size: 20, color: theme.colorScheme.onSurface.withValues(alpha: 0.3)),
+          Icon(Icons.chevron_right, size: 20, color: theme.colorScheme.onSurface.withOpacity(0.3)),
         ],
       ),
       onTap: onTap,

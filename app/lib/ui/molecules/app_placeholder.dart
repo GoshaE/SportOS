@@ -122,7 +122,7 @@ class AppPlaceholder extends StatelessWidget {
 
     final iconColor = switch (type) {
       PlaceholderType.error => cs.error,
-      _ => cs.onSurfaceVariant.withValues(alpha: 0.4),
+      _ => cs.onSurfaceVariant.withOpacity(0.4),
     };
 
     return Center(

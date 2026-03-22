@@ -123,7 +123,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
             children: _penaltyRegistry.map((r) => ListTile(
               leading: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: cs.primaryContainer.withOpacity(0.3), borderRadius: BorderRadius.circular(6)),
                 child: Text(r['code']!, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, fontFeatures: const [FontFeature.tabularFigures()], color: cs.primary)),
               ),
               title: Text(r['name']!, style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w500)),
@@ -148,11 +148,11 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
 
   Widget _marshalRequest(ColorScheme cs, ThemeData theme, String title, String subtitle, String bib, String name) {
     return Container(
-      color: cs.tertiaryContainer.withValues(alpha: 0.1),
+      color: cs.tertiaryContainer.withOpacity(0.1),
       child: ListTile(
         leading: Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: cs.tertiary.withValues(alpha: 0.1), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: cs.tertiary.withOpacity(0.1), shape: BoxShape.circle),
           child: Icon(Icons.warning, color: cs.tertiary, size: 20)
         ),
         title: Text(title, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
@@ -188,7 +188,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start, 
                   children: [
-                    Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.2)),
+                    Divider(height: 1, color: cs.outlineVariant.withOpacity(0.2)),
                     const SizedBox(height: 12),
                     Text('Подал: $from', style: theme.textTheme.bodyMedium),
                     if (via.isNotEmpty) Text(via, style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant)),
@@ -196,7 +196,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
+                      decoration: BoxDecoration(color: cs.surfaceContainerHighest.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
                       child: Text('Причина: $reason', style: theme.textTheme.bodyMedium),
                     ),
                     const SizedBox(height: 12),
@@ -374,7 +374,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
               children: [
                 Container(
                   decoration: BoxDecoration(
-                    color: sel ? cs.tertiaryContainer.withValues(alpha: 0.3) : Colors.transparent,
+                    color: sel ? cs.tertiaryContainer.withOpacity(0.3) : Colors.transparent,
                     border: Border.all(color: sel ? cs.tertiary : Colors.transparent, width: sel ? 2 : 0),
                     borderRadius: BorderRadius.circular(16),
                   ),
@@ -423,7 +423,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
           padding: EdgeInsets.zero,
           children: [
             Container(
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: _penaltyRegistry.take(5).map((r) => ListTile(
@@ -458,7 +458,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -521,7 +521,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
             Container(
               padding: const EdgeInsets.all(12),
               width: double.infinity,
-              color: Theme.of(context).colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: Theme.of(context).colorScheme.surfaceContainerHighest.withOpacity(0.3),
               child: Text('От: $from'),
             )
           ]
@@ -556,7 +556,7 @@ class _ProtestsScreenState extends State<ProtestsScreen> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.all(6),
       margin: const EdgeInsets.only(top: 4),
-      decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.3), borderRadius: BorderRadius.circular(6)),
+      decoration: BoxDecoration(color: cs.primaryContainer.withOpacity(0.3), borderRadius: BorderRadius.circular(6)),
       child: Row(children: [
         Icon(Icons.check_circle, color: cs.primary, size: 16),
         const SizedBox(width: 6),

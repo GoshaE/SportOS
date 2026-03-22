@@ -23,7 +23,7 @@ class DiplomaGenScreen extends StatelessWidget {
       ),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         AppCard(
-          backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.3),
+          backgroundColor: cs.tertiaryContainer.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
           children: [
             Column(
@@ -39,9 +39,9 @@ class DiplomaGenScreen extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: cs.surface.withValues(alpha: 0.5),
+                    color: cs.surface.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                    border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
                   ),
                   child: Text(
                     '{ФИО}  ·  {Дисциплина}  ·  {Место}',

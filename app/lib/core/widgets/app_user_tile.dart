@@ -112,7 +112,7 @@ class AppUserTile extends StatelessWidget {
 
     return CircleAvatar(
       radius: dense ? 16 : 20,
-      backgroundColor: cs.primary.withValues(alpha: 0.15),
+      backgroundColor: cs.primary.withOpacity(0.15),
       child: Text(
         initials,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(

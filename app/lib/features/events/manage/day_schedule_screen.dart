@@ -283,7 +283,7 @@ class _TimeRuler extends StatelessWidget {
           children: [
             Positioned(
               left: 0, right: 0, bottom: 0,
-              child: Container(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+              child: Container(height: 1, color: cs.outlineVariant.withOpacity(0.3)),
             ),
             ...List.generate(totalHours + 1, (i) {
               final x = (i / totalHours) * width;
@@ -296,7 +296,7 @@ class _TimeRuler extends StatelessWidget {
                     '${hour.toString().padLeft(2, '0')}:00',
                     style: TextStyle(fontSize: 9, color: cs.outline, fontWeight: FontWeight.w500),
                   ),
-                  Container(width: 1, height: 6, color: cs.outlineVariant.withValues(alpha: 0.5)),
+                  Container(width: 1, height: 6, color: cs.outlineVariant.withOpacity(0.5)),
                 ]),
               );
             }),
@@ -344,7 +344,7 @@ class _DisciplineBar extends StatelessWidget {
             left: 0, right: 0, top: 23, bottom: 23,
             child: Container(
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.15))),
+                border: Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.15))),
               ),
             ),
           ),
@@ -361,11 +361,11 @@ class _DisciplineBar extends StatelessWidget {
                 child: Ink(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [color, color.withValues(alpha: 0.7)],
+                      colors: [color, color.withOpacity(0.7)],
                     ),
                     borderRadius: BorderRadius.circular(8),
                     boxShadow: [
-                      BoxShadow(color: color.withValues(alpha: 0.2), blurRadius: 4, offset: const Offset(0, 2)),
+                      BoxShadow(color: color.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2)),
                     ],
                   ),
                   child: Padding(
@@ -383,13 +383,13 @@ class _DisciplineBar extends StatelessWidget {
                             ),
                             Text(
                               '$startTime – $endStr · ${discipline.totalDistanceKm.toStringAsFixed(1)} км',
-                              style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 9),
+                              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 9),
                               maxLines: 1, overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-                      Icon(Icons.edit, size: 12, color: Colors.white.withValues(alpha: 0.6)),
+                      Icon(Icons.edit, size: 12, color: Colors.white.withOpacity(0.6)),
                     ]),
                   ),
                 ),

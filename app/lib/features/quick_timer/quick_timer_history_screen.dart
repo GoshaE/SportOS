@@ -25,7 +25,7 @@ class QuickTimerHistoryScreen extends ConsumerWidget {
       ),
       body: history.isEmpty
         ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.history, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+            Icon(Icons.history, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
             const SizedBox(height: 8),
             Text('Нет сохранённых тренировок', style: TextStyle(color: cs.onSurfaceVariant)),
             const SizedBox(height: 16),
@@ -84,7 +84,7 @@ class QuickTimerHistoryScreen extends ConsumerWidget {
                             Container(
                               width: 48, height: 48,
                               decoration: BoxDecoration(
-                                color: cs.primaryContainer.withValues(alpha: 0.15),
+                                color: cs.primaryContainer.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

@@ -56,7 +56,7 @@ class FinancesDashboardTab extends StatelessWidget {
             Stack(
               alignment: Alignment.centerRight,
               children: [
-                Icon(Icons.currency_ruble, size: 80, color: cs.onPrimaryContainer.withValues(alpha: 0.1)),
+                Icon(Icons.currency_ruble, size: 80, color: cs.onPrimaryContainer.withOpacity(0.1)),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -68,7 +68,7 @@ class FinancesDashboardTab extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         _miniKpi('Оплачено', '$ticketsSold шт', cs.onPrimaryContainer),
-                        _miniKpi('Ожидают', '12 шт', cs.onPrimaryContainer.withValues(alpha: 0.7)),
+                        _miniKpi('Ожидают', '12 шт', cs.onPrimaryContainer.withOpacity(0.7)),
                         _miniKpi('Возвраты', '3 шт', cs.error),
                       ],
                     ),
@@ -173,7 +173,7 @@ class FinancesDashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: color.withValues(alpha: 0.8))),
+        Text(label, style: TextStyle(fontSize: 11, color: color.withOpacity(0.8))),
         Text(value, style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color)),
       ],
     );

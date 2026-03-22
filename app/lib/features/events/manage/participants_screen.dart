@@ -209,12 +209,12 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
         // Discipline header
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: cs.primaryContainer.withValues(alpha: 0.12),
+          color: cs.primaryContainer.withOpacity(0.12),
           child: Row(children: [
             Container(
               width: 28, height: 28,
               decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.15),
+                color: cs.primary.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(7),
               ),
               child: Icon(Icons.sports, size: 14, color: cs.primary),
@@ -225,7 +225,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.1),
+                color: cs.primary.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Text('${participants.length} чел.',
@@ -325,7 +325,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
       Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+          color: cs.surfaceContainerHighest.withOpacity(0.15),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -704,7 +704,7 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       decoration: BoxDecoration(
         color: cs.surfaceContainerHighest,
-        border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3))),
+        border: Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.3))),
       ),
       child: SafeArea(
         child: Row(children: [
@@ -733,8 +733,8 @@ class _ParticipantsScreenState extends ConsumerState<ParticipantsScreen> {
       avatar: Icon(icon, size: 16, color: color),
       label: Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color)),
       onPressed: onTap,
-      side: BorderSide(color: color.withValues(alpha: 0.3)),
-      backgroundColor: color.withValues(alpha: 0.08),
+      side: BorderSide(color: color.withOpacity(0.3)),
+      backgroundColor: color.withOpacity(0.08),
     );
   }
 
@@ -900,7 +900,7 @@ class _DisciplineChips extends StatelessWidget {
         selected: selected,
         onSelected: (_) => onTap(),
         selectedColor: cs.primary,
-        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.4),
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.4),
         side: BorderSide.none,
         showCheckmark: false,
         padding: const EdgeInsets.symmetric(horizontal: 8),

@@ -44,7 +44,7 @@ class AppQueueItem extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.15))),
+        border: Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.15))),
       ),
       child: ListTile(
         dense: dense,

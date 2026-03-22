@@ -106,7 +106,7 @@ class EventOverviewScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: overallProgress == 1.0 ? const Color(0xFF2E7D32).withValues(alpha: 0.15) : cs.primary.withValues(alpha: 0.1),
+              color: overallProgress == 1.0 ? const Color(0xFF2E7D32).withOpacity(0.15) : cs.primary.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -357,7 +357,7 @@ class EventOverviewScreen extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(2),
           decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [cs.primary.withValues(alpha: 0.3), cs.secondary.withValues(alpha: 0.3)]),
+            gradient: LinearGradient(colors: [cs.primary.withOpacity(0.3), cs.secondary.withOpacity(0.3)]),
             borderRadius: BorderRadius.circular(22),
           ),
           child: _buildGlassCard(
@@ -400,16 +400,16 @@ class EventOverviewScreen extends ConsumerWidget {
       height: height,
       padding: padding,
       decoration: BoxDecoration(
-        color: gradient != null ? null : (isDark ? cs.surfaceContainerHigh.withValues(alpha: 0.5) : Colors.white.withValues(alpha: 0.9)),
+        color: gradient != null ? null : (isDark ? cs.surfaceContainerHigh.withOpacity(0.5) : Colors.white.withOpacity(0.9)),
         gradient: gradient,
         borderRadius: borderRadius ?? BorderRadius.circular(20),
         border: Border.all(
-          color: gradient != null ? Colors.transparent : (isDark ? Colors.white.withValues(alpha: 0.1) : cs.outlineVariant.withValues(alpha: 0.3)),
+          color: gradient != null ? Colors.transparent : (isDark ? Colors.white.withOpacity(0.1) : cs.outlineVariant.withOpacity(0.3)),
           width: 1,
         ),
         boxShadow: gradient != null ? [] : [
           BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.03),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -429,14 +429,14 @@ class EventOverviewScreen extends ConsumerWidget {
     final progress = item.total > 0 ? item.done / item.total : 0.0;
 
     final statusColor = isDone ? const Color(0xFF2E7D32) : isPartial ? cs.tertiary : cs.onSurfaceVariant;
-    final bgColor = isDone ? const Color(0xFF2E7D32).withValues(alpha: 0.05) : null;
+    final bgColor = isDone ? const Color(0xFF2E7D32).withOpacity(0.05) : null;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
-        color: bgColor ?? (isDark ? cs.surfaceContainerHigh.withValues(alpha: 0.3) : Colors.white.withValues(alpha: 0.8)),
+        color: bgColor ?? (isDark ? cs.surfaceContainerHigh.withOpacity(0.3) : Colors.white.withOpacity(0.8)),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: statusColor.withValues(alpha: isDone ? 0.25 : 0.1)),
+        border: Border.all(color: statusColor.withOpacity(isDone ? 0.25 : 0.1)),
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(14),
@@ -448,7 +448,7 @@ class EventOverviewScreen extends ConsumerWidget {
             Container(
               width: 36, height: 36,
               decoration: BoxDecoration(
-                color: statusColor.withValues(alpha: 0.12),
+                color: statusColor.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
@@ -482,7 +482,7 @@ class EventOverviewScreen extends ConsumerWidget {
               ],
             ])),
             const SizedBox(width: 8),
-            Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+            Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withOpacity(0.4)),
           ]),
         ),
       ),

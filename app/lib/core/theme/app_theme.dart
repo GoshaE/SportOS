@@ -35,7 +35,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.15)),
+          side: BorderSide(color: cs.outlineVariant.withOpacity(0.15)),
         ),
         color: cs.surfaceContainerLow,
         margin: EdgeInsets.zero,
@@ -45,17 +45,17 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: false,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 15),
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withOpacity(0.4), fontSize: 15),
         labelStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
         floatingLabelBehavior: FloatingLabelBehavior.never,
         isDense: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
+          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.7)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.7)),
+          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.7)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -89,7 +89,7 @@ class AppTheme {
 
       // ── Divider: Thin Telegram-style ──
       dividerTheme: DividerThemeData(
-        color: cs.outlineVariant.withValues(alpha: 0.2),
+        color: cs.outlineVariant.withOpacity(0.2),
         thickness: 0.5,
         indent: 16,
         endIndent: 0,
@@ -114,7 +114,7 @@ class AppTheme {
         selectedColor: cs.primaryContainer,
         labelStyle: TextStyle(color: cs.onSurface, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.25)),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.25)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       ),
 
@@ -125,7 +125,7 @@ class AppTheme {
         trackColor: WidgetStateProperty.resolveWith((s) =>
           s.contains(WidgetState.selected) ? cs.primary : cs.surfaceContainerHighest),
         trackOutlineColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? Colors.transparent : cs.outlineVariant.withValues(alpha: 0.3)),
+          s.contains(WidgetState.selected) ? Colors.transparent : cs.outlineVariant.withOpacity(0.3)),
       ),
 
       // ── Radio: Compact ──
@@ -192,7 +192,7 @@ class AppTheme {
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
-          side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.12)),
+          side: BorderSide(color: cs.outlineVariant.withOpacity(0.12)),
         ),
         color: cs.surfaceContainerHigh,
         margin: EdgeInsets.zero,
@@ -202,17 +202,17 @@ class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: false,
         contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        hintStyle: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.4), fontSize: 15),
+        hintStyle: TextStyle(color: cs.onSurfaceVariant.withOpacity(0.4), fontSize: 15),
         labelStyle: TextStyle(color: cs.onSurfaceVariant, fontSize: 13),
         floatingLabelBehavior: FloatingLabelBehavior.never,
         isDense: false,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
@@ -246,7 +246,7 @@ class AppTheme {
 
       // ── Divider: Thin ──
       dividerTheme: DividerThemeData(
-        color: cs.outlineVariant.withValues(alpha: 0.15),
+        color: cs.outlineVariant.withOpacity(0.15),
         thickness: 0.5,
         indent: 16,
         endIndent: 0,
@@ -272,7 +272,7 @@ class AppTheme {
         selectedColor: cs.primaryContainer,
         labelStyle: TextStyle(color: cs.onSurface, fontSize: 13),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.15)),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.15)),
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       ),
 
@@ -283,7 +283,7 @@ class AppTheme {
         trackColor: WidgetStateProperty.resolveWith((s) =>
           s.contains(WidgetState.selected) ? cs.primary : cs.surfaceContainerHighest),
         trackOutlineColor: WidgetStateProperty.resolveWith((s) =>
-          s.contains(WidgetState.selected) ? Colors.transparent : cs.outlineVariant.withValues(alpha: 0.2)),
+          s.contains(WidgetState.selected) ? Colors.transparent : cs.outlineVariant.withOpacity(0.2)),
       ),
 
       // ── Radio ──

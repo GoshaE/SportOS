@@ -70,7 +70,7 @@ class AppSegment<T> extends StatelessWidget {
           return cs.onSurfaceVariant;
         }),
         side: WidgetStateProperty.all(
-          BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+          BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         ),
         shape: WidgetStateProperty.all(
           RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

@@ -173,7 +173,7 @@ class _QtSettingsScreenState extends ConsumerState<QtSettingsScreen> {
                 onChanged: (v) => ref.read(qtDisplaySettingsProvider.notifier).update(
                     displaySettings.copyWith(showBestLap: v)),
               ),
-              Divider(height: 1, indent: 56, color: cs.outlineVariant.withValues(alpha: 0.15)),
+              Divider(height: 1, indent: 56, color: cs.outlineVariant.withOpacity(0.15)),
               _SettingSwitch(
                 icon: Icons.swap_horiz,
                 title: 'Колонка Δ (разрыв)',
@@ -183,7 +183,7 @@ class _QtSettingsScreenState extends ConsumerState<QtSettingsScreen> {
                 onChanged: (v) => ref.read(qtDisplaySettingsProvider.notifier).update(
                     displaySettings.copyWith(showGapColumn: v)),
               ),
-              Divider(height: 1, indent: 56, color: cs.outlineVariant.withValues(alpha: 0.15)),
+              Divider(height: 1, indent: 56, color: cs.outlineVariant.withOpacity(0.15)),
               _SettingSwitch(
                 icon: Icons.view_column,
                 title: 'Колонки кругов',
@@ -284,7 +284,7 @@ class _SectionHeader extends StatelessWidget {
       Container(
         width: 32, height: 32,
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: color.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, size: 18, color: color),
@@ -341,7 +341,7 @@ class _SettingSwitch extends StatelessWidget {
       secondary: Container(
         width: 36, height: 36,
         decoration: BoxDecoration(
-          color: (value ? activeColor : cs.onSurfaceVariant).withValues(alpha: 0.1),
+          color: (value ? activeColor : cs.onSurfaceVariant).withOpacity(0.1),
           borderRadius: BorderRadius.circular(10),
         ),
         child: Icon(icon, size: 18, color: value ? activeColor : cs.onSurfaceVariant),

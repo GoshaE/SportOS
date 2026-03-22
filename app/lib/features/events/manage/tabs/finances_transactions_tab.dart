@@ -179,12 +179,12 @@ class _FinancesTransactionsTabState extends State<FinancesTransactionsTab> {
                       children: [
                         Text(
                           t['date'],
-                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withValues(alpha: 0.8)),
+                          style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant.withOpacity(0.8)),
                         ),
                         const SizedBox(width: 8),
                         Text(
                           'ID: ${t['id']}',
-                          style: TextStyle(fontSize: 11, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurfaceVariant.withValues(alpha: 0.8)),
+                          style: TextStyle(fontSize: 11, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurfaceVariant.withOpacity(0.8)),
                         ),
                       ],
                     ),
@@ -208,7 +208,7 @@ class _FinancesTransactionsTabState extends State<FinancesTransactionsTab> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: statusColor.withValues(alpha: 0.1),
+                      color: statusColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Row(

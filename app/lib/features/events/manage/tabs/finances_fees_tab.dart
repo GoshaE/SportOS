@@ -101,8 +101,8 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
         Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Expanded(child: AppCard(
             padding: const EdgeInsets.all(16),
-            backgroundColor: pricing.earlyBirdEnabled ? cs.tertiary.withValues(alpha: 0.1) : null,
-            borderColor: pricing.earlyBirdEnabled ? cs.tertiary.withValues(alpha: 0.3) : null,
+            backgroundColor: pricing.earlyBirdEnabled ? cs.tertiary.withOpacity(0.1) : null,
+            borderColor: pricing.earlyBirdEnabled ? cs.tertiary.withOpacity(0.3) : null,
             children: [
               Row(children: [
                 Icon(Icons.access_time_filled, color: pricing.earlyBirdEnabled ? cs.tertiary : cs.onSurfaceVariant, size: 20),
@@ -249,13 +249,13 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          color: selected ? c.withValues(alpha: 0.1) : cs.surfaceContainerHighest.withValues(alpha: 0.3),
-          border: Border.all(color: selected ? c.withValues(alpha: 0.5) : cs.outlineVariant.withValues(alpha: 0.5), width: selected ? 1.5 : 1),
+          color: selected ? c.withOpacity(0.1) : cs.surfaceContainerHighest.withOpacity(0.3),
+          border: Border.all(color: selected ? c.withOpacity(0.5) : cs.outlineVariant.withOpacity(0.5), width: selected ? 1.5 : 1),
         ),
         child: Row(children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: selected ? c.withValues(alpha: 0.2) : cs.surfaceContainerHighest, shape: BoxShape.circle),
+            decoration: BoxDecoration(color: selected ? c.withOpacity(0.2) : cs.surfaceContainerHighest, shape: BoxShape.circle),
             child: Icon(icon, size: 20, color: selected ? c : cs.onSurfaceVariant),
           ),
           const SizedBox(width: 12),
@@ -263,7 +263,7 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
             Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: selected ? c : cs.onSurface)),
             Text(subtitle, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
           ])),
-          if (selected) Icon(Icons.radio_button_checked, color: c, size: 20) else Icon(Icons.radio_button_unchecked, color: cs.onSurfaceVariant.withValues(alpha: 0.5), size: 20),
+          if (selected) Icon(Icons.radio_button_checked, color: c, size: 20) else Icon(Icons.radio_button_unchecked, color: cs.onSurfaceVariant.withOpacity(0.5), size: 20),
         ]),
       ),
     );
@@ -276,7 +276,7 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
       Expanded(child: Text(label, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
         child: Text(price != null ? '$price $symbol' : 'Бесплатно', style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 15)),
       ),
       const SizedBox(width: 4),
@@ -341,7 +341,7 @@ class _FinancesFeesTabState extends ConsumerState<FinancesFeesTab> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(color: cs.surfaceContainerHighest.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(color: cs.surfaceContainerHighest.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
       child: Row(children: [
         Icon(icon, size: 20, color: cs.primary),
         const SizedBox(width: 12),

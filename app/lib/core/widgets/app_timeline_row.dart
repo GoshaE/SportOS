@@ -39,7 +39,7 @@ class AppTimelineRow extends StatelessWidget {
         : (isPast ? cs.onSurfaceVariant : cs.surfaceContainerHighest);
     
     final lineColor = isPast || (isCurrent && !isLast)
-        ? cs.primary.withValues(alpha: 0.5) 
+        ? cs.primary.withOpacity(0.5) 
         : cs.surfaceContainerHighest;
 
     final textColor = isCurrent
@@ -78,7 +78,7 @@ class AppTimelineRow extends StatelessWidget {
                   flex: 1,
                   child: Container(
                     width: 2,
-                    color: isFirst ? Colors.transparent : (isCurrent ? cs.primary.withValues(alpha: 0.5) : lineColor),
+                    color: isFirst ? Colors.transparent : (isCurrent ? cs.primary.withOpacity(0.5) : lineColor),
                   ),
                 ),
                 // Node

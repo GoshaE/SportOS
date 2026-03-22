@@ -51,8 +51,8 @@ class DocumentsScreen extends ConsumerWidget {
                       Container(
                         width: double.infinity, height: 200,
                         decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                          color: cs.surfaceContainerHighest.withOpacity(0.3),
+                          border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
                           borderRadius: BorderRadius.circular(12)
                         ),
                         child: Center(
@@ -94,7 +94,7 @@ class DocumentsScreen extends ConsumerWidget {
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: loaded ? cs.primary.withValues(alpha: 0.1) : cs.surfaceContainerHighest,
+          color: loaded ? cs.primary.withOpacity(0.1) : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(icon, color: loaded ? cs.primary : cs.onSurfaceVariant, size: 24),

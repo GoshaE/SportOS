@@ -57,7 +57,7 @@ class _CreateClubScreenState extends State<CreateClubScreen> {
                     Container(
                       height: 4,
                       decoration: BoxDecoration(
-                        color: active ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3),
+                        color: active ? cs.primary : cs.outlineVariant.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
@@ -132,7 +132,7 @@ class _CreateClubScreenState extends State<CreateClubScreen> {
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [cs.primary.withValues(alpha: 0.08), cs.tertiary.withValues(alpha: 0.05)],
+              colors: [cs.primary.withOpacity(0.08), cs.tertiary.withOpacity(0.05)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),

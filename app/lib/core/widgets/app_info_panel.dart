@@ -47,7 +47,7 @@ class AppInfoPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -94,7 +94,7 @@ class AppInfoPanel extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
 
     return Container(
-      color: backgroundColor ?? cs.surfaceContainerHighest.withValues(alpha: 0.3),
+      color: backgroundColor ?? cs.surfaceContainerHighest.withOpacity(0.3),
       padding: padding,
       child: Row(
         children: children.expand((child) sync* {

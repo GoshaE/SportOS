@@ -52,7 +52,7 @@ class QtAthleteTile extends StatelessWidget {
           border: Border.all(color: borderColor, width: 1.5),
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
-            BoxShadow(color: borderColor.withValues(alpha: 0.1), blurRadius: 8, offset: const Offset(0, 2)),
+            BoxShadow(color: borderColor.withOpacity(0.1), blurRadius: 8, offset: const Offset(0, 2)),
           ],
         ),
         padding: const EdgeInsets.all(8),
@@ -62,7 +62,7 @@ class QtAthleteTile extends StatelessWidget {
               Positioned(
                 top: 0,
                 right: 0,
-                child: Icon(icon, size: 14, color: textColor.withValues(alpha: 0.6)),
+                child: Icon(icon, size: 14, color: textColor.withOpacity(0.6)),
               ),
             Center(
               child: Column(
@@ -78,7 +78,7 @@ class QtAthleteTile extends StatelessWidget {
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: textColor.withValues(alpha: 0.6),
+                          color: textColor.withOpacity(0.6),
                           height: 1.0,
                         ),
                       ),
@@ -127,7 +127,7 @@ class QtAthleteTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                         fontWeight: FontWeight.w500,
-                        color: textColor.withValues(alpha: 0.9),
+                        color: textColor.withOpacity(0.9),
                       ),
                     ),
                   ),
@@ -143,44 +143,44 @@ class QtAthleteTile extends StatelessWidget {
   /// Reuse exact same styling logic from AppBibTile
   (Color bg, Color text, Color border, TextDecoration?, IconData?) _style(ColorScheme cs) => switch (state) {
     BibState.available => (
-      cs.primaryContainer.withValues(alpha: 0.2),
+      cs.primaryContainer.withOpacity(0.2),
       cs.primary,
-      cs.primary.withValues(alpha: 0.6),
+      cs.primary.withOpacity(0.6),
       null,
       null,
     ),
     BibState.assigned => (
-      cs.surfaceContainerHighest.withValues(alpha: 0.4),
+      cs.surfaceContainerHighest.withOpacity(0.4),
       cs.onSurfaceVariant,
-      cs.outlineVariant.withValues(alpha: 0.5),
+      cs.outlineVariant.withOpacity(0.5),
       null,
       Icons.check_circle_outline,
     ),
     BibState.finished => (
-      cs.surfaceContainerHighest.withValues(alpha: 0.6),
+      cs.surfaceContainerHighest.withOpacity(0.6),
       cs.outline,
-      cs.outlineVariant.withValues(alpha: 0.3),
+      cs.outlineVariant.withOpacity(0.3),
       TextDecoration.lineThrough,
       Icons.done_all,
     ),
     BibState.dns => (
-      cs.errorContainer.withValues(alpha: 0.15),
+      cs.errorContainer.withOpacity(0.15),
       cs.error,
-      cs.error.withValues(alpha: 0.3),
+      cs.error.withOpacity(0.3),
       TextDecoration.lineThrough,
       Icons.block,
     ),
     BibState.current => (
-      cs.tertiaryContainer.withValues(alpha: 0.3),
+      cs.tertiaryContainer.withOpacity(0.3),
       cs.tertiary,
-      cs.tertiary.withValues(alpha: 0.7),
+      cs.tertiary.withOpacity(0.7),
       null,
       Icons.play_circle_outline,
     ),
     BibState.disabled => (
-      cs.surfaceContainerHighest.withValues(alpha: 0.15),
-      cs.outline.withValues(alpha: 0.5),
-      cs.outlineVariant.withValues(alpha: 0.15),
+      cs.surfaceContainerHighest.withOpacity(0.15),
+      cs.outline.withOpacity(0.5),
+      cs.outlineVariant.withOpacity(0.15),
       null,
       Icons.hourglass_empty,
     ),

@@ -40,9 +40,9 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
             margin: const EdgeInsets.only(right: 4),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: cs.error.withValues(alpha: 0.15),
+              color: cs.error.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+              border: Border.all(color: cs.error.withOpacity(0.3)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 6, height: 6, decoration: BoxDecoration(color: session != null ? cs.error : cs.outline, shape: BoxShape.circle)),
@@ -67,7 +67,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
   Widget _buildNoSession(ColorScheme cs) {
     return Center(
       child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.timer_off_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+        Icon(Icons.timer_off_outlined, size: 64, color: cs.onSurfaceVariant.withOpacity(0.3)),
         const SizedBox(height: 12),
         Text('Нет активной сессии', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
         const SizedBox(height: 4),
@@ -117,7 +117,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     return Column(children: [
       // ── Шапка: дни + дисциплины + статистика ──
       Container(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+        color: cs.surfaceContainerHighest.withOpacity(0.3),
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 10),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           // Multi-day (from Config Engine)
@@ -182,9 +182,9 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _showSplits ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                  color: _showSplits ? cs.primary.withOpacity(0.12) : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _showSplits ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+                  border: Border.all(color: _showSplits ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.3)),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
                   Icon(_showSplits ? Icons.timer : Icons.timer_outlined, size: 14, color: _showSplits ? cs.primary : cs.onSurfaceVariant),
@@ -200,9 +200,9 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
-                  color: _showCards ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                  color: _showCards ? cs.primary.withOpacity(0.12) : cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _showCards ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+                  border: Border.all(color: _showCards ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.3)),
                 ),
                 child: Icon(
                   _showCards ? Icons.view_agenda_outlined : Icons.table_rows_outlined,
@@ -218,7 +218,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
       // ── Таблица результатов (from ResultTableEngine) ──
       Expanded(child: table.rows.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
               const SizedBox(height: 8),
               Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
             ]))
@@ -228,7 +228,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
       // ── Auto-refresh indicator ──
       Container(
         padding: const EdgeInsets.symmetric(vertical: 6),
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+        color: cs.surfaceContainerHighest.withOpacity(0.2),
         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.sync, size: 12, color: cs.onSurfaceVariant),
           const SizedBox(width: 4),
@@ -249,7 +249,7 @@ class _LiveResultsScreenState extends ConsumerState<LiveResultsScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [

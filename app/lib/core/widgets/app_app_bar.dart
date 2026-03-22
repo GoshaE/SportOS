@@ -40,10 +40,10 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
         padding: const EdgeInsets.only(left: 12.0, top: 4.0, bottom: 4.0),
         child: Container(
           decoration: BoxDecoration(
-            color: cs.surfaceContainerHigh.withValues(alpha: 0.5),
+            color: cs.surfaceContainerHigh.withOpacity(0.5),
             shape: BoxShape.circle,
             border: Border.all(
-              color: cs.outlineVariant.withValues(alpha: 0.3),
+              color: cs.outlineVariant.withOpacity(0.3),
             ),
           ),
           child: IconButton(
@@ -93,7 +93,7 @@ class AppAppBar extends StatelessWidget implements PreferredSizeWidget {
       ),
       shape: Border(
         bottom: BorderSide(
-          color: cs.outlineVariant.withValues(alpha: 0.2),
+          color: cs.outlineVariant.withOpacity(0.2),
           width: 1,
         ),
       ),

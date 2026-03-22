@@ -156,7 +156,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.history_toggle_off, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+            Icon(Icons.history_toggle_off, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
             const SizedBox(height: 16),
             Text('Нет сохраненной истории', style: TextStyle(color: cs.onSurfaceVariant)),
           ],
@@ -208,7 +208,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
                   const SizedBox(width: 4),
                   CircleAvatar(
                     radius: 18,
-                    backgroundColor: cs.primary.withValues(alpha: 0.15),
+                    backgroundColor: cs.primary.withOpacity(0.15),
                     child: Text(
                       initials,
                       style: Theme.of(context).textTheme.labelMedium?.copyWith(

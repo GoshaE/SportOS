@@ -464,7 +464,7 @@ class _TeamScreenState extends State<TeamScreen>
                   children: [
                     CircleAvatar(
                       radius: 24,
-                      backgroundColor: color.withValues(alpha: 0.15),
+                      backgroundColor: color.withOpacity(0.15),
                       child: Text(
                         role['icon'] as String,
                         style: const TextStyle(fontSize: 20),
@@ -507,7 +507,7 @@ class _TeamScreenState extends State<TeamScreen>
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: color.withValues(alpha: 0.1),
+                              color: color.withOpacity(0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -544,7 +544,7 @@ class _TeamScreenState extends State<TeamScreen>
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                  color: cs.onSurfaceVariant.withOpacity(0.5),
                 ),
               ],
             ),
@@ -638,7 +638,7 @@ class _TeamScreenState extends State<TeamScreen>
                       children: [
                         CircleAvatar(
                           radius: 20,
-                          backgroundColor: color.withValues(alpha: 0.15),
+                          backgroundColor: color.withOpacity(0.15),
                           child: Text(
                             r['icon'] as String,
                             style: const TextStyle(fontSize: 18),
@@ -746,7 +746,7 @@ class _TeamScreenState extends State<TeamScreen>
           padding: const EdgeInsets.symmetric(horizontal: 12),
           child: Divider(
             height: 24,
-            color: cs.outlineVariant.withValues(alpha: 0.3),
+            color: cs.outlineVariant.withOpacity(0.3),
           ),
         ),
         const Padding(
@@ -767,7 +767,7 @@ class _TeamScreenState extends State<TeamScreen>
                   width: 28,
                   height: 28,
                   decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.1),
+                    color: color.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Center(
@@ -858,7 +858,7 @@ class _TeamScreenState extends State<TeamScreen>
                 color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: cs.outlineVariant.withValues(alpha: 0.5),
+                  color: cs.outlineVariant.withOpacity(0.5),
                 ),
               ),
               child: Row(
@@ -1015,7 +1015,7 @@ class _TeamScreenState extends State<TeamScreen>
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.15),
+              color: color.withOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: color, size: 28),
@@ -1088,7 +1088,7 @@ class _TeamScreenState extends State<TeamScreen>
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.1),
+              color: color.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -1209,7 +1209,7 @@ class _TeamScreenState extends State<TeamScreen>
                         ),
                         selected: sel,
                         selectedColor: color,
-                        backgroundColor: color.withValues(alpha: 0.08),
+                        backgroundColor: color.withOpacity(0.08),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
                           vertical: 8,

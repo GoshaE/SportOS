@@ -209,9 +209,9 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: cs.errorContainer.withValues(alpha: 0.2),
+              color: cs.errorContainer.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+              border: Border.all(color: cs.error.withOpacity(0.3)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 6, height: 6, decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle)),
@@ -286,14 +286,14 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
           Expanded(
             child: AppCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                   Text('${session.config.name} · ${session.config.laps} кр.', style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                    decoration: BoxDecoration(color: cs.error.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Container(width: 6, height: 6, decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle)),
                       const SizedBox(width: 4),
@@ -317,9 +317,9 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: (_forceTableView ?? false) ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                color: (_forceTableView ?? false) ? cs.primary.withOpacity(0.12) : cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: (_forceTableView ?? false) ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+                border: Border.all(color: (_forceTableView ?? false) ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.3)),
               ),
               child: Icon(
                 (_forceTableView ?? false) ? Icons.view_agenda_outlined : Icons.table_rows_outlined,
@@ -335,7 +335,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
       Expanded(
         child: courseAthletes.isEmpty
             ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
                 const SizedBox(height: 8),
                 Text('Ожидание старта спортсменов...', style: TextStyle(color: cs.onSurfaceVariant)),
               ]))
@@ -439,7 +439,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
           Expanded(
             child: AppCard(
               padding: const EdgeInsets.all(4),
-              backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
               children: [
                 SizedBox(
@@ -455,7 +455,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
           const SizedBox(width: 8),
           AppCard(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-            backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+            backgroundColor: cs.primaryContainer.withOpacity(0.15),
             borderRadius: BorderRadius.circular(12),
             children: [
               Row(children: [
@@ -488,8 +488,8 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
           decoration: BoxDecoration(
             color: active ? cs.surface : Colors.transparent,
             borderRadius: BorderRadius.circular(16),
-            border: active ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
-            boxShadow: active ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
+            border: active ? Border.all(color: cs.outlineVariant.withOpacity(0.2)) : null,
+            boxShadow: active ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
           ),
           alignment: Alignment.center,
           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -586,8 +586,8 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: AppCard(
                     padding: EdgeInsets.zero,
-                    backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.1),
-                    borderColor: cs.tertiary.withValues(alpha: 0.3),
+                    backgroundColor: cs.tertiaryContainer.withOpacity(0.1),
+                    borderColor: cs.tertiary.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                     children: [
                       InkWell(
@@ -597,7 +597,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                           child: Row(children: [
                             Container(
                               width: 32, height: 32,
-                              decoration: BoxDecoration(color: cs.tertiary.withValues(alpha: 0.1), shape: BoxShape.circle),
+                              decoration: BoxDecoration(color: cs.tertiary.withOpacity(0.1), shape: BoxShape.circle),
                               child: Center(child: Text('${i + 1}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: cs.tertiary))),
                             ),
                             const SizedBox(width: 12),
@@ -622,7 +622,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
       else
         Expanded(
           child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.touch_app, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+            Icon(Icons.touch_app, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
             const SizedBox(height: 8),
             Text('Нажмите кнопку ОТСЕЧКА', style: theme.textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant)),
             Text('когда спортсмен проходит вашу точку', style: theme.textTheme.bodySmall?.copyWith(color: cs.outline)),
@@ -636,16 +636,16 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
           child: AppCard(
             padding: EdgeInsets.zero,
-            backgroundColor: cs.primaryContainer.withValues(alpha: 0.1),
-            borderColor: cs.primary.withValues(alpha: 0.3),
+            backgroundColor: cs.primaryContainer.withOpacity(0.1),
+            borderColor: cs.primary.withOpacity(0.3),
             borderRadius: BorderRadius.circular(24),
             children: [
               Material(
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: _addQuickMark,
-                  splashColor: cs.primary.withValues(alpha: 0.2),
-                  highlightColor: cs.primary.withValues(alpha: 0.1),
+                  splashColor: cs.primary.withOpacity(0.2),
+                  highlightColor: cs.primary.withOpacity(0.1),
                   child: Container(
                     width: double.infinity,
                     height: 120,
@@ -681,8 +681,8 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
 
     return Container(
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.1),
-        border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2))),
+        color: cs.surfaceContainerHighest.withOpacity(0.1),
+        border: Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.2))),
       ),
       child: Column(mainAxisSize: MainAxisSize.min, children: [
         // Заголовок + переключатель кругов
@@ -720,7 +720,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
             SizedBox(width: 60, child: Text('Разрыв', style: TextStyle(fontSize: 9, color: cs.outline, fontWeight: FontWeight.bold), textAlign: TextAlign.right)),
           ]),
         ),
-        Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.15)),
+        Divider(height: 1, color: cs.outlineVariant.withOpacity(0.15)),
 
         // Таблица
         ConstrainedBox(
@@ -743,7 +743,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
                   // BIB
                   SizedBox(width: 28, child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-                    decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(3)),
+                    decoration: BoxDecoration(color: cs.surface.withOpacity(0.5), borderRadius: BorderRadius.circular(3)),
                     child: Text(r.bib, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: cs.onSurfaceVariant), textAlign: TextAlign.center),
                   )),
                   const SizedBox(width: 4),
@@ -780,9 +780,9 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: selected ? cs.primary.withValues(alpha: 0.15) : Colors.transparent,
+            color: selected ? cs.primary.withOpacity(0.15) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: selected ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.2)),
+            border: Border.all(color: selected ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.2)),
           ),
           child: Text(label, style: TextStyle(fontSize: 10, fontWeight: selected ? FontWeight.w800 : FontWeight.w500, color: selected ? cs.primary : cs.onSurfaceVariant)),
         ),
@@ -847,7 +847,7 @@ class _CoachTimingScreenState extends ConsumerState<CoachTimingScreen>
       // Таблица сплитов по кругам
       AppCard(
         padding: const EdgeInsets.all(12),
-        backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.1),
+        backgroundColor: cs.surfaceContainerHighest.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         children: [
           // Заголовок

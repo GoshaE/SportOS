@@ -306,8 +306,8 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
           child: AppCard(
             padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-            backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.2),
-            borderColor: cs.tertiary.withValues(alpha: 0.3),
+            backgroundColor: cs.tertiaryContainer.withOpacity(0.2),
+            borderColor: cs.tertiary.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
             children: [
               Row(children: [
@@ -326,7 +326,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
             Expanded(
               child: AppCard(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                backgroundColor: cs.surfaceContainerHighest.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
                 children: [
                   Row(children: [
@@ -340,7 +340,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
             const SizedBox(width: 8),
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+              backgroundColor: cs.primaryContainer.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(children: [
@@ -353,7 +353,7 @@ class _MarshalScreenState extends ConsumerState<MarshalScreen> {
             const SizedBox(width: 8),
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+              backgroundColor: cs.primaryContainer.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(children: [

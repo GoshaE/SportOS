@@ -45,9 +45,9 @@ class AppGradientOverlay extends StatelessWidget {
             end: end,
             colors: [
               Colors.transparent,
-              Colors.black.withValues(alpha: maxOpacity * 0.12),
-              Colors.black.withValues(alpha: maxOpacity * 0.82),
-              Colors.black.withValues(alpha: maxOpacity),
+              Colors.black.withOpacity(maxOpacity * 0.12),
+              Colors.black.withOpacity(maxOpacity * 0.82),
+              Colors.black.withOpacity(maxOpacity),
             ],
             stops: const [0.0, 0.4, 0.75, 1.0],
           ),

@@ -96,8 +96,8 @@ class _CheckInScreenState extends ConsumerState<CheckInScreen> {
                     : '—';
 
                 return Card(
-                  color: !paid ? cs.error.withValues(alpha: 0.03)
-                      : mandate == MandateStatus.failed ? cs.secondary.withValues(alpha: 0.03) : null,
+                  color: !paid ? cs.error.withOpacity(0.03)
+                      : mandate == MandateStatus.failed ? cs.secondary.withOpacity(0.03) : null,
                   child: ListTile(
                     leading: GestureDetector(
                       onTap: () => ref.read(participantsProvider.notifier).toggleCheckIn(p.id),

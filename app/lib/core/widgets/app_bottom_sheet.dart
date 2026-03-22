@@ -77,9 +77,9 @@ class AppBottomSheet {
               maxHeight: screenHeight * maxHeight,
             ),
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.surface.withValues(alpha: 0.8),
+              color: Theme.of(context).colorScheme.surface.withOpacity(0.8),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-              border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2))),
+              border: Border(top: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2))),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -91,7 +91,7 @@ class AppBottomSheet {
                     width: 36,
                     height: 4,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(2),
                     ),
                   ),
@@ -130,11 +130,11 @@ class AppBottomSheet {
     return showDialog<T>(
       context: context,
       useRootNavigator: true,
-      barrierColor: Colors.black.withValues(alpha: 0.2),
+      barrierColor: Colors.black.withOpacity(0.2),
       builder: (ctx) => BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
         child: Dialog(
-          backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.85),
+          backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.85),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           clipBehavior: Clip.antiAlias,

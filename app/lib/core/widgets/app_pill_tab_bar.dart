@@ -109,7 +109,7 @@ class _FixedPillTabs extends StatelessWidget {
                       borderRadius: BorderRadius.circular(999),
                       boxShadow: [
                         BoxShadow(
-                          color: cs.primary.withValues(alpha: 0.25),
+                          color: cs.primary.withOpacity(0.25),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
@@ -381,7 +381,7 @@ class _ScrollablePillTabsState extends State<_ScrollablePillTabs> {
             borderRadius: BorderRadius.circular(999),
             boxShadow: [
               BoxShadow(
-                color: widget.cs.primary.withValues(alpha: 0.25),
+                color: widget.cs.primary.withOpacity(0.25),
                 blurRadius: 6,
                 offset: const Offset(0, 2),
               ),

@@ -188,7 +188,7 @@ class AppListRow extends StatelessWidget {
         color: resolvedBg,
         border: Border(
           bottom: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.15),
+            color: cs.outlineVariant.withOpacity(0.15),
           ),
         ),
       ),
@@ -239,10 +239,10 @@ class AppListRow extends StatelessWidget {
   };
 
   Color? _semanticBg(ColorScheme cs) => switch (semantic) {
-    RowSemantic.error   => cs.errorContainer.withValues(alpha: 0.06),
-    RowSemantic.warning => cs.tertiaryContainer.withValues(alpha: 0.06),
-    RowSemantic.success => cs.primaryContainer.withValues(alpha: 0.04),
-    RowSemantic.muted   => cs.surfaceContainerHighest.withValues(alpha: 0.1),
+    RowSemantic.error   => cs.errorContainer.withOpacity(0.06),
+    RowSemantic.warning => cs.tertiaryContainer.withOpacity(0.06),
+    RowSemantic.success => cs.primaryContainer.withOpacity(0.04),
+    RowSemantic.muted   => cs.surfaceContainerHighest.withOpacity(0.1),
     RowSemantic.normal  => null,
   };
 

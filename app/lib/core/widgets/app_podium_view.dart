@@ -52,17 +52,17 @@ class AppPodiumView extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              AppColors.gold.withValues(alpha: 0.15),
-              cs.surfaceContainerHighest.withValues(alpha: 0.3),
+              AppColors.gold.withOpacity(0.15),
+              cs.surfaceContainerHighest.withOpacity(0.3),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.3), width: 1.5),
+          border: Border.all(color: AppColors.gold.withOpacity(0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
-              color: AppColors.gold.withValues(alpha: 0.05),
+              color: AppColors.gold.withOpacity(0.05),
               blurRadius: 20,
               offset: const Offset(0, 8),
             ),
@@ -79,7 +79,7 @@ class AppPodiumView extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: AppColors.gold, width: 3),
                 boxShadow: [
-                  BoxShadow(color: AppColors.gold.withValues(alpha: 0.4), blurRadius: 16, spreadRadius: 2),
+                  BoxShadow(color: AppColors.gold.withOpacity(0.4), blurRadius: 16, spreadRadius: 2),
                 ]
               ),
               child: ClipOval(
@@ -129,7 +129,7 @@ class AppPodiumView extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: cs.surface,
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.5)),
+                          border: Border.all(color: cs.outlineVariant.withOpacity(0.5)),
                         ),
                         child: Text(
                           gold.time,
@@ -138,7 +138,7 @@ class AppPodiumView extends StatelessWidget {
                       ),
                       if (gold.dog.isNotEmpty) ...[
                         const SizedBox(width: 12),
-                        Container(width: 4, height: 4, decoration: BoxDecoration(color: cs.onSurfaceVariant.withValues(alpha: 0.5), shape: BoxShape.circle)),
+                        Container(width: 4, height: 4, decoration: BoxDecoration(color: cs.onSurfaceVariant.withOpacity(0.5), shape: BoxShape.circle)),
                         const SizedBox(width: 8),
                         Icon(Icons.pets, size: 14, color: cs.onSurfaceVariant),
                         const SizedBox(width: 6),

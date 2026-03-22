@@ -238,9 +238,9 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                color: cs.surfaceContainerHighest.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -276,7 +276,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
       Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: cs.primaryContainer.withValues(alpha: 0.15),
+        color: cs.primaryContainer.withOpacity(0.15),
         child: Row(children: [
           Icon(Icons.description, size: 16, color: cs.primary),
           const SizedBox(width: 8),
@@ -289,8 +289,8 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         color: hasDisciplineMapping
-            ? Colors.green.withValues(alpha: 0.08)
-            : Colors.orange.withValues(alpha: 0.08),
+            ? Colors.green.withOpacity(0.08)
+            : Colors.orange.withOpacity(0.08),
         child: Row(children: [
           Icon(
             hasDisciplineMapping ? Icons.auto_awesome : Icons.info_outline,
@@ -329,15 +329,15 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: currentField == ImportField.discipline
-                  ? Colors.green.withValues(alpha: 0.08)
+                  ? Colors.green.withOpacity(0.08)
                   : currentField != ImportField.skip
-                      ? cs.primaryContainer.withValues(alpha: 0.1)
-                      : cs.surfaceContainerHighest.withValues(alpha: 0.2),
+                      ? cs.primaryContainer.withOpacity(0.1)
+                      : cs.surfaceContainerHighest.withOpacity(0.2),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
                 color: currentField == ImportField.discipline
-                    ? Colors.green.withValues(alpha: 0.4)
-                    : currentField != ImportField.skip ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.2),
+                    ? Colors.green.withOpacity(0.4)
+                    : currentField != ImportField.skip ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.2),
               ),
             ),
             child: Row(children: [
@@ -405,7 +405,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cs.surface,
-          border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2))),
+          border: Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.2))),
         ),
         child: SizedBox(width: double.infinity, child: FilledButton.icon(
           onPressed: _buildPreview,
@@ -438,7 +438,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
       Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        color: cs.primaryContainer.withValues(alpha: 0.15),
+        color: cs.primaryContainer.withOpacity(0.15),
         child: Row(children: [
           Icon(Icons.people, size: 16, color: cs.primary),
           const SizedBox(width: 8),
@@ -447,7 +447,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
           if (unassignedCount > 0)
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: cs.error.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+              decoration: BoxDecoration(color: cs.error.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
               child: Text('⚠ $unassignedCount без дисциплины', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.error)),
             ),
           if (unassignedCount == 0)
@@ -517,15 +517,15 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
               margin: const EdgeInsets.only(bottom: 4),
               decoration: BoxDecoration(
                 color: !hasDisc
-                    ? cs.error.withValues(alpha: 0.04)
+                    ? cs.error.withOpacity(0.04)
                     : isSelected
-                        ? cs.primaryContainer.withValues(alpha: 0.1)
-                        : cs.surfaceContainerHighest.withValues(alpha: 0.1),
+                        ? cs.primaryContainer.withOpacity(0.1)
+                        : cs.surfaceContainerHighest.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
                   color: !hasDisc
-                      ? cs.error.withValues(alpha: 0.3)
-                      : isSelected ? cs.primary.withValues(alpha: 0.3) : Colors.transparent,
+                      ? cs.error.withOpacity(0.3)
+                      : isSelected ? cs.primary.withOpacity(0.3) : Colors.transparent,
                 ),
               ),
               child: Padding(
@@ -596,7 +596,7 @@ class _ExcelImportScreenState extends ConsumerState<ExcelImportScreen> {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: cs.surface,
-          border: Border(top: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2))),
+          border: Border(top: BorderSide(color: cs.outlineVariant.withOpacity(0.2))),
         ),
         child: Column(children: [
           if (unassignedCount > 0)

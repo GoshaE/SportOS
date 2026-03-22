@@ -102,9 +102,9 @@ class QtStartTab extends ConsumerWidget {
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             decoration: BoxDecoration(
-              color: isOverdue ? cs.error.withValues(alpha: 0.15) : isUrgent ? cs.errorContainer.withValues(alpha: 0.15) : cs.primaryContainer.withValues(alpha: 0.1),
+              color: isOverdue ? cs.error.withOpacity(0.15) : isUrgent ? cs.errorContainer.withOpacity(0.15) : cs.primaryContainer.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: isOverdue ? cs.error.withValues(alpha: 0.4) : isUrgent ? cs.error.withValues(alpha: 0.3) : cs.primary.withValues(alpha: 0.2)),
+              border: Border.all(color: isOverdue ? cs.error.withOpacity(0.4) : isUrgent ? cs.error.withOpacity(0.3) : cs.primary.withOpacity(0.2)),
             ),
             child: Row(
               children: [
@@ -195,17 +195,17 @@ class QtStartTab extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (!isMass && !isInterval && !hasStarted && !isFinished) 
-                    Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                    Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withOpacity(0.4)),
                   if (canReorder) ...[
                     if (!isMass && !isInterval && !hasStarted && !isFinished) const SizedBox(width: 8),
                     ReorderableDragStartListener(
                       index: i,
-                      child: Icon(Icons.drag_indicator, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                      child: Icon(Icons.drag_indicator, color: cs.onSurfaceVariant.withOpacity(0.4)),
                     ),
                   ],
                 ],
               ),
-              backgroundColor: isCurrent ? cs.tertiaryContainer.withValues(alpha: 0.1) : finished ? cs.primaryContainer.withValues(alpha: 0.05) : hasStarted ? cs.tertiaryContainer.withValues(alpha: 0.05) : null,
+              backgroundColor: isCurrent ? cs.tertiaryContainer.withOpacity(0.1) : finished ? cs.primaryContainer.withOpacity(0.05) : hasStarted ? cs.tertiaryContainer.withOpacity(0.05) : null,
               onTap: !isMass && !isInterval && !hasStarted && !finished && !isFinished ? () => _startIndividual(ref, a.id) : null,
               onLongPress: !hasStarted && !finished && !isFinished ? () => _removeAthleteWithConfirm(context, ref, a.id) : null,
             );

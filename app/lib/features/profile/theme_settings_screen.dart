@@ -145,7 +145,7 @@ class _PresetCard extends StatelessWidget {
         color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: isSelected ? cs.primary : cs.outlineVariant.withValues(alpha: 0.3),
+          color: isSelected ? cs.primary : cs.outlineVariant.withOpacity(0.3),
           width: isSelected ? 2.5 : 1,
         ),
       ),
@@ -236,7 +236,7 @@ class _AccentDot extends StatelessWidget {
                 ? Border.all(color: Theme.of(context).colorScheme.onSurface, width: 3)
                 : Border.all(color: Colors.black12, width: 1),
             boxShadow: isSelected
-                ? [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 8, spreadRadius: 1)]
+                ? [BoxShadow(color: color.withOpacity(0.4), blurRadius: 8, spreadRadius: 1)]
                 : null,
           ),
           child: isSelected

@@ -243,7 +243,7 @@ class _ClubManageScreenState extends State<ClubManageScreen> with SingleTickerPr
     return ListView(padding: const EdgeInsets.all(16), children: [
       // Create announcement
       Card(
-        color: cs.primary.withValues(alpha: 0.05),
+        color: cs.primary.withOpacity(0.05),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

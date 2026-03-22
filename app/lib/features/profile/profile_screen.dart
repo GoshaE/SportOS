@@ -255,7 +255,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     contentPadding: EdgeInsets.zero,
                     leading: CircleAvatar(
                       radius: 18,
-                      backgroundColor: color.withValues(alpha: 0.15),
+                      backgroundColor: color.withOpacity(0.15),
                       child: Text(
                         _rankAbbr(r['rank']!),
                         style: TextStyle(

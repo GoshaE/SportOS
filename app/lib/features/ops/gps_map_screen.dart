@@ -18,7 +18,7 @@ class GpsMapScreen extends StatelessWidget {
           Container(
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(12)),
+            decoration: BoxDecoration(color: cs.primary.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 6, height: 6, decoration: BoxDecoration(color: cs.primary, shape: BoxShape.circle)),
               const SizedBox(width: 4),
@@ -30,7 +30,7 @@ class GpsMapScreen extends StatelessWidget {
       body: Column(children: [
         // Info bar
         Container(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: cs.surfaceContainerHighest.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: Row(children: [
             Icon(Icons.directions_run, size: 16, color: cs.onSurfaceVariant),
@@ -49,9 +49,9 @@ class GpsMapScreen extends StatelessWidget {
         // Map placeholder
         Expanded(child: Stack(children: [
           Container(
-            color: cs.primaryContainer.withValues(alpha: 0.05),
+            color: cs.primaryContainer.withOpacity(0.05),
             child: Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-              Icon(Icons.map, size: 64, color: cs.primary.withValues(alpha: 0.3)),
+              Icon(Icons.map, size: 64, color: cs.primary.withOpacity(0.3)),
               const SizedBox(height: 8),
               Text('Карта трассы', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary)),
               const SizedBox(height: 4),
@@ -87,7 +87,7 @@ class GpsMapScreen extends StatelessWidget {
 
   Widget _mapPin(BuildContext context, ColorScheme cs, String emoji, String label, Color color) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-    decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withValues(alpha: 0.3))),
+    decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(4), border: Border.all(color: color.withOpacity(0.3))),
     child: Text('$emoji $label', style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, color: color)),
   );
 

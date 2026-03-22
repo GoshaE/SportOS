@@ -104,7 +104,7 @@ class _HubSearchScreenState extends State<HubSearchScreen> {
             ),
           ),
         ),
-        Divider(height: 1, color: cs.outlineVariant.withValues(alpha: 0.3)),
+        Divider(height: 1, color: cs.outlineVariant.withOpacity(0.3)),
 
         // ── Результаты поиска ──
         Expanded(child: ListView(

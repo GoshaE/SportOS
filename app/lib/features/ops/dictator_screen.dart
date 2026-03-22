@@ -110,7 +110,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
           borderRadius: BorderRadius.circular(12),
           children: [
             ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: const Text('🥈', style: TextStyle(fontSize: 20)), title: const Text('Кубок Сибири 2025'), subtitle: Text('Скидж. 10км — 01:12:45', style: TextStyle(color: cs.onSurfaceVariant))),
-            Divider(color: cs.outlineVariant.withValues(alpha: 0.3), height: 1),
+            Divider(color: cs.outlineVariant.withOpacity(0.3), height: 1),
             ListTile(dense: true, contentPadding: EdgeInsets.zero, leading: const Text('🥉', style: TextStyle(fontSize: 20)), title: const Text('Кубок Урала 2025'), subtitle: Text('Скидж. 5км — 00:40:20', style: TextStyle(color: cs.onSurfaceVariant))),
           ],
         ),
@@ -169,9 +169,9 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
             margin: const EdgeInsets.only(right: 4),
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: cs.error.withValues(alpha: 0.15),
+              color: cs.error.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+              border: Border.all(color: cs.error.withOpacity(0.3)),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Container(width: 6, height: 6, decoration: BoxDecoration(color: cs.error, shape: BoxShape.circle)),
@@ -188,7 +188,7 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
           child: AppCard(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+            backgroundColor: cs.surfaceContainerHighest.withOpacity(0.3),
             borderRadius: BorderRadius.circular(16),
             children: [
               Row(children: [
@@ -234,8 +234,8 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
             child: AppCard(
               padding: EdgeInsets.zero,
               borderRadius: BorderRadius.circular(16),
-              backgroundColor: isTop3 ? cs.primaryContainer.withValues(alpha: 0.08 * (3 - i)) : cs.surface,
-              borderColor: isTop3 ? cs.primary.withValues(alpha: 0.2 * (3 - i)) : cs.outlineVariant.withValues(alpha: 0.3),
+              backgroundColor: isTop3 ? cs.primaryContainer.withOpacity(0.08 * (3 - i)) : cs.surface,
+              borderColor: isTop3 ? cs.primary.withOpacity(0.2 * (3 - i)) : cs.outlineVariant.withOpacity(0.3),
               children: [
                 ListTile(
                   dense: true,
@@ -272,8 +272,8 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
             Expanded(
               child: AppCard(
                 padding: const EdgeInsets.all(12),
-                backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
-                borderColor: cs.primary.withValues(alpha: 0.2),
+                backgroundColor: cs.primaryContainer.withOpacity(0.15),
+                borderColor: cs.primary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
                 children: [
                   Row(children: [
@@ -293,8 +293,8 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
             Expanded(
               child: AppCard(
                 padding: const EdgeInsets.all(12),
-                backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.15),
-                borderColor: cs.tertiary.withValues(alpha: 0.2),
+                backgroundColor: cs.tertiaryContainer.withOpacity(0.15),
+                borderColor: cs.tertiary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
                 children: [
                   Row(children: [
@@ -333,14 +333,14 @@ class _DictatorScreenState extends ConsumerState<DictatorScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       child: AppCard(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        backgroundColor: color.withValues(alpha: 0.06),
-        borderColor: color.withValues(alpha: 0.2),
+        backgroundColor: color.withOpacity(0.06),
+        borderColor: color.withOpacity(0.2),
         borderRadius: BorderRadius.circular(14),
         children: [
           Row(children: [
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
               child: Icon(icon, size: 18, color: color),
             ),
             const SizedBox(width: 12),

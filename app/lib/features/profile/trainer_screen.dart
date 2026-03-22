@@ -164,7 +164,7 @@ class _TrainerScreenState extends State<TrainerScreen> with SingleTickerProvider
             dataSets: athletes.map((a) => RadarDataSet(
               dataEntries: a.$2.map((v) => RadarEntry(value: v)).toList(),
               borderColor: a.$3,
-              fillColor: a.$3.withValues(alpha: 0.15),
+              fillColor: a.$3.withOpacity(0.15),
               borderWidth: 2,
               entryRadius: 3,
             )).toList(),

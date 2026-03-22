@@ -40,7 +40,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
             // 1️⃣ Top Banner
             AppCard(
               padding: const EdgeInsets.all(16),
-              backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.3),
               children: [
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -57,7 +57,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                         borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: cs.primary.withValues(alpha: 0.3),
+                            color: cs.primary.withOpacity(0.3),
                             blurRadius: 12,
                             offset: const Offset(0, 4),
                           )
@@ -104,7 +104,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                 ActionChip(
                   avatar: Icon(Icons.settings, size: 16, color: cs.primary),
                   label: Text('Управлять', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: cs.primary)),
-                  backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
+                  backgroundColor: cs.primaryContainer.withOpacity(0.3),
                   side: BorderSide(color: cs.primaryContainer),
                   shape: const StadiumBorder(),
                   onPressed: () {},
@@ -112,7 +112,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                 ActionChip(
                   avatar: Icon(Icons.article, size: 16, color: cs.onSurfaceVariant),
                   label: Text('Положение', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: cs.onSurfaceVariant)),
-                  backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  backgroundColor: cs.surfaceContainerHighest.withOpacity(0.5),
                   side: BorderSide.none,
                   shape: const StadiumBorder(),
                   onPressed: () {},
@@ -120,7 +120,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                 ActionChip(
                   avatar: Icon(Icons.share, size: 16, color: cs.onSurfaceVariant),
                   label: Text('Поделиться', style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500, color: cs.onSurfaceVariant)),
-                  backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                  backgroundColor: cs.surfaceContainerHighest.withOpacity(0.5),
                   side: BorderSide.none,
                   shape: const StadiumBorder(),
                   onPressed: () {},
@@ -141,7 +141,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                     badge: 'Завершён',
                     status: EventCardStatus.completed,
                     accentColor: cs.primary,
-                    leading: CircleAvatar(backgroundColor: cs.primary.withValues(alpha: 0.1), child: Text('1', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary))),
+                    leading: CircleAvatar(backgroundColor: cs.primary.withOpacity(0.1), child: Text('1', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary))),
                     onTap: () => context.push('/hub/event/evt-6'),
                     mode: EventCardMode.bento,
                   ),
@@ -159,7 +159,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                     badge: 'Завершён',
                     status: EventCardStatus.completed,
                     accentColor: cs.primary,
-                    leading: CircleAvatar(backgroundColor: cs.primary.withValues(alpha: 0.1), child: Text('2', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary))),
+                    leading: CircleAvatar(backgroundColor: cs.primary.withOpacity(0.1), child: Text('2', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.primary))),
                     onTap: () => context.push('/hub/event/evt-7'),
                     mode: EventCardMode.bento,
                   ),
@@ -177,7 +177,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                     badge: 'Предстоит',
                     status: EventCardStatus.upcoming,
                     accentColor: cs.tertiary,
-                    leading: CircleAvatar(backgroundColor: cs.tertiary.withValues(alpha: 0.1), child: Text('3', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
+                    leading: CircleAvatar(backgroundColor: cs.tertiary.withOpacity(0.1), child: Text('3', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.tertiary))),
                     onTap: () => context.push('/hub/event/evt-1'),
                     mode: EventCardMode.bento,
                   ),
@@ -195,7 +195,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                     badge: 'Будущий',
                     status: EventCardStatus.draft,
                     accentColor: cs.onSurfaceVariant,
-                    leading: CircleAvatar(backgroundColor: cs.onSurfaceVariant.withValues(alpha: 0.1), child: Text('4', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
+                    leading: CircleAvatar(backgroundColor: cs.onSurfaceVariant.withOpacity(0.1), child: Text('4', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
                     mode: EventCardMode.bento,
                   ),
                 ),
@@ -210,7 +210,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                   badge: 'Будущий',
                   status: EventCardStatus.draft,
                   accentColor: cs.onSurfaceVariant,
-                  leading: CircleAvatar(backgroundColor: cs.onSurfaceVariant.withValues(alpha: 0.1), child: Text('5', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
+                  leading: CircleAvatar(backgroundColor: cs.onSurfaceVariant.withOpacity(0.1), child: Text('5', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant))),
                   mode: EventCardMode.bento,
                 ),
               ),
@@ -222,7 +222,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                 // Пакет 1: Все 5 этапов (Акцентный)
                 AppCard(
                   padding: const EdgeInsets.all(16),
-                  backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.3),
+                  backgroundColor: cs.tertiaryContainer.withOpacity(0.3),
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -284,7 +284,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                 // Пакет 2: Любые 3 этапа
                 AppCard(
                   padding: const EdgeInsets.all(16),
-                  backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                  backgroundColor: cs.surfaceContainerHighest.withOpacity(0.3),
                   children: [
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
@@ -585,7 +585,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                         gradient: LinearGradient(
                           begin: Alignment.bottomCenter,
                           end: Alignment.topCenter,
-                          colors: [colors[i].withValues(alpha: 0.4), colors[i]],
+                          colors: [colors[i].withOpacity(0.4), colors[i]],
                         ),
                       ),
                     ],
@@ -613,7 +613,7 @@ class _SeriesScreenState extends State<SeriesScreen> {
                   ),
                   gridData: FlGridData(
                     show: true, drawVerticalLine: false, horizontalInterval: 50,
-                    getDrawingHorizontalLine: (_) => FlLine(color: cs.outlineVariant.withValues(alpha: 0.3), strokeWidth: 0.8, dashArray: [4, 4]),
+                    getDrawingHorizontalLine: (_) => FlLine(color: cs.outlineVariant.withOpacity(0.3), strokeWidth: 0.8, dashArray: [4, 4]),
                   ),
                   borderData: FlBorderData(show: false),
                   barTouchData: BarTouchData(
@@ -651,7 +651,7 @@ class _Badge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: cs.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -689,7 +689,7 @@ class _TimelineNode extends StatelessWidget {
             Container(
               width: 2,
               height: 24,
-              color: isFirst ? Colors.transparent : cs.outlineVariant.withValues(alpha: 0.5),
+              color: isFirst ? Colors.transparent : cs.outlineVariant.withOpacity(0.5),
             ),
             Container(
               width: 14,
@@ -706,7 +706,7 @@ class _TimelineNode extends StatelessWidget {
             Expanded(
               child: Container(
                 width: 2,
-                color: isLast ? Colors.transparent : cs.outlineVariant.withValues(alpha: 0.5),
+                color: isLast ? Colors.transparent : cs.outlineVariant.withOpacity(0.5),
               ),
             ),
           ],

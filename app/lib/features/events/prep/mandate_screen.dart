@@ -91,7 +91,7 @@ class _MandateScreenState extends ConsumerState<MandateScreen> {
         // ─── Список участников ───
         Expanded(child: filtered.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.check_circle_outline, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              Icon(Icons.check_circle_outline, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
               const SizedBox(height: 8),
               Text(
                 participants.isEmpty ? 'Нет участников' : 'Нет совпадений',
@@ -139,7 +139,7 @@ class _MandateScreenState extends ConsumerState<MandateScreen> {
 
     return Card(
       shape: RoundedRectangleBorder(
-        side: BorderSide(color: color.withValues(alpha: 0.3)),
+        side: BorderSide(color: color.withOpacity(0.3)),
         borderRadius: BorderRadius.circular(12),
       ),
       child: ExpansionTile(

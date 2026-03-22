@@ -87,7 +87,7 @@ class AppProtocolRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: cat.startsWith('Ж') ? cs.errorContainer.withValues(alpha: 0.25) : cs.primaryContainer.withValues(alpha: 0.25),
+                color: cat.startsWith('Ж') ? cs.errorContainer.withOpacity(0.25) : cs.primaryContainer.withOpacity(0.25),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(cat, style: theme.textTheme.labelSmall?.copyWith(fontSize: 9, fontWeight: FontWeight.bold, color: cat.startsWith('Ж') ? cs.error : cs.primary)),
@@ -108,7 +108,7 @@ class AppProtocolRow extends StatelessWidget {
             if (penalty != '—') ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                decoration: BoxDecoration(color: cs.tertiaryContainer.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
+                decoration: BoxDecoration(color: cs.tertiaryContainer.withOpacity(0.5), borderRadius: BorderRadius.circular(4)),
                 child: Text('Штр: $penalty', style: theme.textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.bold, color: cs.tertiary)),
               ),
               const SizedBox(width: 6),
@@ -174,7 +174,7 @@ class AppProtocolRow extends StatelessWidget {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: cat.startsWith('Ж') ? cs.errorContainer.withValues(alpha: 0.25) : cs.primaryContainer.withValues(alpha: 0.25),
+                      color: cat.startsWith('Ж') ? cs.errorContainer.withOpacity(0.25) : cs.primaryContainer.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(cat, style: theme.textTheme.labelSmall?.copyWith(fontSize: 12, fontWeight: FontWeight.bold, color: cat.startsWith('Ж') ? cs.error : cs.primary)),
@@ -222,9 +222,9 @@ class AppProtocolRow extends StatelessWidget {
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
         decoration: BoxDecoration(
-          color: isError ? cs.errorContainer.withValues(alpha: 0.25) : cs.surfaceContainerHighest,
+          color: isError ? cs.errorContainer.withOpacity(0.25) : cs.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(4),
-          border: isError ? Border.all(color: cs.error.withValues(alpha: 0.2)) : null,
+          border: isError ? Border.all(color: cs.error.withOpacity(0.2)) : null,
         ),
         child: Text(
           placeText!,
@@ -256,7 +256,7 @@ class AppProtocolRow extends StatelessWidget {
       height: 28,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: cs.primaryContainer.withValues(alpha: 0.5),
+        color: cs.primaryContainer.withOpacity(0.5),
         border: borderColor != null ? Border.all(color: borderColor, width: 2) : null,
       ),
       child: ClipOval(

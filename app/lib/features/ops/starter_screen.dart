@@ -287,7 +287,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
             margin: const EdgeInsets.only(right: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+              color: cs.surfaceContainerHighest.withOpacity(0.3),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -304,7 +304,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
         if (!_isSynced) Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 16),
-          color: cs.error.withValues(alpha: 0.15),
+          color: cs.error.withOpacity(0.15),
           child: Row(children: [
             Icon(Icons.warning_amber, size: 16, color: cs.error),
             const SizedBox(width: 6),
@@ -315,7 +315,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
         // ── Пустое состояние ──
         if (!hasAthletes) Expanded(
           child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.people_outline, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+            Icon(Icons.people_outline, size: 64, color: cs.onSurfaceVariant.withOpacity(0.3)),
             const SizedBox(height: 16),
             Text('Нет спортсменов', style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
             const SizedBox(height: 4),
@@ -331,7 +331,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
               Expanded(
                 child: AppCard(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                  backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+                  backgroundColor: cs.surfaceContainerHighest.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(12),
                   children: [
                     Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -344,7 +344,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
               const SizedBox(width: 8),
               AppCard(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+                backgroundColor: cs.primaryContainer.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(12),
                 children: [
                   Row(children: [
@@ -362,7 +362,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: AppCard(
               padding: const EdgeInsets.all(4),
-              backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+              backgroundColor: cs.surfaceContainerHighest.withOpacity(0.15),
               borderRadius: BorderRadius.circular(20),
               children: [
                 SizedBox(
@@ -375,8 +375,8 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                           decoration: BoxDecoration(
                             color: !_isMassStart ? cs.surface : Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
-                            border: !_isMassStart ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
-                            boxShadow: !_isMassStart ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                            border: !_isMassStart ? Border.all(color: cs.outlineVariant.withOpacity(0.2)) : null,
+                            boxShadow: !_isMassStart ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
                           ),
                           alignment: Alignment.center,
                           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -394,8 +394,8 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                           decoration: BoxDecoration(
                             color: _isMassStart ? cs.surface : Colors.transparent,
                             borderRadius: BorderRadius.circular(16),
-                            border: _isMassStart ? Border.all(color: cs.outlineVariant.withValues(alpha: 0.2)) : null,
-                            boxShadow: _isMassStart ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
+                            border: _isMassStart ? Border.all(color: cs.outlineVariant.withOpacity(0.2)) : null,
+                            boxShadow: _isMassStart ? [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 4, offset: const Offset(0, 2))] : null,
                           ),
                           alignment: Alignment.center,
                           child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -419,15 +419,15 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
               child: AppCard(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 backgroundColor: isOverdue
-                    ? cs.error.withValues(alpha: 0.15)
+                    ? cs.error.withOpacity(0.15)
                     : isUrgent
-                        ? cs.errorContainer.withValues(alpha: 0.15)
-                        : cs.primaryContainer.withValues(alpha: 0.1),
+                        ? cs.errorContainer.withOpacity(0.15)
+                        : cs.primaryContainer.withOpacity(0.1),
                 borderColor: isOverdue
-                    ? cs.error.withValues(alpha: 0.4)
+                    ? cs.error.withOpacity(0.4)
                     : isUrgent
-                        ? cs.error.withValues(alpha: 0.3)
-                        : cs.primary.withValues(alpha: 0.2),
+                        ? cs.error.withOpacity(0.3)
+                        : cs.primary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
                 children: [
                   Row(
@@ -460,7 +460,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                       Icon(
                         isOverdue ? Icons.error : isUrgent ? Icons.volume_up : Icons.schedule,
                         size: 36,
-                        color: (isOverdue || isUrgent ? cs.error : cs.primary).withValues(alpha: 0.8),
+                        color: (isOverdue || isUrgent ? cs.error : cs.primary).withOpacity(0.8),
                       ),
                     ],
                   ),
@@ -468,7 +468,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: cs.primary.withValues(alpha: 0.15))),
+                    decoration: BoxDecoration(color: cs.surface.withOpacity(0.6), borderRadius: BorderRadius.circular(12), border: Border.all(color: cs.primary.withOpacity(0.15))),
                     child: Row(
                       children: [
                         Text('СЛЕДУЮЩИЙ:', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
@@ -487,7 +487,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               child: AppCard(
                 padding: const EdgeInsets.all(16),
-                backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+                backgroundColor: cs.primaryContainer.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(16),
                 children: [
                   Row(mainAxisAlignment: MainAxisAlignment.center, children: [
@@ -505,8 +505,8 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
               padding: const EdgeInsets.all(12),
               child: AppCard(
                 padding: EdgeInsets.zero,
-                backgroundColor: (!_isSynced && !_preFlightPassed) ? cs.tertiaryContainer.withValues(alpha: 0.2) : cs.errorContainer.withValues(alpha: 0.15),
-                borderColor: (!_isSynced && !_preFlightPassed) ? cs.tertiary.withValues(alpha: 0.3) : cs.error.withValues(alpha: 0.3),
+                backgroundColor: (!_isSynced && !_preFlightPassed) ? cs.tertiaryContainer.withOpacity(0.2) : cs.errorContainer.withOpacity(0.15),
+                borderColor: (!_isSynced && !_preFlightPassed) ? cs.tertiary.withOpacity(0.3) : cs.error.withOpacity(0.3),
                 borderRadius: BorderRadius.circular(16),
                 children: [
                   InkWell(
@@ -561,9 +561,9 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
 
                     return AppCard(
                       padding: EdgeInsets.zero,
-                      backgroundColor: isCurrent ? cs.tertiaryContainer.withValues(alpha: 0.1) : isStarted ? cs.primaryContainer.withValues(alpha: 0.05) : cs.surfaceContainerHighest.withValues(alpha: 0.15),
+                      backgroundColor: isCurrent ? cs.tertiaryContainer.withOpacity(0.1) : isStarted ? cs.primaryContainer.withOpacity(0.05) : cs.surfaceContainerHighest.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(12),
-                      borderColor: isCurrent ? cs.tertiary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.1),
+                      borderColor: isCurrent ? cs.tertiary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.1),
                       children: [
                         InkWell(
                           onTap: () => _showAthleteMenu(a),
@@ -574,7 +574,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                               const SizedBox(width: 12),
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(6)),
+                                decoration: BoxDecoration(color: cs.surface.withOpacity(0.5), borderRadius: BorderRadius.circular(6)),
                                 child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: cs.onSurfaceVariant)),
                               ),
                               const SizedBox(width: 12),
@@ -585,7 +585,7 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                                   Text(statusText, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
                                 ]),
                               ),
-                              Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                              Icon(Icons.more_vert, size: 18, color: cs.onSurfaceVariant.withOpacity(0.5)),
                             ]),
                           ),
                         ),
@@ -617,9 +617,9 @@ class _StarterScreenState extends ConsumerState<StarterScreen> {
                     : Container(
                         height: 52,
                         decoration: BoxDecoration(
-                          color: cs.primaryContainer.withValues(alpha: 0.2),
+                          color: cs.primaryContainer.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+                          border: Border.all(color: cs.primary.withOpacity(0.2)),
                         ),
                         child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                           Icon(Icons.auto_mode, size: 20, color: cs.primary),

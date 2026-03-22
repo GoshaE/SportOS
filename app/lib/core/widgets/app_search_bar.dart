@@ -81,7 +81,7 @@ class _AppSearchBarState extends State<AppSearchBar> {
                 )
               : null,
           filled: true,
-          fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          fillColor: cs.surfaceContainerHighest.withOpacity(0.5),
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),

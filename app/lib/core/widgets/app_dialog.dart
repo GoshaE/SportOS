@@ -25,11 +25,11 @@ class AppDialog {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.95),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2), width: 1),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2), width: 1),
             ),
             title: Text(title),
             content: Text(message),
@@ -63,11 +63,11 @@ class AppDialog {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.95),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2), width: 1),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2), width: 1),
             ),
             title: Text(title),
             content: message != null ? Text(message) : null,
@@ -112,11 +112,11 @@ class AppDialog {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.95),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2), width: 1),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2), width: 1),
             ),
             title: Text(title),
             content: scrollable
@@ -158,11 +158,11 @@ class AppDialog {
         child: BackdropFilter(
           filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: AlertDialog(
-            backgroundColor: Theme.of(context).colorScheme.surface.withValues(alpha: 0.95),
+            backgroundColor: Theme.of(context).colorScheme.surface.withOpacity(0.95),
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(24),
-              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withValues(alpha: 0.2), width: 1),
+              side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant.withOpacity(0.2), width: 1),
             ),
             title: Text(title),
             content: Form(

@@ -58,7 +58,7 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
         Row(children: [
           Container(
             width: 36, height: 36, alignment: Alignment.center,
-            decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.15), shape: BoxShape.circle, border: Border.all(color: cs.primary.withValues(alpha: 0.3))),
+            decoration: BoxDecoration(color: cs.primaryContainer.withOpacity(0.15), shape: BoxShape.circle, border: Border.all(color: cs.primary.withOpacity(0.3))),
             child: Text('#$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: cs.primary)),
           ),
           const SizedBox(width: 12),
@@ -88,7 +88,7 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
               child: AppQueueItem(
                 leading: Container(
                   width: 28, height: 28, alignment: Alignment.center,
-                  decoration: BoxDecoration(color: isLast ? cs.primary.withValues(alpha: 0.1) : cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(8)),
+                  decoration: BoxDecoration(color: isLast ? cs.primary.withOpacity(0.1) : cs.surface.withOpacity(0.5), borderRadius: BorderRadius.circular(8)),
                   child: Text('L${lapIdx + 1}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: isLast ? cs.primary : cs.onSurfaceVariant)),
                 ),
                 title: Text(TimeFormatter.compact(lapTime), style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()], color: cs.onSurface)),
@@ -116,7 +116,7 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
     if (table.rows.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.leaderboard_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+          Icon(Icons.leaderboard_outlined, size: 64, color: cs.onSurfaceVariant.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text('Результаты появятся после старта', style: TextStyle(color: cs.onSurfaceVariant)),
         ]),
@@ -133,8 +133,8 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.15),
-          border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1))),
+          color: cs.surfaceContainerHighest.withOpacity(0.15),
+          border: Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.1))),
         ),
         child: Row(children: [
           AppStatCard(value: '$finished', label: 'Финиш', color: cs.primary, expanded: false),
@@ -148,9 +148,9 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
-                color: _showCards ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                color: _showCards ? cs.primary.withOpacity(0.12) : cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _showCards ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+                border: Border.all(color: _showCards ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.3)),
               ),
               child: Icon(
                 _showCards ? Icons.view_agenda_outlined : Icons.table_rows_outlined,

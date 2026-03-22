@@ -43,7 +43,7 @@ class AppSectionHeader extends StatelessWidget {
               title.toUpperCase(),
               style: theme.textTheme.labelMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.8),
                 letterSpacing: 0.5,
               ),
             ),

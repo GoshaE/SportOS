@@ -89,13 +89,13 @@ class CategoriesScreen extends ConsumerWidget {
         if (count > 0) Container(
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          color: cs.primaryContainer.withValues(alpha: 0.2),
+          color: cs.primaryContainer.withOpacity(0.2),
           child: Wrap(spacing: 6, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
             Text('Выбрано $count:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
             ...config.raceCategories.map((c) => Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
               decoration: BoxDecoration(
-                color: _genderColor(c.gender, cs).withValues(alpha: 0.15),
+                color: _genderColor(c.gender, cs).withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(c.shortName, style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _genderColor(c.gender, cs))),
@@ -321,10 +321,10 @@ class _CategoryTile extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: isSelected ? 0.15 : 0.06),
+            color: color.withOpacity(isSelected ? 0.15 : 0.06),
             borderRadius: BorderRadius.circular(4),
           ),
-          child: Text(cat.shortName, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color.withValues(alpha: isSelected ? 1.0 : 0.5))),
+          child: Text(cat.shortName, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color.withOpacity(isSelected ? 1.0 : 0.5))),
         ),
       ]),
       subtitle: Text(cat.subtitle, style: TextStyle(fontSize: 11, color: cs.outline)),

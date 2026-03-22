@@ -66,7 +66,7 @@ class AppProtocolTable extends StatelessWidget {
           color: theme.cardTheme.color ?? cs.surfaceContainerHigh,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: cs.onSurfaceVariant.withValues(alpha: 0.2), // Soft semantic border
+            color: cs.onSurfaceVariant.withOpacity(0.2), // Soft semantic border
           ),
         ),
             // Single horizontal scroll wrapping BOTH header and body
@@ -82,7 +82,7 @@ class AppProtocolTable extends StatelessWidget {
                     headerRow,
                     Divider(
                       height: 1,
-                      color: cs.onSurfaceVariant.withValues(alpha: 0.2), // Semantic divider
+                      color: cs.onSurfaceVariant.withOpacity(0.2), // Semantic divider
                     ),
                     // ── Body: shrinkWrap ListView for lazy-ish rendering ──
                     ListView.separated(
@@ -91,7 +91,7 @@ class AppProtocolTable extends StatelessWidget {
                       itemCount: itemCount,
                       separatorBuilder: (_, i) => Divider(
                         height: 1,
-                        color: cs.onSurfaceVariant.withValues(alpha: 0.2), // Semantic divider
+                        color: cs.onSurfaceVariant.withOpacity(0.2), // Semantic divider
                       ),
                       itemBuilder: (ctx, i) => itemBuilder(ctx, i, false),
                     ),

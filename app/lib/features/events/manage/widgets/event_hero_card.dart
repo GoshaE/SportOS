@@ -70,13 +70,13 @@ class EventHeroCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(20),
         gradient: LinearGradient(
           colors: [
-            statusColor.withValues(alpha: 0.12),
-            cs.surfaceContainerHigh.withValues(alpha: isDark ? 0.6 : 0.9),
+            statusColor.withOpacity(0.12),
+            cs.surfaceContainerHigh.withOpacity(isDark ? 0.6 : 0.9),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
-        border: Border.all(color: statusColor.withValues(alpha: 0.2)),
+        border: Border.all(color: statusColor.withOpacity(0.2)),
       ),
       child: Column(children: [
         // ── Status row ──
@@ -87,7 +87,7 @@ class EventHeroCard extends ConsumerWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                 decoration: BoxDecoration(
-                  color: statusColor.withValues(alpha: 0.15),
+                  color: statusColor.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -123,9 +123,9 @@ class EventHeroCard extends ConsumerWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(children: [
             _HeroKpi(icon: Icons.groups, value: '$totalParticipants', label: 'Участники', color: cs.primary),
-            Container(width: 1, height: 40, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Container(width: 1, height: 40, color: cs.outlineVariant.withOpacity(0.3)),
             _HeroKpi(icon: Icons.how_to_reg, value: '$checkedIn / $totalParticipants', label: 'Чек-ин', color: const Color(0xFF2E7D32)),
-            Container(width: 1, height: 40, color: cs.outlineVariant.withValues(alpha: 0.3)),
+            Container(width: 1, height: 40, color: cs.outlineVariant.withOpacity(0.3)),
             _HeroKpi(icon: Icons.payments, value: revenueStr, label: 'Сборы', color: cs.tertiary),
           ]),
         ),

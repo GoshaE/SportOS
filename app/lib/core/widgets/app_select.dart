@@ -86,7 +86,7 @@ class AppSelect<T> extends StatelessWidget {
               border: Border.all(
                 color: inputTheme.enabledBorder is OutlineInputBorder
                     ? (inputTheme.enabledBorder as OutlineInputBorder).borderSide.color
-                    : cs.outlineVariant.withValues(alpha: 0.4),
+                    : cs.outlineVariant.withOpacity(0.4),
               ),
             ),
             child: Row(children: [
@@ -96,7 +96,7 @@ class AppSelect<T> extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 15,
                     color: isPlaceholder
-                        ? cs.onSurfaceVariant.withValues(alpha: 0.4)
+                        ? cs.onSurfaceVariant.withOpacity(0.4)
                         : cs.onSurface,
                   ),
                 ),
@@ -104,7 +104,7 @@ class AppSelect<T> extends StatelessWidget {
               Icon(
                 Icons.keyboard_arrow_down_rounded,
                 size: 20,
-                color: cs.onSurfaceVariant.withValues(alpha: 0.5),
+                color: cs.onSurfaceVariant.withOpacity(0.5),
               ),
             ]),
           ),
@@ -117,7 +117,7 @@ class AppSelect<T> extends StatelessWidget {
             helperText!,
             style: TextStyle(
               fontSize: 12,
-              color: cs.onSurfaceVariant.withValues(alpha: 0.6),
+              color: cs.onSurfaceVariant.withOpacity(0.6),
             ),
           ),
         ],

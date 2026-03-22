@@ -62,7 +62,7 @@ class PreStartChecklistScreen extends ConsumerWidget {
             padding: const EdgeInsets.only(bottom: 6),
             child: AppCard(
               padding: EdgeInsets.zero,
-              borderColor: item.required ? cs.primary.withValues(alpha: 0.2) : null,
+              borderColor: item.required ? cs.primary.withOpacity(0.2) : null,
               children: [
                 ListTile(
                   dense: true,
@@ -71,7 +71,7 @@ class PreStartChecklistScreen extends ConsumerWidget {
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
                       color: item.required
-                          ? cs.primary.withValues(alpha: 0.15)
+                          ? cs.primary.withOpacity(0.15)
                           : cs.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(8),
                     ),
@@ -93,7 +93,7 @@ class PreStartChecklistScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                         decoration: BoxDecoration(
-                          color: item.required ? cs.primary.withValues(alpha: 0.1) : cs.surfaceContainerHighest,
+                          color: item.required ? cs.primary.withOpacity(0.1) : cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(

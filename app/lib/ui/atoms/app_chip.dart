@@ -97,7 +97,7 @@ class AppChip extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final (bg, fg) = _colors(cs);
     final border = variant == ChipVariant.outlined
-        ? Border.all(color: fg.withValues(alpha: 0.4), width: 1)
+        ? Border.all(color: fg.withOpacity(0.4), width: 1)
         : null;
     final resolvedBg = variant == ChipVariant.outlined
         ? Colors.transparent
@@ -153,31 +153,31 @@ class AppChip extends StatelessWidget {
     ChipType.primary => (
       variant == ChipVariant.filled
           ? cs.primary
-          : cs.primaryContainer.withValues(alpha: 0.3),
+          : cs.primaryContainer.withOpacity(0.3),
       variant == ChipVariant.filled ? cs.onPrimary : cs.primary,
     ),
     ChipType.success => (
       variant == ChipVariant.filled
           ? cs.tertiary
-          : cs.tertiaryContainer.withValues(alpha: 0.3),
+          : cs.tertiaryContainer.withOpacity(0.3),
       variant == ChipVariant.filled ? cs.onTertiary : cs.tertiary,
     ),
     ChipType.warning => (
       variant == ChipVariant.filled
           ? cs.secondary
-          : cs.secondaryContainer.withValues(alpha: 0.3),
+          : cs.secondaryContainer.withOpacity(0.3),
       variant == ChipVariant.filled ? cs.onSecondary : cs.secondary,
     ),
     ChipType.error => (
       variant == ChipVariant.filled
           ? cs.error
-          : cs.errorContainer.withValues(alpha: 0.3),
+          : cs.errorContainer.withOpacity(0.3),
       variant == ChipVariant.filled ? cs.onError : cs.error,
     ),
     ChipType.info => (
       variant == ChipVariant.filled
           ? cs.primaryContainer
-          : cs.primaryContainer.withValues(alpha: 0.2),
+          : cs.primaryContainer.withOpacity(0.2),
       variant == ChipVariant.filled
           ? cs.onPrimaryContainer
           : cs.onPrimaryContainer,

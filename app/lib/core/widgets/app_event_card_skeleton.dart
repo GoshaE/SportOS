@@ -37,7 +37,7 @@ class AppEventCardSkeleton extends StatelessWidget {
       decoration: BoxDecoration(
         color: cs.surfaceContainerLow,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: cs.onSurfaceVariant.withValues(alpha: 0.1)),
+        border: Border.all(color: cs.onSurfaceVariant.withOpacity(0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

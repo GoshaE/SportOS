@@ -40,10 +40,10 @@ class AppErrorWidget extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 400),
                 padding: const EdgeInsets.all(32),
                 decoration: BoxDecoration(
-                  color: cs.errorContainer.withValues(alpha: 0.15),
+                  color: cs.errorContainer.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: cs.error.withValues(alpha: 0.2),
+                    color: cs.error.withOpacity(0.2),
                   ),
                 ),
                 child: Column(
@@ -54,7 +54,7 @@ class AppErrorWidget extends StatelessWidget {
                       width: 64,
                       height: 64,
                       decoration: BoxDecoration(
-                        color: cs.error.withValues(alpha: 0.1),
+                        color: cs.error.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
                       child: Icon(
@@ -91,7 +91,7 @@ class AppErrorWidget extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                          color: cs.surfaceContainerHighest.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(

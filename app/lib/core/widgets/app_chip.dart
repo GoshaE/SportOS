@@ -78,7 +78,7 @@ class AppChip extends StatelessWidget {
         onDeleted: enabled ? onDeleted : null,
         deleteIconColor: cs.onSurfaceVariant,
         backgroundColor: cs.surfaceContainerHigh,
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         labelStyle: TextStyle(
           fontSize: 13,
@@ -98,12 +98,12 @@ class AppChip extends StatelessWidget {
             : null,
         selected: selected,
         onSelected: enabled ? onSelected : null,
-        selectedColor: effectiveColor.withValues(alpha: 0.15),
+        selectedColor: effectiveColor.withOpacity(0.15),
         backgroundColor: cs.surfaceContainerHigh,
         side: BorderSide(
           color: selected
-              ? effectiveColor.withValues(alpha: 0.5)
-              : cs.outlineVariant.withValues(alpha: 0.3),
+              ? effectiveColor.withOpacity(0.5)
+              : cs.outlineVariant.withOpacity(0.3),
         ),
         checkmarkColor: effectiveColor,
         showCheckmark: false,
@@ -125,12 +125,12 @@ class AppChip extends StatelessWidget {
       onSelected: enabled
           ? (_) => onTap?.call()
           : null,
-      selectedColor: effectiveColor.withValues(alpha: 0.15),
+      selectedColor: effectiveColor.withOpacity(0.15),
       backgroundColor: cs.surfaceContainerHigh,
       side: BorderSide(
         color: selected
-            ? effectiveColor.withValues(alpha: 0.5)
-            : cs.outlineVariant.withValues(alpha: 0.3),
+            ? effectiveColor.withOpacity(0.5)
+            : cs.outlineVariant.withOpacity(0.3),
       ),
       showCheckmark: false,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),

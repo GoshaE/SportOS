@@ -73,7 +73,7 @@ class AppClubCard extends StatelessWidget {
       BadgeType.warning => cs.tertiary,
       BadgeType.info => cs.secondary,
       BadgeType.error => cs.error,
-      _ => cs.onSurfaceVariant.withValues(alpha: 0.5),
+      _ => cs.onSurfaceVariant.withOpacity(0.5),
     };
 
     final hasPending = pendingLabel != null && pendingLabel != '0';
@@ -85,7 +85,7 @@ class AppClubCard extends StatelessWidget {
       color: cs.surfaceContainerLow,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: cs.onSurfaceVariant.withValues(alpha: 0.2)),
+        side: BorderSide(color: cs.onSurfaceVariant.withOpacity(0.2)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -174,7 +174,7 @@ class AppClubCard extends StatelessWidget {
                         decoration: BoxDecoration(
                           color: cs.errorContainer,
                           borderRadius: BorderRadius.circular(10),
-                          border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                          border: Border.all(color: cs.error.withOpacity(0.3)),
                         ),
                         child: Text(
                           '$pendingLabel заяв.',
@@ -212,7 +212,7 @@ class AppClubCard extends StatelessWidget {
       elevation: 0,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(24),
-        side: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        side: BorderSide(color: cs.outlineVariant.withOpacity(0.3)),
       ),
       child: InkWell(
         onTap: onTap,
@@ -319,7 +319,7 @@ class AppClubCard extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         border: Border.all(
-          color: outlineColor ?? cs.outlineVariant.withValues(alpha: 0.3),
+          color: outlineColor ?? cs.outlineVariant.withOpacity(0.3),
           width: 1,
         ),
         color: cs.surfaceContainerHighest,
@@ -351,10 +351,10 @@ class AppClubCard extends StatelessWidget {
 
   Widget _buildGlassBadge(String text, BadgeType type, ColorScheme cs, {IconData? icon}) {
     final (baseColor, iconColor) = switch (type) {
-      BadgeType.success => (cs.primary.withValues(alpha: 0.2), cs.primaryContainer),
-      BadgeType.warning => (cs.tertiary.withValues(alpha: 0.2), cs.tertiary),
-      BadgeType.error   => (cs.error.withValues(alpha: 0.2), cs.errorContainer),
-      BadgeType.info    => (cs.secondary.withValues(alpha: 0.2), cs.secondaryContainer),
+      BadgeType.success => (cs.primary.withOpacity(0.2), cs.primaryContainer),
+      BadgeType.warning => (cs.tertiary.withOpacity(0.2), cs.tertiary),
+      BadgeType.error   => (cs.error.withOpacity(0.2), cs.errorContainer),
+      BadgeType.info    => (cs.secondary.withOpacity(0.2), cs.secondaryContainer),
       BadgeType.neutral => (Colors.black45, Colors.white70),
     };
 
@@ -363,10 +363,10 @@ class AppClubCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: baseColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
+            color: Colors.black.withOpacity(0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

@@ -447,13 +447,13 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
               children: [
                 Center(
                   child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.person_add_outlined, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                    Icon(Icons.person_add_outlined, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
                     const SizedBox(height: 12),
                     Text('Добавьте участников', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
                     const SizedBox(height: 4),
                     Text('Нажмите «+ Добавить» или загрузите из книги тренера',
                       textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withOpacity(0.7))),
                     const SizedBox(height: 16),
                     AppButton.small(
                       text: '+ Добавить участника',
@@ -513,7 +513,7 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
                     dense: true,
                     leading: CircleAvatar(
                       radius: 16,
-                      backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
+                      backgroundColor: cs.primaryContainer.withOpacity(0.3),
                       child: Text(
                         bib.isNotEmpty ? bib : '${i + 1}',
                         style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.primary),
@@ -523,17 +523,17 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
                       // Drag handle
                       ReorderableDragStartListener(
                         index: i,
-                        child: Icon(Icons.drag_handle, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                        child: Icon(Icons.drag_handle, size: 20, color: cs.onSurfaceVariant.withOpacity(0.4)),
                       ),
                       // Редактировать
                       IconButton(
-                        icon: Icon(Icons.edit_outlined, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+                        icon: Icon(Icons.edit_outlined, size: 18, color: cs.onSurfaceVariant.withOpacity(0.6)),
                         visualDensity: VisualDensity.compact,
                         onPressed: () => _editEntry(i),
                       ),
                       // Удалить
                       IconButton(
-                        icon: Icon(Icons.close, size: 18, color: cs.error.withValues(alpha: 0.7)),
+                        icon: Icon(Icons.close, size: 18, color: cs.error.withOpacity(0.7)),
                         visualDensity: VisualDensity.compact,
                         onPressed: () => _removeEntry(i),
                       ),

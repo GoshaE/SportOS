@@ -87,7 +87,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
       body: session == null
           // ── Нет активной сессии ──
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.assignment_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              Icon(Icons.assignment_outlined, size: 64, color: cs.onSurfaceVariant.withOpacity(0.3)),
               const SizedBox(height: 16),
               Text('Протоколы пока не сформированы', style: theme.textTheme.titleMedium?.copyWith(color: cs.onSurfaceVariant)),
               const SizedBox(height: 8),
@@ -108,7 +108,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
               children: [
                 // ── Multi-day + Дисциплины ──
                 Container(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+                  color: cs.surfaceContainerHighest.withOpacity(0.3),
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                     if (_totalDays > 1) ...[
@@ -171,7 +171,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: cs.primaryContainer.withValues(alpha: 0.15),
+                      color: cs.primaryContainer.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Row(children: [
@@ -227,7 +227,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
             SliverFillRemaining(
               hasScrollBody: false,
               child: Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                Icon(Icons.hourglass_empty, size: 48, color: cs.onSurfaceVariant.withOpacity(0.3)),
                 const SizedBox(height: 8),
                 Text('Ожидание результатов...', style: TextStyle(color: cs.onSurfaceVariant)),
               ])),
@@ -241,9 +241,9 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
               child: Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest.withValues(alpha: 0.25),
+                  color: cs.surfaceContainerHighest.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                  border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
                 ),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Подписи', style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.bold, color: cs.onSurfaceVariant)),
@@ -275,14 +275,14 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [cs.primary.withValues(alpha: 0.08), cs.primary.withValues(alpha: 0.02)]),
+        gradient: LinearGradient(colors: [cs.primary.withOpacity(0.08), cs.primary.withOpacity(0.02)]),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
+        border: Border.all(color: cs.primary.withOpacity(0.3)),
       ),
       child: Row(children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.12), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: cs.primary.withOpacity(0.12), shape: BoxShape.circle),
           child: Icon(Icons.verified, color: cs.primary, size: 20),
         ),
         const SizedBox(width: 12),
@@ -308,14 +308,14 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        gradient: LinearGradient(colors: [cs.tertiary.withValues(alpha: 0.08), cs.tertiary.withValues(alpha: 0.02)]),
+        gradient: LinearGradient(colors: [cs.tertiary.withOpacity(0.08), cs.tertiary.withOpacity(0.02)]),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.tertiary.withValues(alpha: 0.3)),
+        border: Border.all(color: cs.tertiary.withOpacity(0.3)),
       ),
       child: Row(children: [
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: cs.tertiary.withValues(alpha: 0.12), shape: BoxShape.circle),
+          decoration: BoxDecoration(color: cs.tertiary.withOpacity(0.12), shape: BoxShape.circle),
           child: Icon(Icons.hourglass_top, color: cs.tertiary, size: 20),
         ),
         const SizedBox(width: 12),
@@ -339,7 +339,7 @@ class _ProtocolScreenState extends ConsumerState<ProtocolScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [

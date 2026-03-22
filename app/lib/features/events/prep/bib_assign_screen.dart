@@ -138,9 +138,9 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: cs.primary.withValues(alpha: 0.05),
+                color: cs.primary.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+                border: Border.all(color: cs.primary.withOpacity(0.2)),
               ),
               child: Column(children: [
                 Row(children: [
@@ -206,9 +206,9 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
             SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(children: [
               ChoiceChip(label: const Text('Все'), selected: _filter == 'all', onSelected: (_) => setState(() => _filter = 'all')),
               const SizedBox(width: 8),
-              ChoiceChip(label: Text('Без номера', style: TextStyle(color: cs.tertiary)), selected: _filter == 'unassigned', onSelected: (_) => setState(() => _filter = 'unassigned'), selectedColor: cs.tertiary.withValues(alpha: 0.2)),
+              ChoiceChip(label: Text('Без номера', style: TextStyle(color: cs.tertiary)), selected: _filter == 'unassigned', onSelected: (_) => setState(() => _filter = 'unassigned'), selectedColor: cs.tertiary.withOpacity(0.2)),
               const SizedBox(width: 8),
-              ChoiceChip(label: Text('С номером', style: TextStyle(color: cs.primary)), selected: _filter == 'assigned', onSelected: (_) => setState(() => _filter = 'assigned'), selectedColor: cs.primary.withValues(alpha: 0.2)),
+              ChoiceChip(label: Text('С номером', style: TextStyle(color: cs.primary)), selected: _filter == 'assigned', onSelected: (_) => setState(() => _filter = 'assigned'), selectedColor: cs.primary.withOpacity(0.2)),
             ])),
           ]),
         ),
@@ -382,7 +382,7 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
       const SizedBox(height: 12),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.05), borderRadius: BorderRadius.circular(8)),
+        decoration: BoxDecoration(color: cs.primary.withOpacity(0.05), borderRadius: BorderRadius.circular(8)),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text('Свободных номеров: ${free.length}', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
           Text('Начиная с: $_startBib', style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
@@ -406,8 +406,8 @@ class _BibAssignScreenState extends ConsumerState<BibAssignScreen> {
             borderRadius: BorderRadius.circular(8),
             child: Container(
               decoration: BoxDecoration(
-                color: Theme.of(context).cardColor, border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
-                borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: cs.primary.withValues(alpha: 0.08), blurRadius: 4, offset: const Offset(0, 2))],
+                color: Theme.of(context).cardColor, border: Border.all(color: cs.primary.withOpacity(0.3)),
+                borderRadius: BorderRadius.circular(8), boxShadow: [BoxShadow(color: cs.primary.withOpacity(0.08), blurRadius: 4, offset: const Offset(0, 2))],
               ),
               child: Center(child: Text(strNum, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: cs.primary))),
             ),

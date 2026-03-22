@@ -78,12 +78,12 @@ class AppSettingsTile extends StatelessWidget {
             if (badge != null) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(6)),
+                decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
                 child: Text(badge, style: TextStyle(fontSize: 12, color: cs.primary, fontWeight: FontWeight.w600)),
               ),
               const SizedBox(width: 4),
             ],
-            Icon(trailing, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+            Icon(trailing, size: 18, color: cs.onSurfaceVariant.withOpacity(0.4)),
           ]),
         ),
       );

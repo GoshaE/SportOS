@@ -53,7 +53,7 @@ class AppMenuGroup extends StatelessWidget {
               leading: Container(
                 width: 36, height: 36,
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.1),
+                  color: color.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(item.icon, color: color, size: 20),
@@ -65,7 +65,7 @@ class AppMenuGroup extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.1),
+                      color: color.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -79,7 +79,7 @@ class AppMenuGroup extends StatelessWidget {
               onTap: item.onTap,
             ),
             if (!isLast)
-              Divider(height: 1, indent: 60, endIndent: 16, color: cs.outlineVariant.withValues(alpha: 0.3)),
+              Divider(height: 1, indent: 60, endIndent: 16, color: cs.outlineVariant.withOpacity(0.3)),
           ]);
         }),
         const SizedBox(height: 4),

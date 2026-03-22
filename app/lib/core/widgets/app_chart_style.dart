@@ -24,7 +24,7 @@ class AppChartStyle {
   Color get surface => cs.surface;
   Color get onSurface => cs.onSurface;
   Color get muted => cs.onSurfaceVariant;
-  Color get gridColor => cs.outlineVariant.withValues(alpha: 0.3);
+  Color get gridColor => cs.outlineVariant.withOpacity(0.3);
 
   /// Preset palette for multi-series charts
   List<Color> get palette => [
@@ -117,7 +117,7 @@ class AppChartStyle {
   LinearGradient lineGradient(Color color) => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: [color.withValues(alpha: 0.3), color.withValues(alpha: 0.0)],
+    colors: [color.withOpacity(0.3), color.withOpacity(0.0)],
   );
 
   static Widget chartCard({

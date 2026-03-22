@@ -146,7 +146,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             margin: const EdgeInsets.only(right: 4),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: cs.errorContainer.withValues(alpha: 0.15),
+              color: cs.errorContainer.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Text(
@@ -160,7 +160,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
             decoration: BoxDecoration(
-              color: cs.primaryContainer.withValues(alpha: 0.15),
+              color: cs.primaryContainer.withOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Row(mainAxisSize: MainAxisSize.min, children: [

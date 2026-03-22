@@ -161,9 +161,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
           leading: Container(
             width: 40, height: 40,
             decoration: BoxDecoration(
-              color: emojiBgColor.withValues(alpha: 0.15),
+              color: emojiBgColor.withOpacity(0.15),
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: emojiBgColor.withValues(alpha: 0.3)),
+              border: Border.all(color: emojiBgColor.withOpacity(0.3)),
             ),
             child: Center(
               child: isDnf 
@@ -186,7 +186,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
           trailing: Container(
             padding: const EdgeInsets.all(6),
             decoration: BoxDecoration(
-              color: theme.colorScheme.surface.withValues(alpha: 0.5),
+              color: theme.colorScheme.surface.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(Icons.chevron_right, size: 16, color: theme.colorScheme.onSurfaceVariant),
@@ -207,9 +207,9 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.15),
+                color: color.withOpacity(0.15),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: color.withValues(alpha: 0.3)),
+                border: Border.all(color: color.withOpacity(0.3)),
               ),
               child: Icon(Icons.emoji_events, color: color, size: 20),
             ),
@@ -227,7 +227,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.5), 
+                color: theme.colorScheme.surfaceContainerHighest.withOpacity(0.5), 
                 borderRadius: BorderRadius.circular(8)
               ),
               child: Text(time, style: TextStyle(fontWeight: FontWeight.w900, color: theme.colorScheme.onSurface, fontSize: 16, fontFeatures: const [FontFeature.tabularFigures()])),
@@ -258,7 +258,7 @@ class _MyResultsScreenState extends State<MyResultsScreen> with SingleTickerProv
           FractionallySizedBox(widthFactor: ratio.clamp(0, 1), child: Container(
             height: 12,
             decoration: BoxDecoration(
-              color: isBest ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+              color: isBest ? Theme.of(context).colorScheme.primary : Theme.of(context).colorScheme.primary.withOpacity(0.5),
               borderRadius: BorderRadius.circular(3),
             ),
           )),

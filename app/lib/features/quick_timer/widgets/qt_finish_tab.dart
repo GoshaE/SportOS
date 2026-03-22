@@ -71,7 +71,7 @@ class QtFinishTab extends ConsumerWidget {
     if (session.athletes.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.timer_off_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+          Icon(Icons.timer_off_outlined, size: 64, color: cs.onSurfaceVariant.withOpacity(0.3)),
           const SizedBox(height: 16),
           Text('Добавьте участников на вкладке «Старт»', style: TextStyle(color: cs.onSurfaceVariant)),
         ]),
@@ -161,8 +161,8 @@ class QtFinishTab extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.1),
-        border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.15))),
+        color: cs.surfaceContainerHighest.withOpacity(0.1),
+        border: Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.15))),
       ),
       child: Column(children: [
         if (isRunning) ...[
@@ -175,7 +175,7 @@ class QtFinishTab extends ConsumerWidget {
             Text('LIVE', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.error)),
           ]),
         ] else
-          Text('00:00.0', style: TextStyle(fontSize: 42, fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, color: cs.onSurfaceVariant.withValues(alpha: 0.3), letterSpacing: 2)),
+          Text('00:00.0', style: TextStyle(fontSize: 42, fontFeatures: const [FontFeature.tabularFigures()], fontWeight: FontWeight.w900, color: cs.onSurfaceVariant.withOpacity(0.3), letterSpacing: 2)),
       ]),
     );
   }

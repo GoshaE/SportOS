@@ -230,7 +230,7 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+            color: const Color(0xFF2E7D32).withOpacity(0.08),
             child: Row(children: [
               const Icon(Icons.check_circle, size: 16, color: Color(0xFF2E7D32)),
               const SizedBox(width: 8),
@@ -263,7 +263,7 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
 
         // Info bar
         if (disc != null) Container(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.3),
+          color: cs.surfaceContainerHighest.withOpacity(0.3),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
           child: Row(children: [
             Icon(Icons.timer, size: 14, color: cs.primary),
@@ -356,7 +356,7 @@ class _StartListScreenState extends ConsumerState<StartListScreen> {
   Widget _stat(String label, String value, Color color) {
     return Column(mainAxisSize: MainAxisSize.min, children: [
       Text(value, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
-      Text(label, style: TextStyle(fontSize: 10, color: color.withValues(alpha: 0.7))),
+      Text(label, style: TextStyle(fontSize: 10, color: color.withOpacity(0.7))),
     ]);
   }
 }

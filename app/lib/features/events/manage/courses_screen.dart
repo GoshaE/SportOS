@@ -31,7 +31,7 @@ class CoursesScreen extends ConsumerWidget {
       ),
       body: courses.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.route, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              Icon(Icons.route, size: 64, color: cs.onSurfaceVariant.withOpacity(0.3)),
               const SizedBox(height: 12),
               Text('Нет трасс', style: TextStyle(fontSize: 16, color: cs.onSurfaceVariant)),
               const SizedBox(height: 4),
@@ -65,7 +65,7 @@ class CoursesScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: cs.primary.withValues(alpha: 0.1),
+                                  color: cs.primary.withOpacity(0.1),
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: Icon(Icons.route, size: 20, color: cs.primary),
@@ -78,7 +78,7 @@ class CoursesScreen extends ConsumerWidget {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                 decoration: BoxDecoration(
-                                  color: cs.secondaryContainer.withValues(alpha: 0.3),
+                                  color: cs.secondaryContainer.withOpacity(0.3),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text('${c.checkpoints.length} КП',
@@ -109,9 +109,9 @@ class CoursesScreen extends ConsumerWidget {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
-                                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                                    color: cs.surfaceContainerHighest.withOpacity(0.5),
                                     borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                                    border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
                                   ),
                                   child: Row(mainAxisSize: MainAxisSize.min, children: [
                                     Icon(Icons.location_on, size: 12, color: cs.primary),
@@ -332,7 +332,7 @@ class CoursesScreen extends ConsumerWidget {
             child: Row(children: [
               Container(
                 width: 28, height: 28,
-                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), shape: BoxShape.circle),
                 child: Center(child: Text('${cp.order}', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary))),
               ),
               const SizedBox(width: 12),
@@ -351,7 +351,7 @@ class CoursesScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: cs.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [

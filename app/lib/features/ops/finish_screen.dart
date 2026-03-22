@@ -132,11 +132,11 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
       label: Text(label, style: TextStyle(fontWeight: selected ? FontWeight.bold : FontWeight.normal, color: selected ? cs.onPrimaryContainer : cs.onSurfaceVariant)),
       selected: selected,
       onSelected: (_) {},
-      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
-      selectedColor: cs.primaryContainer.withValues(alpha: 0.6),
+      backgroundColor: cs.surfaceContainerHighest.withOpacity(0.2),
+      selectedColor: cs.primaryContainer.withOpacity(0.6),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: selected ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.1)),
+        side: BorderSide(color: selected ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.1)),
       ),
       showCheckmark: false,
     );
@@ -283,10 +283,10 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
       labelText: label,
       hintText: hint,
       filled: true,
-      fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.2))),
+      fillColor: cs.surfaceContainerHighest.withOpacity(0.3),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.outlineVariant.withOpacity(0.2))),
       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.primary.withValues(alpha: 0.5), width: 2)),
+      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: cs.primary.withOpacity(0.5), width: 2)),
       isDense: true,
     );
   }
@@ -324,14 +324,14 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             Expanded(
               child: AppCard(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-                backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+                backgroundColor: cs.surfaceContainerHighest.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(12),
                 children: [
                   Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                     Text(session.config.name, style: TextStyle(fontSize: 13, color: cs.onSurface, fontWeight: FontWeight.bold)),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(4)),
+                      decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(4)),
                       child: Text('Мастер Времени', style: TextStyle(fontSize: 10, color: cs.primary, fontWeight: FontWeight.bold)),
                     ),
                   ]),
@@ -341,7 +341,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             const SizedBox(width: 8),
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+              backgroundColor: cs.primaryContainer.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(children: [
@@ -354,7 +354,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             const SizedBox(width: 8),
             AppCard(
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 14),
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
+              backgroundColor: cs.primaryContainer.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
               children: [
                 Row(children: [
@@ -402,8 +402,8 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                   child: AppCard(
                     padding: EdgeInsets.zero,
-                    backgroundColor: assigned ? cs.surfaceContainerHighest.withValues(alpha: 0.15) : cs.tertiaryContainer.withValues(alpha: 0.1),
-                    borderColor: assigned ? cs.outlineVariant.withValues(alpha: 0.15) : cs.tertiary.withValues(alpha: 0.3),
+                    backgroundColor: assigned ? cs.surfaceContainerHighest.withOpacity(0.15) : cs.tertiaryContainer.withOpacity(0.1),
+                    borderColor: assigned ? cs.outlineVariant.withOpacity(0.15) : cs.tertiary.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
                     children: [
                       InkWell(
@@ -414,7 +414,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                           child: Row(children: [
                             Container(
                               width: 32, height: 32,
-                              decoration: BoxDecoration(color: (assigned ? cs.primary : cs.tertiary).withValues(alpha: 0.1), shape: BoxShape.circle),
+                              decoration: BoxDecoration(color: (assigned ? cs.primary : cs.tertiary).withOpacity(0.1), shape: BoxShape.circle),
                               child: Center(child: Text('${index + 1}', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: assigned ? cs.primary : cs.tertiary))),
                             ),
                             const SizedBox(width: 12),
@@ -426,7 +426,7 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
                                   Row(children: [
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
+                                      decoration: BoxDecoration(color: cs.surface.withOpacity(0.5), borderRadius: BorderRadius.circular(4)),
                                       child: Text('BIB ${mark.bib}', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: cs.onSurfaceVariant)),
                                     ),
                                     const SizedBox(width: 8),
@@ -454,16 +454,16 @@ class _FinishScreenState extends ConsumerState<FinishScreen> {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
             child: AppCard(
               padding: EdgeInsets.zero,
-              backgroundColor: cs.errorContainer.withValues(alpha: 0.1),
-              borderColor: cs.error.withValues(alpha: 0.3),
+              backgroundColor: cs.errorContainer.withOpacity(0.1),
+              borderColor: cs.error.withOpacity(0.3),
               borderRadius: BorderRadius.circular(24),
               children: [
                 Material(
                   color: Colors.transparent,
                   child: InkWell(
                     onTap: _addMark,
-                    splashColor: cs.error.withValues(alpha: 0.2),
-                    highlightColor: cs.error.withValues(alpha: 0.1),
+                    splashColor: cs.error.withOpacity(0.2),
+                    highlightColor: cs.error.withOpacity(0.1),
                     child: Container(
                       width: double.infinity,
                       height: 120,

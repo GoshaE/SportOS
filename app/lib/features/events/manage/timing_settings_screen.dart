@@ -129,7 +129,7 @@ class TimingSettingsScreen extends ConsumerWidget {
                   width: 36, height: 36,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: p.isDsq ? cs.error.withValues(alpha: 0.15) : cs.tertiary.withValues(alpha: 0.15),
+                    color: p.isDsq ? cs.error.withOpacity(0.15) : cs.tertiary.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(p.code, style: TextStyle(

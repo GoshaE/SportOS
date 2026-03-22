@@ -64,7 +64,7 @@ class AppCachedImage extends StatelessWidget {
                     value: loadingProgress.expectedTotalBytes != null
                         ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
                         : null,
-                    color: cs.primary.withValues(alpha: 0.5),
+                    color: cs.primary.withOpacity(0.5),
                   ),
                 ),
               );
@@ -94,14 +94,14 @@ class AppCachedImage extends StatelessWidget {
       width: width,
       height: height,
       decoration: BoxDecoration(
-        color: placeholderBackgroundColor ?? cs.surfaceContainerHighest.withValues(alpha: 0.5),
+        color: placeholderBackgroundColor ?? cs.surfaceContainerHighest.withOpacity(0.5),
         borderRadius: borderRadius ?? BorderRadius.circular(12),
       ),
       child: Center(
         child: Icon(
           placeholderIcon,
           size: placeholderIconSize,
-          color: placeholderColor ?? cs.onSurfaceVariant.withValues(alpha: 0.4),
+          color: placeholderColor ?? cs.onSurfaceVariant.withOpacity(0.4),
         ),
       ),
     );

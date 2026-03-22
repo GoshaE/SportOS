@@ -40,7 +40,7 @@ class AppAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final bgColor = backgroundColor ?? cs.primary.withValues(alpha: 0.15);
+    final bgColor = backgroundColor ?? cs.primary.withOpacity(0.15);
     final textColor = cs.primary;
     final fontSize = size * 0.35;
 

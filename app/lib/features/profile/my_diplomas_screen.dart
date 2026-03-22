@@ -47,9 +47,9 @@ class _MyDiplomasScreenState extends State<MyDiplomasScreen> {
           final d = _diplomas[i];
           final place = d['place'] as String;
           Color medalColor = Theme.of(context).colorScheme.surfaceContainerHighest;
-          if (place == '1') medalColor = AppColors.gold.withValues(alpha: 0.2);
-          if (place == '2') medalColor = AppColors.silver.withValues(alpha: 0.2);
-          if (place == '3') medalColor = AppColors.bronze.withValues(alpha: 0.2);
+          if (place == '1') medalColor = AppColors.gold.withOpacity(0.2);
+          if (place == '2') medalColor = AppColors.silver.withOpacity(0.2);
+          if (place == '3') medalColor = AppColors.bronze.withOpacity(0.2);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0),
@@ -106,9 +106,9 @@ class _MyDiplomasScreenState extends State<MyDiplomasScreen> {
           width: double.infinity,
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: medalColor.withValues(alpha: 0.1),
+            color: medalColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: medalColor.withValues(alpha: 0.3), width: 2),
+            border: Border.all(color: medalColor.withOpacity(0.3), width: 2),
           ),
           child: Column(
             children: [

@@ -47,7 +47,7 @@ class FinancesPromosTab extends ConsumerWidget {
             child: Padding(
               padding: const EdgeInsets.all(32.0),
               child: Column(children: [
-                Icon(Icons.local_offer, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.5)),
+                Icon(Icons.local_offer, size: 48, color: cs.onSurfaceVariant.withOpacity(0.5)),
                 const SizedBox(height: 16),
                 Text('Нет промокодов', style: TextStyle(color: cs.onSurfaceVariant)),
               ]),
@@ -66,20 +66,20 @@ class FinancesPromosTab extends ConsumerWidget {
               padding: const EdgeInsets.only(bottom: 12),
               child: AppCard(
                 padding: EdgeInsets.zero,
-                backgroundColor: promo.isActive ? null : cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                borderColor: promo.isActive ? promoColor.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3),
+                backgroundColor: promo.isActive ? null : cs.surfaceContainerHighest.withOpacity(0.3),
+                borderColor: promo.isActive ? promoColor.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.3),
                 children: [
                   Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: promo.isActive ? promoColor.withValues(alpha: 0.05) : null,
-                        border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.4))),
+                        color: promo.isActive ? promoColor.withOpacity(0.05) : null,
+                        border: Border(bottom: BorderSide(color: cs.outlineVariant.withOpacity(0.4))),
                       ),
                       child: Row(children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          decoration: BoxDecoration(color: promoColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                          decoration: BoxDecoration(color: promoColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                           child: Text(promo.code, style: TextStyle(fontWeight: FontWeight.w800, fontFeatures: const [FontFeature.tabularFigures()], fontSize: 16, letterSpacing: 1.5, color: promo.isActive ? promoColor : cs.outline)),
                         ),
                         const SizedBox(width: 12),

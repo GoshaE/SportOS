@@ -61,9 +61,9 @@ class BibPoolScreen extends ConsumerWidget {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: cs.errorContainer.withValues(alpha: 0.3),
+                      color: cs.errorContainer.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: cs.error.withValues(alpha: 0.3)),
+                      border: Border.all(color: cs.error.withOpacity(0.3)),
                     ),
                     child: Row(children: [
                       Icon(Icons.warning_amber, color: cs.error, size: 20),
@@ -134,7 +134,7 @@ class BibPoolScreen extends ConsumerWidget {
         Container(
           width: 80, height: 80,
           decoration: BoxDecoration(
-            color: cs.primaryContainer.withValues(alpha: 0.3),
+            color: cs.primaryContainer.withOpacity(0.3),
             shape: BoxShape.circle,
           ),
           child: Icon(Icons.confirmation_number_outlined, size: 40, color: cs.primary),
@@ -160,7 +160,7 @@ class BibPoolScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: isGood ? const Color(0xFF2E7D32).withValues(alpha: 0.08) : cs.surfaceContainerHighest,
+        color: isGood ? const Color(0xFF2E7D32).withOpacity(0.08) : cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -337,7 +337,7 @@ class _BibRangeBar extends StatelessWidget {
       Container(
         height: 40,
         decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+          color: cs.surfaceContainerHighest.withOpacity(0.5),
           borderRadius: BorderRadius.circular(8),
         ),
         child: LayoutBuilder(builder: (context, constraints) {
@@ -359,7 +359,7 @@ class _BibRangeBar extends StatelessWidget {
                   message: '${pool.label}: ${pool.rangeStart}–${pool.rangeEnd} (${pool.capacity} шт)',
                   child: Container(
                     decoration: BoxDecoration(
-                      color: color.withValues(alpha: 0.85),
+                      color: color.withOpacity(0.85),
                       borderRadius: BorderRadius.circular(6),
                       border: overlaps.any((o) => o.$1 == pool.label || o.$2 == pool.label)
                           ? Border.all(color: cs.error, width: 2)
@@ -414,11 +414,11 @@ class _PoolCard extends StatelessWidget {
         color: cs.surface,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: hasOverlap ? cs.error.withValues(alpha: 0.5) : color.withValues(alpha: 0.3),
+          color: hasOverlap ? cs.error.withOpacity(0.5) : color.withOpacity(0.3),
           width: hasOverlap ? 2 : 1,
         ),
         boxShadow: [
-          BoxShadow(color: color.withValues(alpha: 0.06), blurRadius: 8, offset: const Offset(0, 2)),
+          BoxShadow(color: color.withOpacity(0.06), blurRadius: 8, offset: const Offset(0, 2)),
         ],
       ),
       child: Column(children: [
@@ -426,7 +426,7 @@ class _PoolCard extends StatelessWidget {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
           decoration: BoxDecoration(
-            color: color.withValues(alpha: 0.08),
+            color: color.withOpacity(0.08),
             borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
           ),
           child: Row(children: [
@@ -443,7 +443,7 @@ class _PoolCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                 decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
+                  color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(mainAxisSize: MainAxisSize.min, children: [
@@ -490,7 +490,7 @@ class _PoolCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
+                color: color.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
@@ -545,7 +545,7 @@ class _RangeStepper extends StatelessWidget {
           constraints: const BoxConstraints(minWidth: 44),
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
           decoration: BoxDecoration(
-            border: Border.all(color: color.withValues(alpha: 0.3)),
+            border: Border.all(color: color.withOpacity(0.3)),
             borderRadius: BorderRadius.circular(6),
           ),
           child: Text(

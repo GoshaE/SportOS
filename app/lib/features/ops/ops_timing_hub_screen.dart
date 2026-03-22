@@ -103,7 +103,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
             return Padding(
               padding: const EdgeInsets.all(24),
               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.people_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant.withValues(alpha: 0.3)),
+                Icon(Icons.people_outline, size: 48, color: Theme.of(context).colorScheme.onSurfaceVariant.withOpacity(0.3)),
                 const SizedBox(height: 12),
                 Text(
                   'Нет участников для текущей дисциплины.\nДобавьте через Excel или вручную на странице Участники.',
@@ -204,11 +204,11 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
                       )),
                       selected: isSelected,
                       onSelected: (_) => _switchDiscipline(d.id),
-                      selectedColor: cs.primaryContainer.withValues(alpha: 0.6),
+                      selectedColor: cs.primaryContainer.withOpacity(0.6),
                       showCheckmark: false,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(color: isSelected ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.15)),
+                        side: BorderSide(color: isSelected ? cs.primary.withOpacity(0.3) : cs.outlineVariant.withOpacity(0.15)),
                       ),
                     ),
                   );
@@ -222,8 +222,8 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
           if (session != null) ...[
             AppCard(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
-              borderColor: cs.primary.withValues(alpha: 0.2),
+              backgroundColor: cs.primaryContainer.withOpacity(0.15),
+              borderColor: cs.primary.withOpacity(0.2),
               borderRadius: BorderRadius.circular(14),
               children: [
                 Row(children: [
@@ -293,7 +293,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
   Widget _buildAthleteSection(ColorScheme cs, ThemeData theme, RaceSessionState? session, int athleteCount) {
     return AppCard(
       padding: const EdgeInsets.all(14),
-      backgroundColor: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+      backgroundColor: cs.surfaceContainerHighest.withOpacity(0.15),
       borderRadius: BorderRadius.circular(14),
       children: [
         Row(children: [
@@ -365,7 +365,7 @@ class _OpsTimingHubScreenState extends ConsumerState<OpsTimingHubScreen> {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: color.withValues(alpha: 0.1), shape: BoxShape.circle),
+                decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
                 child: Icon(icon, color: color, size: 28),
               ),
               const SizedBox(width: 16),

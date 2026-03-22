@@ -271,7 +271,7 @@ class AppButton extends StatelessWidget {
 
   Widget _buildFilled(ColorScheme cs, Color bg, Color fg) {
     Color bgColor = backgroundColor ?? bg;
-    if (onPressed == null) bgColor = cs.onSurface.withValues(alpha: 0.12);
+    if (onPressed == null) bgColor = cs.onSurface.withOpacity(0.12);
 
     return FilledButton.icon(
       style: FilledButton.styleFrom(
@@ -293,7 +293,7 @@ class AppButton extends StatelessWidget {
       style: OutlinedButton.styleFrom(
         foregroundColor: cs.primary,
         side: BorderSide(
-            color: cs.outlineVariant.withValues(alpha: 0.3), width: 1),
+            color: cs.outlineVariant.withOpacity(0.3), width: 1),
         shape: const StadiumBorder(),
         padding: _padding,
         textStyle: TextStyle(fontSize: _fontSize, fontWeight: _fontWeight),

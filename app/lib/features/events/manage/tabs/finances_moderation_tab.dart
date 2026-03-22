@@ -109,7 +109,7 @@ class _FinancesModerationTabState extends State<FinancesModerationTab> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                color: cs.surfaceContainerHighest.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
@@ -237,7 +237,7 @@ class _FinancesModerationTabState extends State<FinancesModerationTab> {
                         const SizedBox(height: 4),
                         Text(item['description'], style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13)),
                         const SizedBox(height: 4),
-                        Text(item['date'], style: TextStyle(color: cs.onSurfaceVariant.withValues(alpha: 0.8), fontSize: 11)),
+                        Text(item['date'], style: TextStyle(color: cs.onSurfaceVariant.withOpacity(0.8), fontSize: 11)),
                         
                         const SizedBox(height: 8),
                         // Кнопка для открытия модалки

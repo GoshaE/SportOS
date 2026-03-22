@@ -61,7 +61,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 final n = filtered[i];
                 final bool read = n['read'] as bool;
                 return ListTile(
-                  leading: CircleAvatar(backgroundColor: cs.primaryContainer.withValues(alpha: 0.4), child: Icon(n['icon'] as IconData, color: cs.primary, size: 20)),
+                  leading: CircleAvatar(backgroundColor: cs.primaryContainer.withOpacity(0.4), child: Icon(n['icon'] as IconData, color: cs.primary, size: 20)),
                   title: Text(n['title'] as String, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: read ? FontWeight.normal : FontWeight.bold)),
                   subtitle: Text(n['sub'] as String, style: Theme.of(context).textTheme.bodySmall),
                   trailing: Column(mainAxisAlignment: MainAxisAlignment.center, children: [

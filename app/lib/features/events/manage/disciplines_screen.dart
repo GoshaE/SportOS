@@ -41,7 +41,7 @@ class DisciplinesScreen extends ConsumerWidget {
           return Chip(
             avatar: Text(info.icon),
             label: Text('${info.label} (${e.value.length})'),
-            backgroundColor: info.color.withValues(alpha: 0.1),
+            backgroundColor: info.color.withOpacity(0.1),
           );
         }).toList()),
         const SizedBox(height: 8),
@@ -104,7 +104,7 @@ class DisciplinesScreen extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: cs.primaryContainer.withValues(alpha: 0.12),
+              color: cs.primaryContainer.withOpacity(0.12),
               borderRadius: BorderRadius.circular(14),
             ),
             child: Column(children: [
@@ -127,7 +127,7 @@ class DisciplinesScreen extends ConsumerWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                 child: Text('= $totalKm км', textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: cs.primary)),
               ),
@@ -143,7 +143,7 @@ class DisciplinesScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: cs.secondaryContainer.withValues(alpha: 0.12),
+                color: cs.secondaryContainer.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -176,9 +176,9 @@ class DisciplinesScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                          color: cs.surfaceContainerHighest.withOpacity(0.5),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+                          border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
                         ),
                         child: Text(cp.name, style: const TextStyle(fontSize: 10)),
                       ),
@@ -218,9 +218,9 @@ class DisciplinesScreen extends ConsumerWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: cs.primaryContainer.withValues(alpha: 0.1),
+                color: cs.primaryContainer.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: cs.primary.withValues(alpha: 0.2)),
+                border: Border.all(color: cs.primary.withOpacity(0.2)),
               ),
               child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Row(children: [
@@ -437,7 +437,7 @@ class DisciplinesScreen extends ConsumerWidget {
                   if (tmpl.defaultPriceRub != null)
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.2), borderRadius: BorderRadius.circular(6)),
+                      decoration: BoxDecoration(color: cs.primaryContainer.withOpacity(0.2), borderRadius: BorderRadius.circular(6)),
                       child: Text('${tmpl.defaultPriceRub}₽', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: cs.primary)),
                     ),
                   const SizedBox(width: 4),
@@ -475,7 +475,7 @@ class DisciplinesScreen extends ConsumerWidget {
           // Template badge
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: cs.primaryContainer.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Text(tmpl.emoji ?? '🏁', style: const TextStyle(fontSize: 16)),
               const SizedBox(width: 6),
@@ -495,7 +495,7 @@ class DisciplinesScreen extends ConsumerWidget {
           _editSection(cs, 'Дистанция', Icons.straighten),
           Container(
             padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(color: cs.primaryContainer.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: cs.primaryContainer.withOpacity(0.12), borderRadius: BorderRadius.circular(14)),
             child: Column(children: [
               Row(children: [
                 Expanded(child: AppTextField(
@@ -516,7 +516,7 @@ class DisciplinesScreen extends ConsumerWidget {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(color: cs.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: cs.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                 child: Text('= $totalKm км', textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: cs.primary)),
               ),
@@ -654,9 +654,9 @@ class DisciplinesScreen extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: cs.secondaryContainer.withValues(alpha: 0.08),
+        color: cs.secondaryContainer.withOpacity(0.08),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.3)),
       ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -764,7 +764,7 @@ class _DisciplineCard extends StatelessWidget {
                 Container(
                   width: 38, height: 38,
                   decoration: BoxDecoration(
-                    color: sportColor.withValues(alpha: 0.1),
+                    color: sportColor.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Icon(
@@ -788,7 +788,7 @@ class _DisciplineCard extends StatelessWidget {
                 if (d.priceRub != null)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(color: sportColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: sportColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
                     child: Text('${d.priceRub}₽', style: TextStyle(fontSize: 13, color: sportColor, fontWeight: FontWeight.bold)),
                   ),
               ]),
@@ -810,7 +810,7 @@ class _DisciplineCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                   decoration: BoxDecoration(
-                    color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
+                    color: cs.surfaceContainerHighest.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(c, style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),

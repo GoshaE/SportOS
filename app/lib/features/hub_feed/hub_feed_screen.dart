@@ -262,7 +262,7 @@ class _SeriesCard extends StatelessWidget {
                         gradient: LinearGradient(
                           colors: [
                             cs.primaryContainer,
-                            cs.primary.withValues(alpha: 0.15),
+                            cs.primary.withOpacity(0.15),
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
