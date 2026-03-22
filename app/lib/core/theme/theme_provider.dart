@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
 
 // ═══════════════════════════════════════
 // ARCHITECTURE:
@@ -146,12 +150,11 @@ class AccentColor {
 }
 
 final accentColors = <AccentColor>[
-  const AccentColor(id: 'zinc',    name: 'Цинк',       color: Color(0xFF18181B), darkVariant: Color(0xFFA1A1AA)),  // zinc-400 (visible on dark bg)
+  const AccentColor(id: 'green',   name: 'Зелёный',    color: Color(0xFF15803D), darkVariant: Color(0xFF22C55E)),   // green-700 → green-500
   const AccentColor(id: 'blue',    name: 'Синий',       color: Color(0xFF1D4ED8), darkVariant: Color(0xFF3B82F6)),   // blue-700 → blue-500
   const AccentColor(id: 'violet',  name: 'Фиолетовый', color: Color(0xFF6D28D9), darkVariant: Color(0xFF8B5CF6)),   // violet-700 → violet-500
   const AccentColor(id: 'rose',    name: 'Роза',        color: Color(0xFFBE123C), darkVariant: Color(0xFFF43F5E)),   // rose-700 → rose-500
   const AccentColor(id: 'orange',  name: 'Оранжевый',  color: Color(0xFFC2410C), darkVariant: Color(0xFFF97316)),   // orange-700 → orange-500
-  const AccentColor(id: 'green',   name: 'Зелёный',    color: Color(0xFF15803D), darkVariant: Color(0xFF22C55E)),   // green-700 → green-500
   const AccentColor(id: 'yellow',  name: 'Жёлтый',     color: Color(0xFFA16207), darkVariant: Color(0xFFEAB308)),   // yellow-700 → yellow-500
 ];
 
@@ -241,7 +244,7 @@ class ThemeState {
   const ThemeState({
     this.mode = ThemeMode.system,
     this.presetId = 'zinc',
-    this.accentId = 'zinc',
+    this.accentId = 'green',
   });
 
   BasePreset get preset => getPresetById(presetId);
@@ -270,13 +273,69 @@ class ThemeState {
 final themeProvider = NotifierProvider<ThemeNotifier, ThemeState>(ThemeNotifier.new);
 
 class ThemeNotifier extends Notifier<ThemeState> {
-  @override
-  ThemeState build() => const ThemeState();
+  static const _fileName = 'theme_settings.json';
 
-  void setMode(ThemeMode mode) => state = state.copyWith(mode: mode);
-  void setPreset(String id) => state = state.copyWith(presetId: id);
-  void setAccent(String id) => state = state.copyWith(accentId: id);
+  @override
+  ThemeState build() {
+    // Загружаем сохранённые настройки асинхронно
+    _load();
+    return const ThemeState();
+  }
+
+  void setMode(ThemeMode mode) {
+    state = state.copyWith(mode: mode);
+    _save();
+  }
+
+  void setPreset(String id) {
+    state = state.copyWith(presetId: id);
+    _save();
+  }
+
+  void setAccent(String id) {
+    state = state.copyWith(accentId: id);
+    _save();
+  }
 
   bool get isDark => state.mode == ThemeMode.dark;
   bool get isSystem => state.mode == ThemeMode.system;
+
+  // ── Persistence ──
+
+  Future<File> get _file async {
+    final dir = await getApplicationSupportDirectory();
+    return File('${dir.path}/$_fileName');
+  }
+
+  Future<void> _load() async {
+    try {
+      final f = await _file;
+      if (!f.existsSync()) return;
+      final json = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+      state = ThemeState(
+        mode: ThemeMode.values.firstWhere(
+          (m) => m.name == json['mode'],
+          orElse: () => ThemeMode.system,
+        ),
+        presetId: json['presetId'] as String? ?? 'zinc',
+        accentId: json['accentId'] as String? ?? 'green',
+      );
+    } catch (_) {
+      // Первый запуск или повреждённый файл — используем дефолты
+    }
+  }
+
+  Future<void> _save() async {
+    try {
+      final f = await _file;
+      final json = jsonEncode({
+        'mode': state.mode.name,
+        'presetId': state.presetId,
+        'accentId': state.accentId,
+      });
+      await f.writeAsString(json);
+    } catch (_) {
+      // Не критично — настройки просто не сохранятся
+    }
+  }
 }
