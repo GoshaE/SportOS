@@ -195,6 +195,23 @@ ColorScheme buildColorScheme({
   final tertiary = neutral.onSurfaceVariant;
   final onTertiary = isDark ? Colors.black : Colors.white;
 
+  // Error containers — must be explicit for dart2js (auto-generated getters
+  // can be mangled by minification / tree-shaking in release web builds).
+  final errorColor = isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626);
+  final errorContainer = isDark
+      ? Color.lerp(errorColor, Colors.black, 0.7)!
+      : Color.lerp(errorColor, Colors.white, 0.85)!;
+  final onErrorContainer = isDark
+      ? Color.lerp(errorColor, Colors.white, 0.6)!
+      : Color.lerp(errorColor, Colors.black, 0.7)!;
+
+  // Surface containers — derive missing tiers from existing palette.
+  final surfaceContainer = Color.lerp(
+    neutral.surfaceContainerLow, neutral.surfaceContainerHigh, 0.5)!;
+  final surfaceContainerLowest = isDark
+      ? Color.lerp(neutral.surface, Colors.black, 0.3)!
+      : Color.lerp(neutral.surface, Colors.white, 0.5)!;
+
   return ColorScheme(
     brightness: brightness,
     primary: primary,
@@ -209,13 +226,17 @@ ColorScheme buildColorScheme({
     onTertiary: onTertiary,
     tertiaryContainer: neutral.surfaceContainerHighest,
     onTertiaryContainer: neutral.onSurface,
-    error: isDark ? const Color(0xFFFCA5A5) : const Color(0xFFDC2626),
+    error: errorColor,
     onError: isDark ? const Color(0xFF7F1D1D) : Colors.white,
+    errorContainer: errorContainer,
+    onErrorContainer: onErrorContainer,
     surface: neutral.surface,
     onSurface: neutral.onSurface,
     onSurfaceVariant: neutral.onSurfaceVariant,
     outline: neutral.outline,
     outlineVariant: neutral.outlineVariant,
+    surfaceContainerLowest: surfaceContainerLowest,
+    surfaceContainer: surfaceContainer,
     surfaceContainerLow: neutral.surfaceContainerLow,
     surfaceContainerHigh: neutral.surfaceContainerHigh,
     surfaceContainerHighest: neutral.surfaceContainerHighest,

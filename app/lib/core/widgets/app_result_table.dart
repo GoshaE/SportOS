@@ -168,7 +168,7 @@ class AppResultTable extends StatelessWidget {
                 border: Border.all(color: cs.primary, width: 2),
                 borderRadius: BorderRadius.circular(14),
               ) : null,
-              child: _CardRow(columns: table.columns, row: row, theme: theme, cs: cs),
+              child: _CardRow(columns: table.columns, row: row),
             ),
           );
         },
@@ -290,21 +290,20 @@ class _TableRow extends StatelessWidget {
 class _CardRow extends StatelessWidget {
   final List<ColumnDef> columns;
   final ResultRow row;
-  final ThemeData theme;
-  final ColorScheme cs;
 
   const _CardRow({
     required this.columns,
     required this.row,
-    required this.theme,
-    required this.cs,
   });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+
     // Обёрнуто в try-catch чтобы не ломать весь экран при ошибке одной карточки
     try {
-      return _buildContent();
+      return _buildContent(theme, cs);
     } catch (e) {
       return Container(
         padding: const EdgeInsets.all(12),
@@ -317,7 +316,7 @@ class _CardRow extends StatelessWidget {
     }
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(ThemeData theme, ColorScheme cs) {
     final place = row.cells['place'];
     final bib = row.cells['bib'];
     final name = row.cells['name'];
@@ -339,7 +338,7 @@ class _CardRow extends StatelessWidget {
         children: [
           // ── Top: place + bib + name + category ──
           Row(children: [
-            SizedBox(width: 30, child: _placeInCard(place)),
+            SizedBox(width: 30, child: _placeInCard(place, theme, cs)),
             if (bib != null) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
@@ -375,18 +374,16 @@ class _CardRow extends StatelessWidget {
           ]),
           const SizedBox(height: 6),
           // ── Bottom: lap chips row ──
-          _buildBottomRow(time),
+          _buildBottomRow(time, cs),
         ],
       ),
     );
   }
 
   /// Bottom section: laps + gap + total time.
-  /// 
-  /// Uses Wrap for all elements to avoid overflow on narrow screens.
-  Widget _buildBottomRow(CellValue? time) {
+  Widget _buildBottomRow(CellValue? time, ColorScheme cs) {
     final gap = row.cells['gap_leader'] ?? row.cells['gap_prev'];
-    final lapChips = _lapChips();
+    final lapChips = _lapChips(cs);
 
     return Row(
       children: [
@@ -413,7 +410,7 @@ class _CardRow extends StatelessWidget {
     );
   }
 
-  Widget _placeInCard(CellValue? cell) {
+  Widget _placeInCard(CellValue? cell, ThemeData theme, ColorScheme cs) {
     if (cell == null) return const SizedBox.shrink();
     if (cell.raw is int) {
       final p = cell.raw as int;
@@ -431,7 +428,7 @@ class _CardRow extends StatelessWidget {
         fontSize: 11));
   }
 
-  List<Widget> _lapChips() {
+  List<Widget> _lapChips(ColorScheme cs) {
     final chips = <Widget>[];
     for (final col in columns) {
       if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
