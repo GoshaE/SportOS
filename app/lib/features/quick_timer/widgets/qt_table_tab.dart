@@ -1,13 +1,14 @@
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sportos_app/core/widgets/widgets.dart';
 
 import '../../../domain/quick_timer/quick_timer_models.dart';
+import '../../../domain/quick_timer/quick_timer_providers.dart';
 import '../../../domain/quick_timer/quick_result_calculator.dart';
 import '../../../domain/timing/result_table.dart';
 import '../../../domain/timing/time_formatter.dart';
 
-class QtTableTab extends StatefulWidget {
+class QtTableTab extends ConsumerStatefulWidget {
   final QuickSession session;
 
   const QtTableTab({
@@ -16,10 +17,10 @@ class QtTableTab extends StatefulWidget {
   });
 
   @override
-  State<QtTableTab> createState() => _QtTableTabState();
+  ConsumerState<QtTableTab> createState() => _QtTableTabState();
 }
 
-class _QtTableTabState extends State<QtTableTab> {
+class _QtTableTabState extends ConsumerState<QtTableTab> {
   bool _showCards = false;
 
   void _showAthleteDetail(BuildContext context, QuickSession session, ResultRow row, ColorScheme cs) {
@@ -166,6 +167,28 @@ class _QtTableTabState extends State<QtTableTab> {
           onRowTap: (row) => _showAthleteDetail(context, widget.session, row, cs),
         ),
       ),
+      if (widget.session.status == QuickSessionStatus.finished)
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: AppButton.primary(
+              text: 'Новый забег',
+              icon: Icons.replay,
+              onPressed: () {
+                AppDialog.confirm(
+                  context,
+                  title: 'Начать новый забег?',
+                  message: 'Текущие результаты сохранены.',
+                ).then((confirm) {
+                  if (confirm == true) {
+                    ref.read(quickSessionProvider.notifier).reset();
+                  }
+                });
+              },
+            ),
+          ),
+        ),
     ]);
   }
 }
