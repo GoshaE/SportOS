@@ -83,13 +83,17 @@ class AppBibTile extends StatelessWidget {
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, fontWeight: FontWeight.bold, color: textColor.withValues(alpha: 0.6), height: 1.0),
                       ),
                     ),
-                  Text(
-                    bib,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      height: 1.0,
-                      fontWeight: FontWeight.w900,
-                      color: textColor,
-                      decoration: decoration,
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      bib,
+                      maxLines: 1,
+                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        height: 1.0,
+                        fontWeight: FontWeight.w900,
+                        color: textColor,
+                        decoration: decoration,
+                      ),
                     ),
                   ),
                   if (name != null)

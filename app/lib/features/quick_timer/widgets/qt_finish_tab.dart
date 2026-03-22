@@ -147,7 +147,15 @@ class QtFinishTab extends ConsumerWidget {
             }
 
             // Имя крупно, BIB мелко (тренеры знают всех в лицо)
-            final displayName = a.name.isNotEmpty ? a.name.split(' ').first : a.bib;
+            String displayName;
+            if (a.name.isNotEmpty) {
+              final parts = a.name.trim().split(RegExp(r'\s+'));
+              displayName = parts.length > 1
+                  ? '${parts[0]} ${parts[1][0]}.'
+                  : parts[0];
+            } else {
+              displayName = a.bib;
+            }
 
             return AppBibTile(
               bib: displayName,
