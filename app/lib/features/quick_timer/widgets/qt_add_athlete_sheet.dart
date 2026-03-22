@@ -84,6 +84,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
     final cs = Theme.of(context).colorScheme;
 
     return Column(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // ── Переключатель (Табы) ──
@@ -138,11 +139,9 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
         ),
 
         // ── Контент вкладок ──
-        Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
-            child: _tabIndex == 0 ? _buildNewTab(cs) : _buildRecentTab(cs),
-          ),
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 250),
+          child: _tabIndex == 0 ? _buildNewTab(cs) : _buildRecentTab(cs),
         ),
       ],
     );
@@ -151,6 +150,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
   Widget _buildNewTab(ColorScheme cs) {
     return Column(
       key: const ValueKey('tab_new'),
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Padding(
@@ -171,7 +171,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
             keyboardType: TextInputType.number,
           ),
         ),
-        const Spacer(),
+        const SizedBox(height: 32),
         SafeArea(
           top: false,
           child: Padding(
@@ -218,6 +218,8 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
 
     return ListView.builder(
       key: const ValueKey('tab_recent_list'),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 40),
       itemCount: list.length,
       itemBuilder: (context, i) {
