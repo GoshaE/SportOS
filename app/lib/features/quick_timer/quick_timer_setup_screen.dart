@@ -465,44 +465,79 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
               ],
             ),
 
-          // ── Список участников (AppUserTile) ──
-          ...List.generate(_entries.length, (i) {
-            final e = _entries[i];
-            final name = e.nameCtrl.text.trim();
-            final bib = e.bibCtrl.text.trim();
-            final displayName = name.isNotEmpty ? name : 'Участник ${i + 1}';
+          // ── Список участников (drag-to-reorder) ──
+          if (_entries.isNotEmpty)
+            ReorderableListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              buildDefaultDragHandles: false,
+              onReorder: (oldIndex, newIndex) {
+                setState(() {
+                  if (newIndex > oldIndex) newIndex--;
+                  final item = _entries.removeAt(oldIndex);
+                  _entries.insert(newIndex, item);
+                });
+              },
+              itemCount: _entries.length,
+              proxyDecorator: (child, index, animation) {
+                return AnimatedBuilder(
+                  animation: animation,
+                  builder: (context, child) {
+                    final elevation = Tween<double>(begin: 0, end: 6).evaluate(animation);
+                    return Material(
+                      elevation: elevation,
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.circular(12),
+                      child: child,
+                    );
+                  },
+                  child: child,
+                );
+              },
+              itemBuilder: (context, i) {
+                final e = _entries[i];
+                final name = e.nameCtrl.text.trim();
+                final bib = e.bibCtrl.text.trim();
+                final displayName = name.isNotEmpty ? name : 'Участник ${i + 1}';
 
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 2),
-              child: AppUserTile(
-                name: displayName,
-                subtitle: 'BIB: ${bib.isNotEmpty ? bib : '—'}',
-                dense: true,
-                leading: CircleAvatar(
-                  radius: 16,
-                  backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
-                  child: Text(
-                    bib.isNotEmpty ? bib : '${i + 1}',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.primary),
+                return Padding(
+                  key: ValueKey(e),
+                  padding: const EdgeInsets.only(bottom: 2),
+                  child: AppUserTile(
+                    name: displayName,
+                    subtitle: '#${i + 1} · BIB: ${bib.isNotEmpty ? bib : '—'}',
+                    dense: true,
+                    leading: CircleAvatar(
+                      radius: 16,
+                      backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
+                      child: Text(
+                        bib.isNotEmpty ? bib : '${i + 1}',
+                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.primary),
+                      ),
+                    ),
+                    trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                      // Drag handle
+                      ReorderableDragStartListener(
+                        index: i,
+                        child: Icon(Icons.drag_handle, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
+                      ),
+                      // Редактировать
+                      IconButton(
+                        icon: Icon(Icons.edit_outlined, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _editEntry(i),
+                      ),
+                      // Удалить
+                      IconButton(
+                        icon: Icon(Icons.close, size: 18, color: cs.error.withValues(alpha: 0.7)),
+                        visualDensity: VisualDensity.compact,
+                        onPressed: () => _removeEntry(i),
+                      ),
+                    ]),
                   ),
-                ),
-                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
-                  // Редактировать
-                  IconButton(
-                    icon: Icon(Icons.edit_outlined, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _editEntry(i),
-                  ),
-                  // Удалить
-                  IconButton(
-                    icon: Icon(Icons.close, size: 18, color: cs.error.withValues(alpha: 0.7)),
-                    visualDensity: VisualDensity.compact,
-                    onPressed: () => _removeEntry(i),
-                  ),
-                ]),
-              ),
-            );
-          }),
+                );
+              },
+            ),
 
           const SizedBox(height: 24),
 
