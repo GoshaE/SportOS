@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -58,7 +57,6 @@ class QtStartTab extends ConsumerWidget {
     if (confirm == true) {
       HapticFeedback.mediumImpact();
       ref.read(quickSessionProvider.notifier).removeAthlete(athleteId);
-      if (context.mounted) AppSnackBar.info(context, '$displayName удалён');
     }
   }
 

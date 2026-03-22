@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -36,11 +35,6 @@ class QtFinishTab extends ConsumerWidget {
       ref.read(quickSessionProvider.notifier).finishSession();
       ref.read(quickSessionProvider.notifier).saveToHistory();
       ref.read(quickHistoryProvider.notifier).refresh();
-      if (context.mounted) {
-        AppSnackBar.success(context, 'Все финишировали! Результаты сохранены.');
-        // Переключение табов делегировано экрану, мы просто показываем снек. 
-        // Экран (QuickTimerScreen) слушает состояние allFinished.
-      }
     } else if (context.mounted) {
       AppSnackBar.withUndo(
         context,
@@ -66,7 +60,6 @@ class QtFinishTab extends ConsumerWidget {
     if (confirm == true) {
       HapticFeedback.mediumImpact();
       ref.read(quickSessionProvider.notifier).undoLastSplit(athleteId);
-      if (context.mounted) AppSnackBar.info(context, 'Отсечка $displayName отменена');
     }
   }
 

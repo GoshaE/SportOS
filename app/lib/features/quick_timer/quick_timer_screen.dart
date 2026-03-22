@@ -91,7 +91,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     ref.read(quickHistoryProvider.notifier).refresh();
     if (mounted) {
       _tabCtrl.animateTo(2);
-      AppSnackBar.success(context, 'Сессия завершена. Результаты сохранены.');
     }
   }
 

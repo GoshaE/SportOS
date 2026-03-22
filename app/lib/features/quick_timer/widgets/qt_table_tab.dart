@@ -126,7 +126,7 @@ class _QtTableTabState extends ConsumerState<QtTableTab> {
     final finished = widget.session.finishedCount;
     final total = widget.session.athletes.length;
     final started = widget.session.startedCount;
-    final onTrack = started - finished;
+    final onTrack = (started - finished).clamp(0, total);
     final waiting = total - started;
 
     return Column(children: [

@@ -113,7 +113,7 @@ class _QtSettingsScreenState extends ConsumerState<QtSettingsScreen> {
                   children: [
                     for (final sec in [15, 30, 45, 60])
                       ChoiceChip(
-                        label: Text('${sec}с'),
+                        label: Text('$secс'),
                         selected: _interval == sec,
                         onSelected: isRunning ? null : (_) {
                           setState(() => _interval = sec);
@@ -208,7 +208,7 @@ class _QtSettingsScreenState extends ConsumerState<QtSettingsScreen> {
                   title: 'Начать новую сессию?',
                   message: 'Текущие результаты сохранены в истории.',
                 ).then((ok) {
-                  if (ok == true && mounted) {
+                  if (ok == true && context.mounted) {
                     ref.read(quickSessionProvider.notifier).reset();
                     Navigator.of(context).pop();
                   }

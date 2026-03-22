@@ -91,7 +91,7 @@ void showQtSettingsSheet(BuildContext context, WidgetRef ref, VoidCallback onRes
               children: [
                 for (final sec in [15, 30, 45, 60])
                   ChoiceChip(
-                    label: Text('${sec}с'),
+                    label: Text('$secс'),
                     selected: interval == sec,
                     onSelected: isRunning ? null : (_) {
                       setSheetState(() => interval = sec);

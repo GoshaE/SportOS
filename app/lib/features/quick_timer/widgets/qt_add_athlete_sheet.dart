@@ -63,7 +63,6 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
       name: name,
       bib: bibCtrl.text.trim(),
     );
-    AppSnackBar.success(context, '$name добавлен');
     Navigator.of(context, rootNavigator: true).pop();
   }
 
@@ -80,7 +79,6 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
       nextBibInt++;
       suffix++;
     }
-    AppSnackBar.success(context, 'Добавлено: ${_selectedRecent.length}');
     Navigator.of(context, rootNavigator: true).pop();
   }
 
