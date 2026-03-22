@@ -298,18 +298,73 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 2c: + monoTiming.copyWith + theme.textTheme.copyWith ──
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final name = row.cells['name']?.display ?? '';
-    final time = row.cells['result_time']?.display ?? '—';
-    final place = row.cells['place']?.display ?? '';
-    final bib = row.cells['bib']?.display ?? '';
-    final gap = row.cells['gap_leader']?.display ??
-                row.cells['gap_prev']?.display ?? '';
+    // ── Extract cell values ──
+    final placeCell = row.cells['place'];
+    final bibCell = row.cells['bib'];
+    final nameDisplay = row.cells['name']?.display ?? '';
+    final timeDisplay = row.cells['result_time']?.display ?? '';
+    final categoryDisplay = row.cells['category']?.display ?? '';
+    final gapDisplay = row.cells['gap_leader']?.display ??
+                        row.cells['gap_prev']?.display ?? '';
 
+    final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
+
+    // ── Time color: leader → primary, DNF/DNS/DSQ → error, else onSurface ──
+    Color timeColor = cs.onSurface;
+    if (placeCell?.raw is int && (placeCell!.raw as int) == 1) {
+      timeColor = cs.primary;
+    } else if (isDnf) {
+      timeColor = cs.error;
+    }
+
+    // ── Place widget ──
+    Widget placeWidget;
+    if (placeCell == null) {
+      placeWidget = const SizedBox.shrink();
+    } else if (placeCell.raw is int) {
+      final p = placeCell.raw as int;
+      if (p >= 1 && p <= 3) {
+        placeWidget = Text(['🥇', '🥈', '🥉'][p - 1], style: const TextStyle(fontSize: 16));
+      } else {
+        placeWidget = Text('$p', textAlign: TextAlign.center,
+          style: theme.textTheme.titleSmall?.copyWith(
+            fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 14));
+      }
+    } else {
+      placeWidget = Text(placeCell.display, textAlign: TextAlign.center,
+        style: theme.textTheme.labelSmall?.copyWith(
+          fontWeight: FontWeight.w700, fontSize: 11,
+          color: placeCell.style == CellStyle.error ? cs.error : cs.onSurfaceVariant));
+    }
+
+    // ── Lap chips ──
+    final lapChips = <Widget>[];
+    for (final col in columns) {
+      if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
+        final cell = row.cells[col.id];
+        if (cell != null && cell.display.isNotEmpty) {
+          final isHighlight = cell.style == CellStyle.highlight;
+          lapChips.add(Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: isHighlight
+                  ? cs.primaryContainer.withOpacity(0.3)
+                  : cs.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text('${col.label}: ${cell.display}',
+              style: AppTypography.monoTiming.copyWith(
+                fontSize: 11,
+                fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w400,
+                color: isHighlight ? cs.primary : cs.onSurfaceVariant)),
+          ));
+        }
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -321,57 +376,51 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row ──
+          // ── Top: place + bib + name + category ──
           Row(children: [
-            SizedBox(width: 28, child: Text(place, textAlign: TextAlign.center,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700))),
-            const SizedBox(width: 6),
-            if (bib.isNotEmpty) ...[
+            SizedBox(width: 30, child: placeWidget),
+            if (bibCell != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(bib, style: theme.textTheme.labelMedium?.copyWith(
-                  color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
+                child: Text(bibCell.display, style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
               ),
               const SizedBox(width: 8),
             ],
-            Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+            Expanded(child: Text(nameDisplay, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleSmall?.copyWith(
-                color: cs.onSurface, fontSize: 14, fontWeight: FontWeight.w600))),
+                fontWeight: FontWeight.w600, fontSize: 14,
+                color: isDnf ? cs.onSurfaceVariant : cs.onSurface))),
+            if (categoryDisplay.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cs.primaryContainer.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(categoryDisplay, style: theme.textTheme.labelSmall?.copyWith(
+                  fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
+              ),
           ]),
           const SizedBox(height: 6),
-          // ── Bottom row ──
+          // ── Bottom: laps + gap + total time ──
           Row(children: [
-            Expanded(child: Wrap(
-              spacing: 4, runSpacing: 3,
-              children: [
-                for (final col in columns)
-                  if (col.id.startsWith('lap') && col.id.endsWith('_time'))
-                    if (row.cells[col.id] != null && row.cells[col.id]!.display.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text('${col.label}: ${row.cells[col.id]!.display}',
-                          style: AppTypography.monoTiming.copyWith(
-                            fontSize: 11, color: cs.onSurfaceVariant)),
-                      ),
-              ],
-            )),
-            if (gap.isNotEmpty) ...[
+            if (lapChips.isNotEmpty)
+              Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: lapChips)),
+            if (lapChips.isEmpty) const Spacer(),
+            if (gapDisplay.isNotEmpty) ...[
               const SizedBox(width: 4),
-              Text(gap, style: AppTypography.monoTiming.copyWith(
+              Text(gapDisplay, style: AppTypography.monoTiming.copyWith(
                 fontSize: 11, color: cs.onSurfaceVariant)),
             ],
             const SizedBox(width: 6),
-            Text(time, style: AppTypography.monoTiming.copyWith(
-              fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
+            Text(timeDisplay.isEmpty ? '—' : timeDisplay,
+              style: AppTypography.monoTiming.copyWith(
+                fontSize: 15, fontWeight: FontWeight.w700, color: timeColor)),
           ]),
         ],
       ),
