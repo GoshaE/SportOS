@@ -22,8 +22,8 @@ class _AddAthleteContent extends ConsumerStatefulWidget {
   ConsumerState<_AddAthleteContent> createState() => _AddAthleteContentState();
 }
 
-class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
-  int _tabIndex = 0; // 0 - Новый, 1 - Недавние
+class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with SingleTickerProviderStateMixin {
+  late final TabController _tabCtrl;
 
   final nameCtrl = TextEditingController();
   final surnameCtrl = TextEditingController();
@@ -36,6 +36,11 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
     final session = ref.read(quickSessionProvider);
     final nextBib = '${(session?.athletes.length ?? 0) + 1}';
     bibCtrl = TextEditingController(text: nextBib);
+
+    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl.addListener(() {
+      if (mounted) setState(() {});
+    });
   }
 
   @override
@@ -43,6 +48,7 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
     nameCtrl.dispose();
     surnameCtrl.dispose();
     bibCtrl.dispose();
+    _tabCtrl.dispose();
     super.dispose();
   }
 
@@ -90,58 +96,16 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> {
         // ── Переключатель (Табы) ──
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-          child: Container(
-            height: 40,
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withValues(alpha: 0.5),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            padding: const EdgeInsets.all(4),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _tabIndex = 0),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: _tabIndex == 0 ? cs.surface : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: _tabIndex == 0
-                            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                            : null,
-                      ),
-                      child: Text('Новый', style: TextStyle(fontWeight: _tabIndex == 0 ? FontWeight.w700 : FontWeight.w500, color: _tabIndex == 0 ? cs.primary : cs.onSurfaceVariant)),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _tabIndex = 1),
-                    behavior: HitTestBehavior.opaque,
-                    child: Container(
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: _tabIndex == 1 ? cs.surface : Colors.transparent,
-                        borderRadius: BorderRadius.circular(8),
-                        boxShadow: _tabIndex == 1
-                            ? [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 4, offset: const Offset(0, 2))]
-                            : null,
-                      ),
-                      child: Text('Недавние', style: TextStyle(fontWeight: _tabIndex == 1 ? FontWeight.w700 : FontWeight.w500, color: _tabIndex == 1 ? cs.primary : cs.onSurfaceVariant)),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+          child: AppPillTabBar(
+            controller: _tabCtrl,
+            tabs: const ['Новый', 'Недавние'],
           ),
         ),
 
         // ── Контент вкладок ──
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),
-          child: _tabIndex == 0 ? _buildNewTab(cs) : _buildRecentTab(cs),
+          child: _tabCtrl.index == 0 ? _buildNewTab(cs) : _buildRecentTab(cs),
         ),
       ],
     );
