@@ -129,27 +129,26 @@ class EventDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                 sliver: SliverList(delegate: SliverChildListDelegate([
 
-                  // 1️⃣ Action chips
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
+                  // 1️⃣ Action grid
+                  GridView.count(
+                    crossAxisCount: 3,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 8,
+                    crossAxisSpacing: 8,
+                    childAspectRatio: 1.15,
                     children: [
-                      _actionChip(context, Icons.settings, 'Управлять', cs.primary,
-                        cs.primaryContainer.withValues(alpha: 0.3), BorderSide(color: cs.primaryContainer),
-                        () => context.push('/manage/$resolvedEventId')),
-                      _actionChip(context, Icons.people, 'Участники', cs.secondary,
-                        cs.secondaryContainer.withValues(alpha: 0.3), BorderSide(color: cs.secondaryContainer),
-                        () => context.push('/hub/event/$resolvedEventId/participants')),
-                      _actionChip(context, Icons.leaderboard, 'Результаты', cs.onSurfaceVariant,
-                        cs.surfaceContainerHighest.withValues(alpha: 0.5), BorderSide.none,
-                        () => context.push('/results/$resolvedEventId/live')),
-                      _actionChip(context, Icons.timer, 'Хронометраж', Colors.deepOrange,
-                        Colors.deepOrange.withValues(alpha: 0.1), BorderSide(color: Colors.deepOrange.withValues(alpha: 0.3)),
-                        () => context.push('/events/$resolvedEventId/timing')),
-                      _actionChip(context, Icons.gavel, 'Судейство', cs.error,
-                        cs.errorContainer.withValues(alpha: 0.25), BorderSide(color: cs.error.withValues(alpha: 0.4)),
-                        () => context.push('/ops/$resolvedEventId/timing')),
-                    ],
+                      _ActionTile(icon: Icons.settings, label: 'Управлять', color: cs.primary,
+                        onTap: () => context.push('/manage/$resolvedEventId')),
+                      _ActionTile(icon: Icons.people, label: 'Участники', color: cs.secondary,
+                        onTap: () => context.push('/hub/event/$resolvedEventId/participants')),
+                      _ActionTile(icon: Icons.leaderboard, label: 'Результаты', color: cs.tertiary,
+                        onTap: () => context.push('/results/$resolvedEventId/live')),
+                      _ActionTile(icon: Icons.timer, label: 'Хронометраж', color: Colors.deepOrange,
+                        onTap: () => context.push('/events/$resolvedEventId/timing')),
+                      _ActionTile(icon: Icons.gavel, label: 'Судейство', color: cs.error,
+                        onTap: () => context.push('/ops/$resolvedEventId/timing')),
+                     ],
                   ),
                   const SizedBox(height: 16),
 
@@ -234,19 +233,6 @@ class EventDetailScreen extends ConsumerWidget {
     );
   }
 
-  Widget _actionChip(BuildContext context, IconData icon, String label, Color color,
-      Color bg, BorderSide side, VoidCallback onPressed) {
-    final theme = Theme.of(context);
-    return ActionChip(
-      avatar: Icon(icon, size: 16, color: color),
-      label: Text(label, style: theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600, color: color)),
-      backgroundColor: bg,
-      side: side,
-      shape: const StadiumBorder(),
-      onPressed: onPressed,
-    );
-  }
-
   String _fmtDate(DateTime d) {
     const months = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
       'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'];
@@ -316,6 +302,55 @@ class EventDetailScreen extends ConsumerWidget {
     StartType.pursuit => Icons.speed,
     StartType.relay => Icons.people,
   };
+}
+
+// ═══════════════════════════════════════
+// Action Tile (grid button)
+// ═══════════════════════════════════════
+class _ActionTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ActionTile({required this.icon, required this.label, required this.color, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Material(
+      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icon, size: 22, color: color),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurface),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 void _showInfoModal(BuildContext context, ColorScheme cs, ThemeData theme, String title, IconData icon, String content) {
