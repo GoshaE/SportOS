@@ -8,6 +8,17 @@ import '../../domain/quick_timer/quick_timer_models.dart';
 import '../../domain/quick_timer/quick_timer_providers.dart';
 
 /// QT1 — Настройка быстрой сессии хронометража.
+///
+/// Используемые компоненты:
+/// - [AppSectionHeader] — заголовки секций с action
+/// - [AppCard] — карточки секций
+/// - [AppInfoBanner] — подсказки по режимам
+/// - [AppUserTile] — строки участников
+/// - [AppTextField] — поля ввода
+/// - [AppSearchBar] — поиск/добавление
+/// - [AppBottomSheet] — модалка добавления + группы
+/// - [AppButton] — кнопки действий
+/// - [AppSnackBar] — уведомления
 class QuickTimerSetupScreen extends ConsumerStatefulWidget {
   const QuickTimerSetupScreen({super.key});
 
@@ -20,19 +31,76 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
   int _laps = 1;
   int _intervalSeconds = 30;
 
-  /// Пары (имя, номер). Минимум 1 строка.
-  final List<_AthleteEntry> _entries = [
-    _AthleteEntry(),
-  ];
+  /// Список участников: (имя, bib).
+  final List<_AthleteEntry> _entries = [];
 
-  void _addEntry() => setState(() => _entries.add(_AthleteEntry()));
+  // ═══════════════════════════════════════
+  // Actions: участники
+  // ═══════════════════════════════════════
 
-  void _removeEntry(int i) {
-    if (_entries.length <= 1) return;
-    setState(() => _entries.removeAt(i));
+  void _addEntry({String name = '', String bib = ''}) {
+    setState(() {
+      final nextBib = bib.isNotEmpty ? bib : '${_entries.length + 1}';
+      _entries.add(_AthleteEntry()
+        ..nameCtrl.text = name
+        ..bibCtrl.text = nextBib);
+    });
   }
 
-  /// Быстрое заполнение номерами 1..N
+  void _removeEntry(int i) {
+    setState(() {
+      _entries[i].nameCtrl.dispose();
+      _entries[i].bibCtrl.dispose();
+      _entries.removeAt(i);
+    });
+  }
+
+  void _showAddAthleteSheet() {
+    final nameCtrl = TextEditingController();
+    final surnameCtrl = TextEditingController();
+    final bibCtrl = TextEditingController(text: '${_entries.length + 1}');
+
+    AppBottomSheet.show(
+      context,
+      title: 'Добавить участника',
+      initialHeight: 0.45,
+      actions: [
+        AppButton.primary(
+          text: 'Добавить',
+          icon: Icons.add,
+          onPressed: () {
+            final name = '${nameCtrl.text.trim()} ${surnameCtrl.text.trim()}'.trim();
+            if (name.isEmpty) {
+              AppSnackBar.info(context, 'Введите имя');
+              return;
+            }
+            final bib = bibCtrl.text.trim();
+            _addEntry(name: name, bib: bib);
+            Navigator.of(context, rootNavigator: true).pop();
+          },
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(child: AppTextField(label: 'Имя', controller: nameCtrl, hintText: 'Алексей', autofocus: true)),
+            const SizedBox(width: 12),
+            Expanded(child: AppTextField(label: 'Фамилия', controller: surnameCtrl, hintText: 'Иванов')),
+          ]),
+          const SizedBox(height: 12),
+          AppTextField(
+            label: 'BIB (номер)',
+            controller: bibCtrl,
+            hintText: '${_entries.length + 1}',
+            keyboardType: TextInputType.number,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Быстрое заполнение пустых BIB и имён.
   void _autoFillBibs() {
     setState(() {
       for (var i = 0; i < _entries.length; i++) {
@@ -44,30 +112,78 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
         }
       }
     });
+    AppSnackBar.success(context, 'Номера и имена заполнены');
   }
+
+  /// Быстрое добавление N пустых строк.
+  void _addMultipleEntries() {
+    final countCtrl = TextEditingController(text: '5');
+    AppBottomSheet.show(
+      context,
+      title: 'Добавить несколько',
+      initialHeight: 0.3,
+      actions: [
+        AppButton.primary(
+          text: 'Добавить',
+          icon: Icons.group_add,
+          onPressed: () {
+            final count = int.tryParse(countCtrl.text.trim()) ?? 0;
+            if (count <= 0 || count > 50) {
+              AppSnackBar.info(context, 'Укажите число от 1 до 50');
+              return;
+            }
+            for (var i = 0; i < count; i++) {
+              _addEntry();
+            }
+            _autoFillBibs();
+            Navigator.of(context, rootNavigator: true).pop();
+          },
+        ),
+      ],
+      child: AppTextField(
+        label: 'Количество участников',
+        controller: countCtrl,
+        hintText: '5',
+        keyboardType: TextInputType.number,
+        autofocus: true,
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // Actions: группы (книга тренера)
+  // ═══════════════════════════════════════
 
   void _loadGroup(SavedGroup group) {
     setState(() {
+      for (final e in _entries) {
+        e.nameCtrl.dispose();
+        e.bibCtrl.dispose();
+      }
       _entries.clear();
       for (final m in group.members) {
         _entries.add(_AthleteEntry()
           ..nameCtrl.text = m.name
           ..bibCtrl.text = m.defaultBib);
       }
-      if (_entries.isEmpty) _entries.add(_AthleteEntry());
     });
     AppSnackBar.success(context, 'Группа «${group.name}» загружена');
   }
 
   void _saveCurrentGroup() {
+    if (_entries.isEmpty) {
+      AppSnackBar.info(context, 'Добавьте участников');
+      return;
+    }
     final nameCtrl = TextEditingController();
     AppBottomSheet.show(
       context,
-      title: 'Сохранить группу',
+      title: 'Сохранить как группу',
       initialHeight: 0.35,
       actions: [
         AppButton.primary(
           text: 'Сохранить',
+          icon: Icons.save,
           onPressed: () {
             final name = nameCtrl.text.trim();
             if (name.isEmpty) return;
@@ -88,15 +204,11 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
           },
         ),
       ],
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          AppTextField(
-            label: 'Название группы',
-            hintText: 'например: Младшая группа',
-            controller: nameCtrl,
-          ),
-        ],
+      child: AppTextField(
+        label: 'Название группы',
+        hintText: 'например: Младшая группа',
+        controller: nameCtrl,
+        autofocus: true,
       ),
     );
   }
@@ -104,49 +216,63 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
   void _showGroupPicker() {
     final groups = ref.read(savedGroupsProvider);
     if (groups.isEmpty) {
-      AppSnackBar.info(context, 'Нет сохранённых групп');
+      AppSnackBar.info(context, 'Нет сохранённых групп. Добавьте участников и сохраните группу.');
       return;
     }
     AppBottomSheet.show(
       context,
-      title: 'Загрузить группу',
+      title: 'Книга тренера',
       initialHeight: 0.5,
       child: Column(
-        children: groups.map((g) => ListTile(
-          leading: const Icon(Icons.group),
-          title: Text(g.name),
-          subtitle: Text('${g.members.length} чел.'),
-          trailing: IconButton(
-            icon: const Icon(Icons.delete_outline, size: 20),
-            onPressed: () {
-              ref.read(savedGroupsProvider.notifier).delete(g.id);
-              Navigator.of(context, rootNavigator: true).pop();
-              AppSnackBar.info(context, 'Группа удалена');
-            },
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          AppInfoBanner.info(
+            title: 'Загрузите сохранённую группу',
+            subtitle: 'Текущий список будет заменён.',
           ),
-          onTap: () {
-            _loadGroup(g);
-            Navigator.of(context, rootNavigator: true).pop();
-          },
-        )).toList(),
+          const SizedBox(height: 12),
+          ...groups.map((g) => AppUserTile(
+            name: g.name,
+            subtitle: '${g.members.length} участник(ов)',
+            leading: CircleAvatar(
+              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              child: Icon(Icons.group, color: Theme.of(context).colorScheme.primary, size: 20),
+            ),
+            trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+              IconButton(
+                icon: Icon(Icons.delete_outline, size: 18, color: Theme.of(context).colorScheme.error),
+                onPressed: () {
+                  ref.read(savedGroupsProvider.notifier).delete(g.id);
+                  Navigator.of(context, rootNavigator: true).pop();
+                  AppSnackBar.info(context, 'Группа удалена');
+                },
+              ),
+            ]),
+            onTap: () {
+              _loadGroup(g);
+              Navigator.of(context, rootNavigator: true).pop();
+            },
+          )),
+        ],
       ),
     );
   }
 
+  // ═══════════════════════════════════════
+  // Start session
+  // ═══════════════════════════════════════
+
   void _startSession() {
-    // Валидация
-    final athletes = _entries
-        .where((e) => e.nameCtrl.text.trim().isNotEmpty)
-        .toList();
-    if (athletes.isEmpty) {
+    final valid = _entries.where((e) => e.nameCtrl.text.trim().isNotEmpty).toList();
+    if (valid.isEmpty) {
       AppSnackBar.info(context, 'Добавьте хотя бы одного участника');
       return;
     }
 
     // Автозаполнение пустых BIB
-    for (var i = 0; i < athletes.length; i++) {
-      if (athletes[i].bibCtrl.text.trim().isEmpty) {
-        athletes[i].bibCtrl.text = '${i + 1}';
+    for (var i = 0; i < valid.length; i++) {
+      if (valid[i].bibCtrl.text.trim().isEmpty) {
+        valid[i].bibCtrl.text = '${i + 1}';
       }
     }
 
@@ -154,7 +280,7 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
       mode: _mode,
       totalLaps: _laps,
       intervalSeconds: _intervalSeconds,
-      athletes: athletes
+      athletes: valid
           .map((e) => (name: e.nameCtrl.text.trim(), bib: e.bibCtrl.text.trim()))
           .toList(),
     );
@@ -170,10 +296,13 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
     super.dispose();
   }
 
+  // ═══════════════════════════════════════
+  // BUILD
+  // ═══════════════════════════════════════
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppAppBar(
@@ -188,9 +317,11 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 100),
         children: [
-          // ── Режим старта ──
+          // ═══════════════════════════════
+          // 1. РЕЖИМ СТАРТА
+          // ═══════════════════════════════
           AppSectionHeader(title: 'Режим старта', icon: Icons.play_arrow),
           AppCard(
             padding: const EdgeInsets.all(12),
@@ -204,6 +335,7 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
                 selected: {_mode},
                 onSelectionChanged: (s) => setState(() => _mode = s.first),
               ),
+              const SizedBox(height: 10),
               AppInfoBanner.info(
                 title: _mode == QuickStartMode.mass
                     ? 'Масс-старт'
@@ -218,12 +350,13 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // ── Кол-во кругов ──
+          // ═══════════════════════════════
+          // 2. КОЛ-ВО КРУГОВ
+          // ═══════════════════════════════
           AppSectionHeader(title: 'Количество кругов', icon: Icons.loop),
           AppCard(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             children: [
               Row(
                 children: [
@@ -240,13 +373,14 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
 
-          // ── Интервал (только интервальный режим) ──
+          // ═══════════════════════════════
+          // 3. ИНТЕРВАЛ (только interval)
+          // ═══════════════════════════════
           if (_mode == QuickStartMode.interval) ...[
             AppSectionHeader(title: 'Интервал между стартами', icon: Icons.schedule),
             AppCard(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
               children: [
                 Row(
                   children: [
@@ -264,93 +398,174 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
                 ),
               ],
             ),
-            const SizedBox(height: 16),
           ],
 
-          // ── Участники ──
+          // ═══════════════════════════════
+          // 4. УЧАСТНИКИ
+          // ═══════════════════════════════
           AppSectionHeader(
             title: 'Участники (${_entries.length})',
             icon: Icons.people,
+            action: '+ Добавить',
+            onAction: _showAddAthleteSheet,
           ),
-          Row(mainAxisAlignment: MainAxisAlignment.end, children: [
-              IconButton(
-                icon: Icon(Icons.folder_open, size: 20, color: cs.primary),
-                tooltip: 'Загрузить группу',
-                onPressed: _showGroupPicker,
-              ),
-              IconButton(
-                icon: Icon(Icons.save_alt, size: 20, color: cs.primary),
-                tooltip: 'Сохранить группу',
-                onPressed: _saveCurrentGroup,
-              ),
-              IconButton(
-                icon: Icon(Icons.auto_fix_high, size: 20, color: cs.primary),
-                tooltip: 'Автозаполнение',
-                onPressed: _autoFillBibs,
-              ),
-          ]),
 
-          ...List.generate(_entries.length, (i) => Padding(
+          // ── Действия с группой ──
+          Padding(
             padding: const EdgeInsets.only(bottom: 8),
             child: Row(children: [
-              // BIB
-              SizedBox(
-                width: 60,
-                child: TextField(
-                  controller: _entries[i].bibCtrl,
-                  keyboardType: TextInputType.number,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: cs.primary),
-                  decoration: InputDecoration(
-                    hintText: '#',
-                    isDense: true,
-                    filled: true,
-                    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-                  ),
-                ),
+              AppButton.small(
+                text: 'Из книги',
+                icon: Icons.folder_open,
+                onPressed: _showGroupPicker,
               ),
               const SizedBox(width: 8),
-              // Имя
-              Expanded(
-                child: TextField(
-                  controller: _entries[i].nameCtrl,
-                  textCapitalization: TextCapitalization.words,
-                  decoration: InputDecoration(
-                    hintText: 'Имя участника',
-                    isDense: true,
-                    filled: true,
-                    fillColor: cs.surfaceContainerHighest.withValues(alpha: 0.3),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: BorderSide.none),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+              AppButton.smallSecondary(
+                text: 'Сохранить',
+                icon: Icons.save_alt,
+                onPressed: _saveCurrentGroup,
+              ),
+              const Spacer(),
+              AppButton.smallSecondary(
+                text: 'Группу',
+                icon: Icons.group_add,
+                onPressed: _addMultipleEntries,
+              ),
+              const SizedBox(width: 8),
+              AppButton.smallSecondary(
+                text: 'Авто',
+                icon: Icons.auto_fix_high,
+                onPressed: _entries.isNotEmpty ? _autoFillBibs : null,
+              ),
+            ]),
+          ),
+
+          // ── Пустой стейт ──
+          if (_entries.isEmpty)
+            AppCard(
+              padding: const EdgeInsets.all(24),
+              children: [
+                Center(
+                  child: Column(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(Icons.person_add_outlined, size: 48, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+                    const SizedBox(height: 12),
+                    Text('Добавьте участников', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
+                    const SizedBox(height: 4),
+                    Text('Нажмите «+ Добавить» или загрузите из книги тренера',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
+                    const SizedBox(height: 16),
+                    AppButton.small(
+                      text: '+ Добавить участника',
+                      icon: Icons.person_add,
+                      onPressed: _showAddAthleteSheet,
+                    ),
+                  ]),
+                ),
+              ],
+            ),
+
+          // ── Список участников (AppUserTile) ──
+          ...List.generate(_entries.length, (i) {
+            final e = _entries[i];
+            final name = e.nameCtrl.text.trim();
+            final bib = e.bibCtrl.text.trim();
+            final displayName = name.isNotEmpty ? name : 'Участник ${i + 1}';
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2),
+              child: AppUserTile(
+                name: displayName,
+                subtitle: 'BIB: ${bib.isNotEmpty ? bib : '—'}',
+                dense: true,
+                leading: CircleAvatar(
+                  radius: 16,
+                  backgroundColor: cs.primaryContainer.withValues(alpha: 0.3),
+                  child: Text(
+                    bib.isNotEmpty ? bib : '${i + 1}',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: cs.primary),
                   ),
                 ),
+                trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                  // Редактировать
+                  IconButton(
+                    icon: Icon(Icons.edit_outlined, size: 18, color: cs.onSurfaceVariant.withValues(alpha: 0.6)),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _editEntry(i),
+                  ),
+                  // Удалить
+                  IconButton(
+                    icon: Icon(Icons.close, size: 18, color: cs.error.withValues(alpha: 0.7)),
+                    visualDensity: VisualDensity.compact,
+                    onPressed: () => _removeEntry(i),
+                  ),
+                ]),
               ),
-              const SizedBox(width: 4),
-              // Удалить
-              if (_entries.length > 1)
-                IconButton(
-                  icon: Icon(Icons.remove_circle_outline, size: 20, color: cs.error),
-                  onPressed: () => _removeEntry(i),
-                  visualDensity: VisualDensity.compact,
-                ),
-            ]),
-          )),
+            );
+          }),
 
-          // Кнопка добавить
-          TextButton.icon(
-            onPressed: _addEntry,
-            icon: Icon(Icons.add, color: cs.primary),
-            label: Text('Добавить участника', style: TextStyle(color: cs.primary)),
-          ),
           const SizedBox(height: 24),
 
-          // ── СТАРТ ──
+          // ═══════════════════════════════
+          // 5. СТАРТ
+          // ═══════════════════════════════
           AppButton.primary(
             text: 'СТАРТ  ▶',
             icon: Icons.play_arrow,
             onPressed: _startSession,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ═══════════════════════════════════════
+  // Edit athlete
+  // ═══════════════════════════════════════
+
+  void _editEntry(int index) {
+    final e = _entries[index];
+    final parts = e.nameCtrl.text.trim().split(RegExp(r'\s+'));
+    final nameCtrl = TextEditingController(text: parts.isNotEmpty ? parts.first : '');
+    final surnameCtrl = TextEditingController(text: parts.length > 1 ? parts.sublist(1).join(' ') : '');
+    final bibCtrl = TextEditingController(text: e.bibCtrl.text);
+
+    AppBottomSheet.show(
+      context,
+      title: 'Редактировать участника',
+      initialHeight: 0.45,
+      actions: [
+        AppButton.primary(
+          text: 'Сохранить',
+          icon: Icons.check,
+          onPressed: () {
+            final name = '${nameCtrl.text.trim()} ${surnameCtrl.text.trim()}'.trim();
+            if (name.isEmpty) {
+              AppSnackBar.info(context, 'Введите имя');
+              return;
+            }
+            setState(() {
+              e.nameCtrl.text = name;
+              e.bibCtrl.text = bibCtrl.text.trim();
+            });
+            Navigator.of(context, rootNavigator: true).pop();
+          },
+        ),
+      ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Expanded(child: AppTextField(label: 'Имя', controller: nameCtrl, hintText: 'Алексей', autofocus: true)),
+            const SizedBox(width: 12),
+            Expanded(child: AppTextField(label: 'Фамилия', controller: surnameCtrl, hintText: 'Иванов')),
+          ]),
+          const SizedBox(height: 12),
+          AppTextField(
+            label: 'BIB (номер)',
+            controller: bibCtrl,
+            hintText: '${index + 1}',
+            keyboardType: TextInputType.number,
           ),
         ],
       ),
