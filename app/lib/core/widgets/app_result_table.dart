@@ -298,7 +298,9 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 1: absolute minimum — const only, no theme ──
+    // ── Phase 2a: Theme.of + ColorScheme, but NO .withOpacity / monoTiming ──
+    final cs = Theme.of(context).colorScheme;
+
     final name = row.cells['name']?.display ?? '';
     final time = row.cells['result_time']?.display ?? '—';
     final place = row.cells['place']?.display ?? '';
@@ -307,9 +309,9 @@ class _CardRow extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF333333)),
+        border: Border.all(color: cs.outlineVariant),
       ),
       child: Row(
         children: [
@@ -318,8 +320,8 @@ class _CardRow extends StatelessWidget {
             width: 28,
             child: Text(place,
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Color(0xFFAAAAAA),
+              style: TextStyle(
+                color: cs.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w700,
               )),
@@ -330,12 +332,12 @@ class _CardRow extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               decoration: BoxDecoration(
-                color: const Color(0xFF2A2A2A),
+                color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(bib,
-                style: const TextStyle(
-                  color: Color(0xFF999999),
+                style: TextStyle(
+                  color: cs.onSurfaceVariant,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
                 )),
@@ -347,16 +349,16 @@ class _CardRow extends StatelessWidget {
             child: Text(name,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
+              style: TextStyle(
+                color: cs.onSurface,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               )),
           ),
           // Time
           Text(time,
-            style: const TextStyle(
-              color: Color(0xFFCCCCCC),
+            style: TextStyle(
+              color: cs.onSurface,
               fontSize: 14,
               fontWeight: FontWeight.w700,
               fontFamily: 'monospace',
