@@ -64,7 +64,6 @@ import '../features/ops/gps_map_screen.dart';
 import '../features/coach/coach_timing_screen.dart';
 
 // Quick Timer
-import '../features/quick_timer/quick_timer_setup_screen.dart';
 import '../features/quick_timer/quick_timer_screen.dart';
 import '../features/quick_timer/quick_timer_results_screen.dart';
 import '../features/quick_timer/quick_timer_history_screen.dart';
@@ -599,8 +598,8 @@ final GoRouter router = GoRouter(
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,
       path: '/quick-timer',
-      name: 'quick-timer-setup',
-      builder: (context, state) => const QuickTimerSetupScreen(),
+      name: 'quick-timer',
+      builder: (context, state) => const QuickTimerScreen(),
     ),
     GoRoute(
       parentNavigatorKey: _rootNavigatorKey,

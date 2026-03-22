@@ -125,6 +125,33 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
   /// Загрузить сессию (из истории для просмотра).
   void loadSession(QuickSession session) => state = session;
 
+  /// Добавить участника на лету (во время сессии).
+  void addAthlete({required String name, required String bib}) {
+    if (state == null) return;
+    final nextOrder = state!.athletes.length;
+    final newAthlete = QuickAthlete(
+      id: 'qa-${DateTime.now().millisecondsSinceEpoch}',
+      name: name,
+      bib: bib.isNotEmpty ? bib : '${nextOrder + 1}',
+      startOrder: nextOrder,
+    );
+    state = state!.copyWith(athletes: [...state!.athletes, newAthlete]);
+  }
+
+  /// Обновить настройки сессии (до старта и во время).
+  void updateSettings({
+    QuickStartMode? mode,
+    int? totalLaps,
+    int? intervalSeconds,
+  }) {
+    if (state == null) return;
+    state = state!.copyWith(
+      mode: mode ?? state!.mode,
+      totalLaps: totalLaps ?? state!.totalLaps,
+      intervalSeconds: intervalSeconds ?? state!.intervalSeconds,
+    );
+  }
+
   /// Сбросить сессию.
   void reset() => state = null;
 }
