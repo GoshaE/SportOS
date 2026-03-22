@@ -129,27 +129,34 @@ class EventDetailScreen extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 140),
                 sliver: SliverList(delegate: SliverChildListDelegate([
 
-                  // 1️⃣ Action grid
-                  GridView.count(
-                    crossAxisCount: 3,
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: 1.15,
-                    children: [
-                      _ActionTile(icon: Icons.settings, label: 'Управлять', color: cs.primary,
-                        onTap: () => context.push('/manage/$resolvedEventId')),
-                      _ActionTile(icon: Icons.people, label: 'Участники', color: cs.secondary,
-                        onTap: () => context.push('/hub/event/$resolvedEventId/participants')),
-                      _ActionTile(icon: Icons.leaderboard, label: 'Результаты', color: cs.tertiary,
-                        onTap: () => context.push('/results/$resolvedEventId/live')),
-                      _ActionTile(icon: Icons.timer, label: 'Хронометраж', color: Colors.deepOrange,
-                        onTap: () => context.push('/events/$resolvedEventId/timing')),
-                      _ActionTile(icon: Icons.gavel, label: 'Судейство', color: cs.error,
-                        onTap: () => context.push('/ops/$resolvedEventId/timing')),
-                     ],
-                  ),
+                  // 1️⃣ Action tiles (adaptive)
+                  LayoutBuilder(builder: (context, constraints) {
+                    const minTile = 90.0;
+                    const maxTile = 130.0;
+                    const spacing = 8.0;
+                    const count = 5; // number of action tiles
+                    // If all 5 fit at minTile width → 1 row, otherwise 3 cols
+                    final canFitAll = (count * minTile + (count - 1) * spacing) <= constraints.maxWidth;
+                    final effectiveCols = canFitAll ? count : 3;
+                    final tileW = ((constraints.maxWidth - (effectiveCols - 1) * spacing) / effectiveCols).clamp(minTile, maxTile);
+
+                    return Wrap(
+                      spacing: spacing,
+                      runSpacing: spacing,
+                      children: [
+                        _ActionTile(icon: Icons.settings, label: 'Управлять', color: cs.primary, width: tileW,
+                          onTap: () => context.push('/manage/$resolvedEventId')),
+                        _ActionTile(icon: Icons.people, label: 'Участники', color: cs.secondary, width: tileW,
+                          onTap: () => context.push('/hub/event/$resolvedEventId/participants')),
+                        _ActionTile(icon: Icons.leaderboard, label: 'Результаты', color: cs.tertiary, width: tileW,
+                          onTap: () => context.push('/results/$resolvedEventId/live')),
+                        _ActionTile(icon: Icons.timer, label: 'Хронометраж', color: Colors.deepOrange, width: tileW,
+                          onTap: () => context.push('/events/$resolvedEventId/timing')),
+                        _ActionTile(icon: Icons.gavel, label: 'Судейство', color: cs.error, width: tileW,
+                          onTap: () => context.push('/ops/$resolvedEventId/timing')),
+                      ],
+                    );
+                  }),
                   const SizedBox(height: 16),
 
                   // 2️⃣ Дисциплины (из провайдера)
@@ -311,41 +318,45 @@ class _ActionTile extends StatelessWidget {
   final IconData icon;
   final String label;
   final Color color;
+  final double width;
   final VoidCallback onTap;
 
-  const _ActionTile({required this.icon, required this.label, required this.color, required this.onTap});
+  const _ActionTile({required this.icon, required this.label, required this.color, required this.width, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
-      borderRadius: BorderRadius.circular(14),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(14),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.12),
-                  shape: BoxShape.circle,
+    return SizedBox(
+      width: width,
+      child: Material(
+        color: cs.surfaceContainerHighest.withValues(alpha: 0.35),
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.12),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 18, color: color),
                 ),
-                child: Icon(icon, size: 22, color: color),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                label,
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: cs.onSurface),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
+                const SizedBox(height: 6),
+                Text(
+                  label,
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: cs.onSurface),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
           ),
         ),
       ),
