@@ -31,21 +31,22 @@ class TimeFormatter {
     return '${neg ? '-' : ''}$h:$m:$s.$ms';
   }
 
-  /// Compact time — auto-selects format based on duration:
-  ///  - <1 hour: `"23:45"` (mm:ss)
-  ///  - ≥1 hour: `"1:05:30"` (h:mm:ss)
+  /// Compact time with hundredths — auto-selects format based on duration:
+  ///  - <1 hour: `"23:45.67"` (mm:ss.cc)
+  ///  - ≥1 hour: `"1:05:30.67"` (h:mm:ss.cc)
   ///
-  /// Used in: Marshal checkpoint marks, compact UI, result times.
+  /// Used in: Marshal checkpoint marks, compact UI, result times, lap times.
   static String compact(Duration d) {
     final neg = d.isNegative;
     final abs = d.abs();
     final h = abs.inHours;
     final m = abs.inMinutes.remainder(60).toString().padLeft(2, '0');
     final s = abs.inSeconds.remainder(60).toString().padLeft(2, '0');
+    final cc = (abs.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
     if (h > 0) {
-      return '${neg ? '-' : ''}$h:$m:$s';
+      return '${neg ? '-' : ''}$h:$m:$s.$cc';
     }
-    return '${neg ? '-' : ''}$m:$s';
+    return '${neg ? '-' : ''}$m:$s.$cc';
   }
 
   /// Hours:minutes:seconds (no ms): `"01:23:45"`
@@ -98,17 +99,27 @@ class TimeFormatter {
 
   // ─── Gap / Delta Formats ──────────────────────────────────────
 
-  /// Gap format with sign: `"+1:23.4"` or `"-0:05.2"`
+  /// Gap format with sign and hundredths:
+  ///  - <1 min:  `"+3.27"` (s.cc)
+  ///  - <1 hour: `"+1:03.27"` (m:ss.cc)
+  ///  - ≥1 hour: `"+1:00:03.27"` (h:mm:ss.cc)
   ///
   /// Used in: Gap tables, live results delta, coach screen.
   static String gap(Duration d) {
-    if (d == Duration.zero) return '±0.0';
+    if (d == Duration.zero) return '±0.00';
     final sign = d.isNegative ? '-' : '+';
     final abs = d.abs();
-    final m = abs.inMinutes;
+    final h = abs.inHours;
+    final m = abs.inMinutes.remainder(60);
     final s = abs.inSeconds.remainder(60);
-    final tenths = (abs.inMilliseconds.remainder(1000) ~/ 100);
-    return '$sign$m:${s.toString().padLeft(2, '0')}.$tenths';
+    final cc = (abs.inMilliseconds.remainder(1000) ~/ 10).toString().padLeft(2, '0');
+    if (h > 0) {
+      return '$sign$h:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}.$cc';
+    }
+    if (m > 0) {
+      return '$sign$m:${s.toString().padLeft(2, '0')}.$cc';
+    }
+    return '$sign$s.$cc';
   }
 
   /// Gap in seconds only: `"+1.234"` or `"-0.567"`

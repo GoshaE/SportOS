@@ -43,10 +43,10 @@ class QuickResultCalculator {
       const ColumnDef(id: 'name', label: 'Имя', type: ColumnType.text, flex: 1.5, minWidth: 80),
       if (displaySettings.showLapColumns)
         for (var lap = 1; lap <= session.totalLaps; lap++)
-          ColumnDef(id: 'lap${lap}_time', label: 'L$lap', type: ColumnType.time, align: ColumnAlign.right, flex: 0.8, minWidth: 60),
-      const ColumnDef(id: 'result_time', label: 'Время', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0, minWidth: 70),
+          ColumnDef(id: 'lap${lap}_time', label: 'L$lap', type: ColumnType.time, align: ColumnAlign.right, flex: 0.9, minWidth: 80),
+      const ColumnDef(id: 'result_time', label: 'Время', type: ColumnType.time, align: ColumnAlign.right, flex: 1.1, minWidth: 90),
       if (displaySettings.showGapColumn)
-        const ColumnDef(id: 'gap_leader', label: 'Δ', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.7, minWidth: 55),
+        const ColumnDef(id: 'gap_leader', label: 'Δ', type: ColumnType.gap, align: ColumnAlign.right, flex: 1.0, minWidth: 110),
     ];
 
     // ── Предвычисляем лучшие круги ──
@@ -134,7 +134,7 @@ class QuickResultCalculator {
       if (leaderTotalTime != null && athleteTime != null && i > 0) {
         final gap = athleteTime - leaderTotalTime;
         if (gap.inMilliseconds > 0) {
-          cells['gap_leader'] = CellValue(raw: gap, display: '+${TimeFormatter.compact(gap)}', style: CellStyle.error);
+          cells['gap_leader'] = CellValue(raw: gap, display: TimeFormatter.gap(gap), style: CellStyle.error);
         } else {
           cells['gap_leader'] = CellValue.na;
         }
