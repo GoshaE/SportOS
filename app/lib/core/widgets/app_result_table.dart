@@ -298,154 +298,72 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
-    return _buildContent(theme, cs);
-  }
-
-  Widget _buildContent(ThemeData theme, ColorScheme cs) {
-    final place = row.cells['place'];
-    final bib = row.cells['bib'];
-    final name = row.cells['name'];
-    final time = row.cells['result_time'];
-    final category = row.cells['category'];
-
-    final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
-    final rowTint = _rowTint(row.type, cs);
+    // ── Phase 1: absolute minimum — const only, no theme ──
+    final name = row.cells['name']?.display ?? '';
+    final time = row.cells['result_time']?.display ?? '—';
+    final place = row.cells['place']?.display ?? '';
+    final bib = row.cells['bib']?.display ?? '';
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: rowTint ?? (theme.cardTheme.color ?? cs.surfaceContainerHigh),
+        color: const Color(0xFF1E1E1E),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant.withOpacity(0.15)),
+        border: Border.all(color: const Color(0xFF333333)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          // ── Top: place + bib + name + category ──
-          Row(children: [
-            SizedBox(width: 30, child: _placeInCard(place, theme, cs)),
-            if (bib != null) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cs.surfaceContainerHighest,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(bib.display,
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
+          // Place
+          SizedBox(
+            width: 28,
+            child: Text(place,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Color(0xFFAAAAAA),
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+              )),
+          ),
+          const SizedBox(width: 6),
+          // Bib
+          if (bib.isNotEmpty) ...[
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2A2A2A),
+                borderRadius: BorderRadius.circular(4),
               ),
-              const SizedBox(width: 8),
-            ],
-            Expanded(
-              child: Text(name?.display ?? '',
-                style: theme.textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: isDnf ? cs.onSurfaceVariant : cs.onSurface,
-                  fontSize: 14),
-                maxLines: 1, overflow: TextOverflow.ellipsis),
+              child: Text(bib,
+                style: const TextStyle(
+                  color: Color(0xFF999999),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                )),
             ),
-            if (category != null && category.display.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(category.display,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
-              ),
-          ]),
-          const SizedBox(height: 6),
-          // ── Bottom: lap chips row ──
-          _buildBottomRow(time, cs),
+            const SizedBox(width: 8),
+          ],
+          // Name
+          Expanded(
+            child: Text(name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              )),
+          ),
+          // Time
+          Text(time,
+            style: const TextStyle(
+              color: Color(0xFFCCCCCC),
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              fontFamily: 'monospace',
+            )),
         ],
       ),
     );
-  }
-
-  /// Bottom section: laps + gap + total time.
-  Widget _buildBottomRow(CellValue? time, ColorScheme cs) {
-    final gap = row.cells['gap_leader'] ?? row.cells['gap_prev'];
-    final lapChips = _lapChips(cs);
-
-    return Row(
-      children: [
-        // Lap chips — shrinkable
-        if (lapChips.isNotEmpty)
-          Expanded(
-            child: Wrap(spacing: 4, runSpacing: 3, children: lapChips),
-          ),
-        if (lapChips.isEmpty)
-          const Spacer(),
-        // Gap
-        if (gap != null && gap.display.isNotEmpty) ...[
-          const SizedBox(width: 4),
-          Text(gap.display,
-            style: AppTypography.monoTiming.copyWith(
-              fontSize: 11, color: cs.onSurfaceVariant)),
-        ],
-        // Total time
-        const SizedBox(width: 6),
-        Text(time?.display ?? '',
-          style: AppTypography.monoTiming.copyWith(
-            fontSize: 15, fontWeight: FontWeight.w700, color: _timeColor(row, cs))),
-      ],
-    );
-  }
-
-  Widget _placeInCard(CellValue? cell, ThemeData theme, ColorScheme cs) {
-    if (cell == null) return const SizedBox.shrink();
-    if (cell.raw is int) {
-      final p = cell.raw as int;
-      if (p >= 1 && p <= 3) {
-        return Text(['🥇', '🥈', '🥉'][p - 1], style: const TextStyle(fontSize: 16));
-      }
-      return Text('$p', textAlign: TextAlign.center,
-        style: theme.textTheme.titleSmall?.copyWith(
-          fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 14));
-    }
-    return Text(cell.display, textAlign: TextAlign.center,
-      style: theme.textTheme.labelSmall?.copyWith(
-        fontWeight: FontWeight.w700,
-        color: cell.style == CellStyle.error ? cs.error : cs.onSurfaceVariant,
-        fontSize: 11));
-  }
-
-  List<Widget> _lapChips(ColorScheme cs) {
-    final chips = <Widget>[];
-    for (final col in columns) {
-      if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
-        final cell = row.cells[col.id];
-        if (cell != null && cell.display.isNotEmpty) {
-          chips.add(Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: cell.style == CellStyle.highlight
-                  ? cs.primaryContainer.withOpacity(0.3)
-                  : cs.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text('${col.label}: ${cell.display}',
-              style: AppTypography.monoTiming.copyWith(
-                fontSize: 11,
-                fontWeight: cell.style == CellStyle.highlight ? FontWeight.w700 : FontWeight.w400,
-                color: cell.style == CellStyle.highlight ? cs.primary : cs.onSurfaceVariant)),
-          ));
-        }
-      }
-    }
-    return chips;
-  }
-
-  Color _timeColor(ResultRow row, ColorScheme cs) {
-    final cell = row.cells['place'];
-    if (cell?.raw is int && (cell!.raw as int) == 1) return cs.primary;
-    if (row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq) return cs.error;
-    return cs.onSurface;
   }
 }
 
