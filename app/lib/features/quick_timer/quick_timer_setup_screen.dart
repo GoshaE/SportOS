@@ -476,6 +476,10 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
                   if (newIndex > oldIndex) newIndex--;
                   final item = _entries.removeAt(oldIndex);
                   _entries.insert(newIndex, item);
+                  // Переназначить BIB по новому порядку
+                  for (var i = 0; i < _entries.length; i++) {
+                    _entries[i].bibCtrl.text = '${i + 1}';
+                  }
                 });
               },
               itemCount: _entries.length,
