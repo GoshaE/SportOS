@@ -298,71 +298,77 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 2a: Theme.of + ColorScheme, but NO .withOpacity / monoTiming ──
+    // ── Phase 2b: + .withOpacity + _rowTint + Column layout ──
     final cs = Theme.of(context).colorScheme;
 
     final name = row.cells['name']?.display ?? '';
     final time = row.cells['result_time']?.display ?? '—';
     final place = row.cells['place']?.display ?? '';
     final bib = row.cells['bib']?.display ?? '';
+    final gap = row.cells['gap_leader']?.display ??
+                row.cells['gap_prev']?.display ?? '';
+
+    final rowTint = _rowTint(row.type, cs);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: cs.surfaceContainerHigh,
+        color: rowTint ?? cs.surfaceContainerHigh,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: cs.outlineVariant),
+        border: Border.all(color: cs.outlineVariant.withOpacity(0.15)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Place
-          SizedBox(
-            width: 28,
-            child: Text(place,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: cs.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              )),
-          ),
-          const SizedBox(width: 6),
-          // Bib
-          if (bib.isNotEmpty) ...[
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              decoration: BoxDecoration(
-                color: cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(4),
+          // ── Top row ──
+          Row(children: [
+            SizedBox(width: 28, child: Text(place, textAlign: TextAlign.center,
+              style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700))),
+            const SizedBox(width: 6),
+            if (bib.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                decoration: BoxDecoration(
+                  color: cs.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(bib, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
               ),
-              child: Text(bib,
-                style: TextStyle(
-                  color: cs.onSurfaceVariant,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                )),
-            ),
-            const SizedBox(width: 8),
-          ],
-          // Name
-          Expanded(
-            child: Text(name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: cs.onSurface,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-              )),
-          ),
-          // Time
-          Text(time,
-            style: TextStyle(
-              color: cs.onSurface,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              fontFamily: 'monospace',
+              const SizedBox(width: 8),
+            ],
+            Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+              style: TextStyle(color: cs.onSurface, fontSize: 14, fontWeight: FontWeight.w600))),
+          ]),
+          const SizedBox(height: 6),
+          // ── Bottom row ──
+          Row(children: [
+            // Lap chips placeholder — iterate columns
+            Expanded(child: Wrap(
+              spacing: 4, runSpacing: 3,
+              children: [
+                for (final col in columns)
+                  if (col.id.startsWith('lap') && col.id.endsWith('_time'))
+                    if (row.cells[col.id] != null && row.cells[col.id]!.display.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text('${col.label}: ${row.cells[col.id]!.display}',
+                          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11,
+                            fontFamily: 'monospace')),
+                      ),
+              ],
             )),
+            if (gap.isNotEmpty) ...[
+              const SizedBox(width: 4),
+              Text(gap, style: TextStyle(color: cs.onSurfaceVariant, fontSize: 11, fontFamily: 'monospace')),
+            ],
+            const SizedBox(width: 6),
+            Text(time, style: TextStyle(color: cs.onSurface, fontSize: 15,
+              fontWeight: FontWeight.w700, fontFamily: 'monospace')),
+          ]),
         ],
       ),
     );
