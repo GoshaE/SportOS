@@ -24,6 +24,7 @@ class _AddAthleteContent extends ConsumerStatefulWidget {
 
 class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with SingleTickerProviderStateMixin {
   late final TabController _tabCtrl;
+  final Set<String> _selectedRecent = {};
 
   final nameCtrl = TextEditingController();
   final surnameCtrl = TextEditingController();
@@ -66,22 +67,18 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
     Navigator.of(context, rootNavigator: true).pop();
   }
 
-  void _addRecentAthlete(QuickAthlete athlete) {
-    final session = ref.read(quickSessionProvider);
-    final nextBib = '${(session?.athletes.length ?? 0) + 1}';
-    
-    // Проверяем, нет ли его уже в сессии
-    final exists = session?.athletes.any((a) => a.name == athlete.name) ?? false;
-    if (exists) {
-      AppSnackBar.warning(context, '${athlete.name} уже в стартовом листе');
-      return;
-    }
 
-    ref.read(quickSessionProvider.notifier).addAthlete(
-      name: athlete.name,
-      bib: nextBib, // Выдаем новый уникальный биб
-    );
-    AppSnackBar.success(context, '${athlete.name} добавлен ($nextBib)');
+  void _addSelectedRecentAthletes() {
+    if (_selectedRecent.isEmpty) return;
+    final session = ref.read(quickSessionProvider);
+    final notifier = ref.read(quickSessionProvider.notifier);
+    int nextBibInt = (session?.athletes.length ?? 0) + 1;
+
+    for (var name in _selectedRecent) {
+      notifier.addAthlete(name: name, bib: '$nextBibInt');
+      nextBibInt++;
+    }
+    AppSnackBar.success(context, 'Добавлено: ${_selectedRecent.length}');
     Navigator.of(context, rootNavigator: true).pop();
   }
 
@@ -180,30 +177,92 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
       );
     }
 
-    return ListView.builder(
-      key: const ValueKey('tab_recent_list'),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 40),
-      itemCount: list.length,
-      itemBuilder: (context, i) {
-        final a = list[i];
-        final session = ref.read(quickSessionProvider);
-        final exists = session?.athletes.any((sa) => sa.name == a.name) ?? false;
-        
-        return AppUserTile(
-          name: a.name,
-          subtitle: 'Участвовал ранее',
-          trailing: exists 
-            ? Icon(Icons.check_circle, color: cs.primary)
-            : IconButton(
-                icon: const Icon(Icons.add_circle_outline),
-                color: cs.primary,
-                onPressed: () => _addRecentAthlete(a),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        ListView.builder(
+          key: const ValueKey('tab_recent_list'),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.zero,
+          itemCount: list.length,
+          itemBuilder: (context, i) {
+            final a = list[i];
+            final session = ref.read(quickSessionProvider);
+            final exists = session?.athletes.any((sa) => sa.name == a.name) ?? false;
+            final isSelected = _selectedRecent.contains(a.name);
+            
+            final parts = a.name.trim().split(RegExp(r'\s+'));
+            final initials = parts.isNotEmpty
+                ? (parts.length > 1
+                    ? '${parts[0].characters.first}${parts[1].characters.first}'.toUpperCase()
+                    : parts[0].characters.first.toUpperCase())
+                : '?';
+            
+            return AppUserTile(
+              name: a.name,
+              subtitle: exists ? 'Уже в стартовом листе' : 'Участвовал ранее',
+              leading: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Checkbox(
+                    value: isSelected || exists,
+                    onChanged: exists ? null : (val) {
+                      setState(() {
+                        if (val == true) {
+                          _selectedRecent.add(a.name);
+                        } else {
+                          _selectedRecent.remove(a.name);
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(width: 4),
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: cs.primary.withValues(alpha: 0.15),
+                    child: Text(
+                      initials,
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: cs.primary,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-          onTap: exists ? null : () => _addRecentAthlete(a),
-        );
-      },
+              trailing: exists ? Icon(Icons.check_circle, color: cs.primary) : null,
+              onTap: exists ? null : () {
+                setState(() {
+                  if (isSelected) {
+                    _selectedRecent.remove(a.name);
+                  } else {
+                    _selectedRecent.add(a.name);
+                  }
+                });
+              },
+            );
+          },
+        ),
+        
+        // Кнопка множественного добавления
+        if (_selectedRecent.isNotEmpty)
+          SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: AppButton.primary(
+                text: 'Добавить выбранных (${_selectedRecent.length})',
+                icon: Icons.group_add,
+                onPressed: _addSelectedRecentAthletes,
+              ),
+            ),
+          )
+        else
+          const SizedBox(height: 32),
+      ],
     );
   }
 }
