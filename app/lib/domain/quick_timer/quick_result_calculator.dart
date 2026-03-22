@@ -25,10 +25,8 @@ class QuickResultCalculator {
       return 0;
     });
 
-    final leaderLapDurations = athletes.isNotEmpty
-        ? athletes.first.lapDurations(session.effectiveStart(athletes.first))
-        : <Duration>[];
-        
+
+
     Duration? leaderTotalTime;
     if (athletes.isNotEmpty && athletes.first.splits.isNotEmpty) {
       leaderTotalTime = athletes.first.splits.last.difference(session.effectiveStart(athletes.first));
@@ -44,6 +42,19 @@ class QuickResultCalculator {
       const ColumnDef(id: 'result_time', label: 'Время', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0, minWidth: 70),
       const ColumnDef(id: 'gap_leader', label: 'Δ', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.7, minWidth: 55),
     ];
+
+    // ── Предвычисляем лучшие круги ──
+    // Для каждого круга находим минимальное время среди всех атлетов
+    final bestLapTimes = <int, Duration>{};
+    for (final a in athletes) {
+      final lapDurs = a.lapDurations(session.effectiveStart(a));
+      for (var lap = 0; lap < lapDurs.length; lap++) {
+        final current = bestLapTimes[lap];
+        if (current == null || lapDurs[lap] < current) {
+          bestLapTimes[lap] = lapDurs[lap];
+        }
+      }
+    }
 
     // ── Строки ──
     final rows = <ResultRow>[];
@@ -87,22 +98,33 @@ class QuickResultCalculator {
       cells['name'] = CellValue(raw: displayName, display: displayName,
         style: finished ? CellStyle.bold : hasStarted ? CellStyle.normal : CellStyle.muted);
 
-      // Laps
+      // Личный лучший круг атлета (для подсветки personal best)
+      Duration? personalBest;
+      if (lapDurations.length > 1) {
+        personalBest = lapDurations.reduce((a, b) => a < b ? a : b);
+      }
+
+      // Laps — с подсветкой лучших 🟣
       for (var lap = 1; lap <= session.totalLaps; lap++) {
         final lapIdx = lap - 1;
         if (lapIdx < lapDurations.length) {
           final lapTime = lapDurations[lapIdx];
-          var lapStyle = CellStyle.normal;
-          if (i == 0 && finished) lapStyle = CellStyle.highlight;
-          
-          String lapDisplay = TimeFormatter.compact(lapTime);
-          if (i > 0 && lapIdx < leaderLapDurations.length) {
-            final diff = lapTime - leaderLapDurations[lapIdx];
-            if (diff.inMilliseconds > 0) {
-              lapDisplay = TimeFormatter.compact(lapTime);
-              lapStyle = CellStyle.normal; // Можно сделать CellStyle.error если отставание большое
-            }
+          final lapDisplay = TimeFormatter.compact(lapTime);
+
+          // Абсолютно лучший на этом круге среди всех (primary)
+          final isBestOnLap = bestLapTimes[lapIdx] == lapTime;
+          // Личный лучший круг атлета (success/green), если > 1 круг
+          final isPersonalBest = personalBest != null && lapTime == personalBest && !isBestOnLap;
+
+          CellStyle lapStyle;
+          if (isBestOnLap) {
+            lapStyle = CellStyle.highlight;
+          } else if (isPersonalBest) {
+            lapStyle = CellStyle.success;
+          } else {
+            lapStyle = CellStyle.normal;
           }
+
           cells['lap${lap}_time'] = CellValue(raw: lapTime, display: lapDisplay, style: lapStyle);
         } else {
           cells['lap${lap}_time'] = CellValue.na;
