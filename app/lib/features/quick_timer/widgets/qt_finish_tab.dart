@@ -7,6 +7,7 @@ import 'package:sportos_app/core/widgets/widgets.dart';
 import '../../../domain/quick_timer/quick_timer_models.dart';
 import '../../../domain/timing/time_formatter.dart';
 import '../../../domain/quick_timer/quick_timer_providers.dart';
+import 'qt_athlete_tile.dart';
 
 class QtFinishTab extends ConsumerWidget {
   final QuickSession session;
@@ -146,18 +147,15 @@ class QtFinishTab extends ConsumerWidget {
               state = BibState.available;
             }
 
-            // Имя крупно, BIB мелко (тренеры знают всех в лицо)
-            String displayName;
-            if (a.name.isNotEmpty) {
-              final parts = a.name.trim().split(RegExp(r'\s+'));
-              displayName = parts.join('\n');
-            } else {
-              displayName = a.bib;
-            }
+            // Имя/Фамилия крупно, BIB мелко (тренеры знают всех в лицо)
+            final parts = a.name.trim().split(RegExp(r'\s+'));
+            final firstName = parts.isNotEmpty ? parts[0] : a.bib;
+            final lastName = parts.length > 1 ? parts.sublist(1).join(' ') : null;
 
-            return AppBibTile(
-              bib: displayName,
-              name: a.name.isNotEmpty ? '#${a.bib}' : null,
+            return QtAthleteTile(
+              firstName: firstName,
+              lastName: lastName,
+              bib: a.bib,
               lapInfo: lapInfo,
               state: state,
               onTap: () {

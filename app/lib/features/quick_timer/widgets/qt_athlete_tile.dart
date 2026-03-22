@@ -1,42 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:sportos_app/core/widgets/app_bib_tile.dart';
 
-/// BIB tile state (visual style)
-enum BibState {
-  available,  // Active, tappable — bold primary border
-  assigned,   // Already assigned — muted, check mark
-  finished,   // Crossed out
-  dns,        // Red, blocked
-  current,    // Highlighted — accent background
-  disabled,   // Not started yet — muted, non-interactive
-}
-
-/// AppBibTile: Grid tile showing a BIB number with status styling.
+/// Плитка атлета для финишной вкладки Quick Timer.
 ///
-/// Replaces _bibTile, _finishedBibTile in finish_screen and BIB
-/// displays in starter/dictator screens.
+/// В отличие от [AppBibTile], здесь главное — **имя и фамилия** (крупно),
+/// а BIB-номер отображается мелко снизу. Тренеры знают спортсменов в лицо
+/// и быстрее ориентируются по имени.
 ///
-/// Usage:
 /// ```dart
-/// GridView.count(
-///   crossAxisCount: 3,
-///   children: [
-///     AppBibTile(bib: '07', name: 'Петров', state: BibState.available, onTap: () {}),
-///     AppBibTile(bib: '24', name: 'Иванов', state: BibState.finished),
-///   ],
+/// QtAthleteTile(
+///   firstName: 'Георгий',
+///   lastName: 'Ершов',
+///   bib: '5',
+///   lapInfo: 'На трассе',
+///   state: BibState.available,
+///   onTap: () => _recordSplit(ref, athleteId),
 /// )
 /// ```
-class AppBibTile extends StatelessWidget {
+class QtAthleteTile extends StatelessWidget {
+  final String firstName;
+  final String? lastName;
   final String bib;
-  final String? name;
   final String? lapInfo;
   final BibState state;
   final VoidCallback? onTap;
   final VoidCallback? onLongPress;
 
-  const AppBibTile({
+  const QtAthleteTile({
     super.key,
+    required this.firstName,
+    this.lastName,
     required this.bib,
-    this.name,
     this.lapInfo,
     this.state = BibState.available,
     this.onTap,
@@ -75,34 +69,68 @@ class AppBibTile extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
+                  // ── Статус (lapInfo) ──
                   if (lapInfo != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: 2),
                       child: Text(
                         lapInfo!,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(fontSize: 10, fontWeight: FontWeight.bold, color: textColor.withValues(alpha: 0.6), height: 1.0),
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: textColor.withValues(alpha: 0.6),
+                          height: 1.0,
+                        ),
                       ),
                     ),
-                  Text(
-                    bib,
-                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      height: 1.0,
-                      fontWeight: FontWeight.w900,
-                      color: textColor,
-                      decoration: decoration,
+
+                  // ── Имя (крупно) ──
+                  FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      firstName,
+                      maxLines: 1,
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        height: 1.1,
+                        fontWeight: FontWeight.w900,
+                        color: textColor,
+                        decoration: decoration,
+                      ),
                     ),
                   ),
-                  if (name != null)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
+
+                  // ── Фамилия (крупно, вторая строка) ──
+                  if (lastName != null && lastName!.isNotEmpty)
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
                       child: Text(
-                        name!,
-                        textAlign: TextAlign.center,
+                        lastName!,
                         maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.w500, color: textColor.withValues(alpha: 0.9)),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          height: 1.1,
+                          fontWeight: FontWeight.w900,
+                          color: textColor,
+                          decoration: decoration,
+                        ),
                       ),
                     ),
+
+                  // ── BIB (мелко внизу) ──
+                  Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      '#$bib',
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                        fontWeight: FontWeight.w500,
+                        color: textColor.withValues(alpha: 0.9),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -112,6 +140,7 @@ class AppBibTile extends StatelessWidget {
     );
   }
 
+  /// Reuse exact same styling logic from AppBibTile
   (Color bg, Color text, Color border, TextDecoration?, IconData?) _style(ColorScheme cs) => switch (state) {
     BibState.available => (
       cs.primaryContainer.withValues(alpha: 0.2),
