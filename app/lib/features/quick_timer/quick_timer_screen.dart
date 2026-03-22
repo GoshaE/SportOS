@@ -524,11 +524,11 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             onPressed: () => context.push('/quick-timer/history'),
           ),
         ],
-        bottom: TabBar(controller: _tabCtrl, tabs: const [
-          Tab(text: 'Старт'),
-          Tab(text: 'Финиш'),
-          Tab(text: 'Таблица'),
-        ]),
+        bottom: AppPillTabBar(
+          controller: _tabCtrl,
+          tabs: const ['Старт', 'Финиш', 'Таблица'],
+          icons: const [Icons.play_arrow, Icons.flag, Icons.leaderboard],
+        ),
       ),
       body: TabBarView(
         controller: _tabCtrl,
@@ -563,158 +563,146 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     final isOverdue = countdown != null && countdown.isNegative;
 
     return Column(children: [
-      // ── Пустой стейт: нет участников ──
-      if (totalCount == 0) Expanded(
-        child: Center(
-          child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.person_add_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
-            const SizedBox(height: 16),
-            Text('Добавьте участников', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: cs.onSurfaceVariant)),
-            const SizedBox(height: 8),
-            Text('Нажмите «+ Добавить» или откройте ⚙️ для загрузки группы',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant.withValues(alpha: 0.7))),
-            const SizedBox(height: 20),
-            AppButton.small(text: '+ Добавить участника', icon: Icons.person_add, onPressed: _showAddAthleteSheet),
-          ]),
+      // ── Режим / подсказка (до старта) ──
+      if (totalCount > 0 && !isRunning && !isFinished)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: AppInfoBanner.info(
+            title: isMass ? 'Масс-старт' : isInterval ? 'Интервальный старт' : 'Ручной старт',
+            subtitle: isMass
+                ? 'Все стартуют одновременно. Нажмите кнопку СТАРТ.'
+                : isInterval
+                    ? 'Нажмите «Старт» — первый спортсмен уйдёт. Далее автоматически каждые ${session.intervalSeconds} сек.'
+                    : 'Нажимайте на спортсмена, когда он готов к старту.',
+          ),
+        ),
+
+      // ── Обратный отсчёт (интервальный) ──
+      if (isInterval && isRunning && current != null && countdown != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            backgroundColor: isOverdue
+                ? cs.error.withValues(alpha: 0.15)
+                : isUrgent
+                    ? cs.errorContainer.withValues(alpha: 0.15)
+                    : cs.primaryContainer.withValues(alpha: 0.1),
+            borderColor: isOverdue
+                ? cs.error.withValues(alpha: 0.4)
+                : isUrgent
+                    ? cs.error.withValues(alpha: 0.3)
+                    : cs.primary.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(16),
+            children: [
+              Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text(
+                    isOverdue ? 'ОПОЗДАНИЕ!' : isUrgent ? 'ВНИМАНИЕ' : 'ДО СТАРТА',
+                    style: TextStyle(fontSize: 11, color: isOverdue || isUrgent ? cs.error : cs.primary, fontWeight: FontWeight.w800, letterSpacing: 1.0),
+                  ),
+                  Text(
+                    _fmtCountdown(countdown),
+                    style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: isOverdue || isUrgent ? cs.error : cs.primary, height: 1.1),
+                  ),
+                ]),
+                Icon(isOverdue ? Icons.error : isUrgent ? Icons.volume_up : Icons.schedule, size: 36,
+                  color: (isOverdue || isUrgent ? cs.error : cs.primary).withValues(alpha: 0.8)),
+              ]),
+              const SizedBox(height: 8),
+              AppQueueItem(
+                leading: Icon(Icons.person, color: cs.primary, size: 22),
+                title: Text('${current.bib} — ${current.name}',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: cs.primary)),
+                subtitle: const Text('Следующий'),
+                dense: true,
+                backgroundColor: cs.surface.withValues(alpha: 0.6),
+              ),
+            ],
+          ),
+        ),
+
+      // ── Все стартовали ──
+      if (totalCount > 0 && current == null && startedCount == totalCount && isRunning)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: AppInfoBanner.success(title: 'Все стартовали!', subtitle: 'Переключитесь на «Финиш».'),
+        ),
+
+      // ── Заголовок ──
+      Padding(
+        padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
+        child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text('СТАРТ-ЛИСТ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 1.2)),
+          if (totalCount > 0)
+            Text('$startedCount/$totalCount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.primary)),
+        ]),
+      ),
+
+      // ── Список участников + inline кнопка добавить ──
+      Expanded(
+        child: ListView.builder(
+          padding: const EdgeInsets.only(top: 4, bottom: 8),
+          // +1 для info-баннера (если пусто) или кнопки добавить
+          itemCount: sorted.length + (isFinished ? 0 : 1),
+          itemBuilder: (context, i) {
+            // Последний элемент — кнопка добавить
+            if (i == sorted.length) {
+              if (totalCount == 0) {
+                // Пустой стейт как inline
+                return Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  child: AppInfoBanner.info(
+                    title: 'Добавьте участников',
+                    subtitle: 'Нажмите кнопку ниже или откройте ⚙️ → «Из книги».',
+                  ),
+                );
+              }
+              // После списка — кнопка добавить
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                child: AppQueueItem(
+                  leading: Icon(Icons.person_add, color: cs.primary.withValues(alpha: 0.7), size: 22),
+                  title: Text('Добавить участника', style: TextStyle(fontSize: 14, color: cs.primary, fontWeight: FontWeight.w600)),
+                  backgroundColor: cs.primary.withValues(alpha: 0.04),
+                  onTap: _showAddAthleteSheet,
+                ),
+              );
+            }
+
+            final a = sorted[i];
+            final hasStarted = isMass ? (isRunning || isFinished) : a.startTime != null;
+            final isCurrent = !isMass && current?.id == a.id;
+            final finished = a.isFinished(session.totalLaps);
+
+            final color = finished ? cs.primary : hasStarted ? cs.tertiary : isCurrent ? cs.tertiary : cs.onSurfaceVariant;
+            final icon = finished ? Icons.flag : hasStarted ? Icons.check_circle : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
+            final statusText = finished ? 'Финиш' : hasStarted ? 'На трассе' : isCurrent ? 'Текущий' : 'Ожидает';
+
+            return AppQueueItem(
+              leading: Icon(icon, color: color, size: 24),
+              title: Text('${a.bib} — ${a.name.isNotEmpty ? a.name : 'BIB ${a.bib}'}',
+                style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: cs.onSurface)),
+              subtitle: Text('#${i + 1} · $statusText', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+              trailing: !isMass && !isInterval && !hasStarted && !isFinished
+                  ? Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4))
+                  : null,
+              backgroundColor: isCurrent
+                  ? cs.tertiaryContainer.withValues(alpha: 0.1)
+                  : finished
+                      ? cs.primaryContainer.withValues(alpha: 0.05)
+                      : hasStarted
+                          ? cs.tertiaryContainer.withValues(alpha: 0.05)
+                          : null,
+              onTap: !isMass && !isInterval && !hasStarted && !finished && !isFinished
+                  ? () => _startIndividual(a.id)
+                  : null,
+            );
+          },
         ),
       ),
 
-      if (totalCount > 0) ...[
-        // ── Режим / подсказка ──
-        if (!isRunning && !isFinished)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: AppInfoBanner.info(
-              title: isMass ? 'Масс-старт' : isInterval ? 'Интервальный старт' : 'Ручной старт',
-              subtitle: isMass
-                  ? 'Все стартуют одновременно. Нажмите кнопку СТАРТ.'
-                  : isInterval
-                      ? 'Нажмите «Старт» — первый спортсмен уйдёт. Далее автоматически каждые ${session.intervalSeconds} сек.'
-                      : 'Нажимайте на спортсмена, когда он готов к старту.',
-            ),
-          ),
-
-        // ── Обратный отсчёт (интервальный) ──
-        if (isInterval && isRunning && current != null && countdown != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: AppCard(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              backgroundColor: isOverdue
-                  ? cs.error.withValues(alpha: 0.15)
-                  : isUrgent
-                      ? cs.errorContainer.withValues(alpha: 0.15)
-                      : cs.primaryContainer.withValues(alpha: 0.1),
-              borderColor: isOverdue
-                  ? cs.error.withValues(alpha: 0.4)
-                  : isUrgent
-                      ? cs.error.withValues(alpha: 0.3)
-                      : cs.primary.withValues(alpha: 0.2),
-              borderRadius: BorderRadius.circular(16),
-              children: [
-                Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(
-                      isOverdue ? 'ОПОЗДАНИЕ!' : isUrgent ? 'ВНИМАНИЕ' : 'ДО СТАРТА',
-                      style: TextStyle(fontSize: 11, color: isOverdue || isUrgent ? cs.error : cs.primary, fontWeight: FontWeight.w800, letterSpacing: 1.0),
-                    ),
-                    Text(
-                      _fmtCountdown(countdown),
-                      style: TextStyle(fontSize: 48, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: isOverdue || isUrgent ? cs.error : cs.primary, height: 1.1),
-                    ),
-                  ]),
-                  Icon(isOverdue ? Icons.error : isUrgent ? Icons.volume_up : Icons.schedule, size: 36,
-                    color: (isOverdue || isUrgent ? cs.error : cs.primary).withValues(alpha: 0.8)),
-                ]),
-                const SizedBox(height: 8),
-                AppQueueItem(
-                  leading: Icon(Icons.person, color: cs.primary, size: 22),
-                  title: Text('${current.bib} — ${current.name}',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: cs.primary)),
-                  subtitle: const Text('Следующий'),
-                  dense: true,
-                  backgroundColor: cs.surface.withValues(alpha: 0.6),
-                ),
-              ],
-            ),
-          ),
-
-        // ── Все стартовали ──
-        if (current == null && startedCount == totalCount && isRunning)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: AppInfoBanner.success(title: 'Все стартовали!', subtitle: 'Переключитесь на «Финиш».'),
-          ),
-
-        // ── Заголовок + кнопка добавить ──
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 12, 4),
-          child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-            Text('СТАРТ-ЛИСТ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 1.2)),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Text('$startedCount/$totalCount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.primary)),
-              const SizedBox(width: 8),
-              if (!isFinished)
-                GestureDetector(
-                  onTap: _showAddAthleteSheet,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: cs.primary.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Icon(Icons.person_add, size: 14, color: cs.primary),
-                      const SizedBox(width: 4),
-                      Text('+', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: cs.primary)),
-                    ]),
-                  ),
-                ),
-            ]),
-          ]),
-        ),
-
-        // ── Очередь (AppQueueItem) ──
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 4, bottom: 8),
-            itemCount: sorted.length,
-            itemBuilder: (context, i) {
-              final a = sorted[i];
-              final hasStarted = isMass ? (isRunning || isFinished) : a.startTime != null;
-              final isCurrent = !isMass && current?.id == a.id;
-              final finished = a.isFinished(session.totalLaps);
-
-              final color = finished ? cs.primary : hasStarted ? cs.tertiary : isCurrent ? cs.tertiary : cs.onSurfaceVariant;
-              final icon = finished ? Icons.flag : hasStarted ? Icons.check_circle : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
-              final statusText = finished ? 'Финиш' : hasStarted ? 'На трассе' : isCurrent ? 'Текущий' : 'Ожидает';
-
-              return AppQueueItem(
-                leading: Icon(icon, color: color, size: 24),
-                title: Text('${a.bib} — ${a.name.isNotEmpty ? a.name : 'BIB ${a.bib}'}',
-                  style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: cs.onSurface)),
-                subtitle: Text('#${i + 1} · $statusText', style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
-                trailing: !isMass && !isInterval && !hasStarted && !isFinished
-                    ? Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4))
-                    : null,
-                backgroundColor: isCurrent
-                    ? cs.tertiaryContainer.withValues(alpha: 0.1)
-                    : finished
-                        ? cs.primaryContainer.withValues(alpha: 0.05)
-                        : hasStarted
-                            ? cs.tertiaryContainer.withValues(alpha: 0.05)
-                            : null,
-                onTap: !isMass && !isInterval && !hasStarted && !finished && !isFinished
-                    ? () => _startIndividual(a.id)
-                    : null,
-              );
-            },
-          ),
-        ),
-      ],
-
-      // ── Кнопки СТАРТ ──
+      // ── Кнопка СТАРТ (внизу, sticky) ──
       if (totalCount > 0 && !isRunning && !isFinished) ...[
         if (isMass)
           SafeArea(
@@ -741,6 +729,16 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             ),
           ),
       ],
+
+      // ── Добавить первого (когда пусто, sticky внизу) ──
+      if (totalCount == 0 && !isFinished)
+        SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: AppButton.primary(text: '+ Добавить участника', icon: Icons.person_add, onPressed: _showAddAthleteSheet),
+          ),
+        ),
 
       // ── Сессия завершена ──
       if (isFinished && totalCount > 0)
