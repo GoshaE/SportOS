@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/widgets.dart';
 import 'package:sportos_app/core/widgets/app_app_bar.dart';
@@ -26,6 +25,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
   Timer? _uiTimer;
   Duration _elapsed = Duration.zero;
   late TabController _tabCtrl;
+  bool _showCards = false;
 
   @override
   void initState() {
@@ -96,15 +96,26 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     ref.read(quickSessionProvider.notifier).recordSplit(athleteId);
     final session = ref.read(quickSessionProvider);
     if (session != null && session.allFinished) {
-      _finishAndGoResults();
+      // Авто-завершение: сохраняем, но НЕ уходим с экрана
+      ref.read(quickSessionProvider.notifier).finishSession();
+      ref.read(quickSessionProvider.notifier).saveToHistory();
+      ref.read(quickHistoryProvider.notifier).refresh();
+      if (mounted) {
+        // Переключаемся на вкладку Таблица
+        _tabCtrl.animateTo(_tabCtrl.length - 1);
+        AppSnackBar.success(context, 'Все финишировали! Результаты сохранены.');
+      }
     }
   }
 
-  void _finishAndGoResults() {
+  void _finishManually() {
     ref.read(quickSessionProvider.notifier).finishSession();
     ref.read(quickSessionProvider.notifier).saveToHistory();
     ref.read(quickHistoryProvider.notifier).refresh();
-    context.pushReplacement('/quick-timer/results');
+    if (mounted) {
+      _tabCtrl.animateTo(_tabCtrl.length - 1);
+      AppSnackBar.success(context, 'Сессия завершена. Результаты сохранены.');
+    }
   }
 
   // ═══════════════════════════════════════
@@ -189,7 +200,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
                   title: 'Завершить сессию?',
                   message: 'Результаты будут сохранены.',
                 );
-                if (confirm == true) _finishAndGoResults();
+                if (confirm == true) _finishManually();
               },
             ),
         ],
@@ -629,48 +640,142 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       return 0;
     });
 
-    // Лидер для расчёта отставаний
-    Duration? leaderTime;
+    // Лидер для расчёта отставаний (по лапам)
+    final leaderLapDurations = athletes.isNotEmpty
+        ? athletes.first.lapDurations(session.effectiveStart(athletes.first))
+        : <Duration>[];
+    Duration? leaderTotalTime;
     if (athletes.isNotEmpty && athletes.first.splits.isNotEmpty) {
-      leaderTime = athletes.first.splits.last.difference(session.effectiveStart(athletes.first));
+      leaderTotalTime = athletes.first.splits.last.difference(session.effectiveStart(athletes.first));
     }
 
-    if (athletes.every((a) => a.splits.isEmpty)) {
+    // Пустой стейт
+    final hasAnyData = athletes.any((a) => a.splits.isNotEmpty || a.startTime != null);
+    if (!hasAnyData) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
           Icon(Icons.leaderboard_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
           const SizedBox(height: 16),
-          Text('Результаты появятся после первых отсечек', style: TextStyle(color: cs.onSurfaceVariant)),
+          Text('Результаты появятся после старта', style: TextStyle(color: cs.onSurfaceVariant)),
         ]),
       );
     }
 
+    return Column(children: [
+      // ── Toolbar ──
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+          border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1))),
+        ),
+        child: Row(children: [
+          // Статистика
+          _statBadge(cs, '${session.finishedCount}', 'Финиш', cs.primary),
+          const SizedBox(width: 6),
+          _statBadge(cs, '${session.athletes.length - session.finishedCount}', 'На трассе', cs.tertiary),
+          const Spacer(),
+          // Переключатель вид
+          GestureDetector(
+            onTap: () => setState(() => _showCards = !_showCards),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _showCards ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _showCards ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                Icon(
+                  _showCards ? Icons.grid_view : Icons.view_list,
+                  size: 16,
+                  color: _showCards ? cs.primary : cs.onSurfaceVariant,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _showCards ? 'Виджеты' : 'Список',
+                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _showCards ? cs.primary : cs.onSurfaceVariant),
+                ),
+              ]),
+            ),
+          ),
+        ]),
+      ),
+
+      // ── Контент ──
+      Expanded(
+        child: _showCards
+            ? _buildTableGrid(session, athletes, cs, leaderLapDurations, leaderTotalTime)
+            : _buildTableList(session, athletes, cs, leaderLapDurations, leaderTotalTime),
+      ),
+    ]);
+  }
+
+  Widget _statBadge(ColorScheme cs, String value, String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
+      child: Row(mainAxisSize: MainAxisSize.min, children: [
+        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
+        const SizedBox(width: 3),
+        Text(label, style: TextStyle(fontSize: 9, color: color)),
+      ]),
+    );
+  }
+
+  // ── Список ──
+  Widget _buildTableList(QuickSession session, List<QuickAthlete> athletes, ColorScheme cs,
+      List<Duration> leaderLapDurations, Duration? leaderTotalTime) {
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       itemCount: athletes.length,
       separatorBuilder: (_, a) => const SizedBox(height: 6),
       itemBuilder: (context, i) {
         final a = athletes[i];
         final laps = a.completedLaps;
         final finished = a.isFinished(session.totalLaps);
-        final hasTime = a.splits.isNotEmpty;
+        final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
         final place = i + 1;
+        final lapDurations = a.lapDurations(session.effectiveStart(a));
 
+        // Имя или BIB
+        final displayName = a.name.isNotEmpty ? a.name : 'BIB ${a.bib}';
+
+        // Общее время
         String timeStr = '—';
         Duration? athleteTime;
-        if (hasTime) {
+        if (a.splits.isNotEmpty) {
           athleteTime = a.splits.last.difference(session.effectiveStart(a));
           timeStr = TimeFormatter.compact(athleteTime);
         }
 
+        // Статус
+        String status;
+        Color statusColor;
+        if (finished) {
+          status = 'Финиш';
+          statusColor = cs.primary;
+        } else if (!hasStarted) {
+          status = 'Ожидает';
+          statusColor = cs.outline;
+        } else if (laps > 0) {
+          status = 'Круг $laps/${session.totalLaps}';
+          statusColor = cs.tertiary;
+        } else {
+          status = 'На трассе';
+          statusColor = cs.tertiary;
+        }
+
+        // Общее отставание от лидера
         String gapStr = '';
-        if (leaderTime != null && athleteTime != null && i > 0) {
-          final gap = athleteTime - leaderTime;
+        if (leaderTotalTime != null && athleteTime != null && i > 0) {
+          final gap = athleteTime - leaderTotalTime;
           if (gap.inMilliseconds > 0) {
             gapStr = '+${TimeFormatter.compact(gap)}';
           }
         }
 
+        // Медаль
         final Color? medalColor = place == 1
             ? const Color(0xFFFFD700)
             : place == 2
@@ -679,64 +784,276 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
                     ? const Color(0xFFCD7F32)
                     : null;
 
-        return AppCard(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-          backgroundColor: finished
-              ? cs.primaryContainer.withValues(alpha: 0.08)
-              : cs.surfaceContainerHighest.withValues(alpha: 0.15),
+        return InkWell(
+          onTap: () => _showAthleteDetail(session, a, place, cs),
           borderRadius: BorderRadius.circular(12),
-          borderColor: medalColor?.withValues(alpha: 0.4) ?? cs.outlineVariant.withValues(alpha: 0.1),
-          children: [
-            Row(children: [
-              Container(
-                width: 32, height: 32,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: medalColor?.withValues(alpha: 0.15) ?? cs.surface.withValues(alpha: 0.5),
-                  shape: BoxShape.circle,
-                  border: Border.all(color: medalColor?.withValues(alpha: 0.5) ?? cs.outlineVariant.withValues(alpha: 0.2)),
-                ),
-                child: Text('$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: medalColor ?? cs.onSurfaceVariant)),
-              ),
-              const SizedBox(width: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
-                child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: cs.primary)),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(a.name, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                  Text(
-                    finished ? 'Финиш' : laps > 0 ? 'Круг $laps/${session.totalLaps}' : 'На трассе',
-                    style: TextStyle(fontSize: 11, color: finished ? cs.primary : cs.onSurfaceVariant, fontWeight: FontWeight.w600),
+          child: AppCard(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            backgroundColor: finished
+                ? cs.primaryContainer.withValues(alpha: 0.08)
+                : !hasStarted
+                    ? cs.surfaceContainerHighest.withValues(alpha: 0.1)
+                    : cs.surfaceContainerHighest.withValues(alpha: 0.15),
+            borderRadius: BorderRadius.circular(12),
+            borderColor: medalColor?.withValues(alpha: 0.4) ?? cs.outlineVariant.withValues(alpha: 0.1),
+            children: [
+              Row(children: [
+                // Позиция
+                Container(
+                  width: 30, height: 30,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: medalColor?.withValues(alpha: 0.15) ?? cs.surface.withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                    border: Border.all(color: medalColor?.withValues(alpha: 0.5) ?? cs.outlineVariant.withValues(alpha: 0.2)),
                   ),
-                ]),
-              ),
-              if (gapStr.isNotEmpty)
+                  child: Text('$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: medalColor ?? cs.onSurfaceVariant)),
+                ),
+                const SizedBox(width: 8),
+                // BIB
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                  decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
+                  child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: cs.primary)),
+                ),
+                const SizedBox(width: 8),
+                // Имя + статус
+                Expanded(
+                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(displayName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
+                    Text(status, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w600)),
+                  ]),
+                ),
+                // Отставание
+                if (gapStr.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: Text(gapStr, style: TextStyle(fontSize: 11, color: cs.error, fontWeight: FontWeight.w600)),
+                  ),
+                // Время
+                Text(timeStr, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: finished ? cs.primary : cs.onSurface)),
+                const SizedBox(width: 4),
+                Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+              ]),
+              // ── Лапы с отставаниями по кругам ──
+              if (lapDurations.isNotEmpty && session.totalLaps > 1)
                 Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Text(gapStr, style: TextStyle(fontSize: 12, color: cs.error, fontWeight: FontWeight.w600)),
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    children: lapDurations.asMap().entries.map((e) {
+                      final lapIdx = e.key;
+                      final lapTime = e.value;
+                      // Отставание на этом круге
+                      String lapGap = '';
+                      if (i > 0 && lapIdx < leaderLapDurations.length) {
+                        final diff = lapTime - leaderLapDurations[lapIdx];
+                        if (diff.inMilliseconds > 0) {
+                          lapGap = ' +${TimeFormatter.compact(diff)}';
+                        }
+                      }
+                      return Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Text(
+                          'L${lapIdx + 1}: ${TimeFormatter.compact(lapTime)}$lapGap',
+                          style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: lapGap.isNotEmpty ? cs.error : cs.onSurfaceVariant),
+                        ),
+                      );
+                    }).toList(),
+                  ),
                 ),
-              Text(timeStr, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: finished ? cs.primary : cs.onSurface)),
-            ]),
-            if (a.splits.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(top: 6),
-                child: Wrap(
-                  spacing: 8,
-                  children: a.lapDurations(session.effectiveStart(a)).asMap().entries.map((e) {
-                    return Text(
-                      'L${e.key + 1}: ${TimeFormatter.compact(e.value)}',
-                      style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontFamily: 'monospace'),
-                    );
-                  }).toList(),
-                ),
-              ),
-          ],
+            ],
+          ),
         );
       },
+    );
+  }
+
+  // ── Виджеты (карточки) ──
+  Widget _buildTableGrid(QuickSession session, List<QuickAthlete> athletes, ColorScheme cs,
+      List<Duration> leaderLapDurations, Duration? leaderTotalTime) {
+    return GridView.extent(
+      maxCrossAxisExtent: 140,
+      childAspectRatio: 0.85,
+      padding: const EdgeInsets.all(12),
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      children: athletes.asMap().entries.map((entry) {
+        final i = entry.key;
+        final a = entry.value;
+        final finished = a.isFinished(session.totalLaps);
+        final laps = a.completedLaps;
+        final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
+        final place = i + 1;
+
+        // Время
+        String? timeStr;
+        if (a.splits.isNotEmpty) {
+          final time = a.splits.last.difference(session.effectiveStart(a));
+          timeStr = TimeFormatter.compact(time);
+        }
+
+        // Lap info
+        final String lapInfo;
+        if (finished) {
+          lapInfo = '#$place ${timeStr ?? 'Финиш'}';
+        } else if (!hasStarted) {
+          lapInfo = 'Ожидает';
+        } else if (laps > 0) {
+          lapInfo = 'Круг $laps/${session.totalLaps}';
+        } else {
+          lapInfo = 'На трассе';
+        }
+
+        final BibState state;
+        if (finished) {
+          state = BibState.finished;
+        } else if (!hasStarted) {
+          state = BibState.disabled;
+        } else if (laps > 0) {
+          state = BibState.current;
+        } else {
+          state = BibState.available;
+        }
+
+        return AppBibTile(
+          bib: a.bib,
+          name: a.name.isNotEmpty ? a.name : null,
+          lapInfo: lapInfo,
+          state: state,
+          onTap: () => _showAthleteDetail(session, a, place, cs),
+        );
+      }).toList(),
+    );
+  }
+
+  // ── Модальное окно с деталями спортсмена ──
+  void _showAthleteDetail(QuickSession session, QuickAthlete a, int place, ColorScheme cs) {
+    final finished = a.isFinished(session.totalLaps);
+    final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
+    final displayName = a.name.isNotEmpty ? a.name : 'BIB ${a.bib}';
+    final lapDurations = a.lapDurations(session.effectiveStart(a));
+
+    // Общее время
+    String totalTime = '—';
+    if (a.splits.isNotEmpty) {
+      totalTime = TimeFormatter.compact(a.splits.last.difference(session.effectiveStart(a)));
+    }
+
+    // Позиция
+    final Color? medalColor = place == 1
+        ? const Color(0xFFFFD700)
+        : place == 2
+            ? const Color(0xFFC0C0C0)
+            : place == 3
+                ? const Color(0xFFCD7F32)
+                : null;
+
+    AppBottomSheet.show(
+      context,
+      title: '$displayName (BIB ${a.bib})',
+      initialHeight: 0.55,
+      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        // ── Статус и позиция ──
+        Row(children: [
+          if (medalColor != null)
+            Container(
+              width: 36, height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: medalColor.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+                border: Border.all(color: medalColor.withValues(alpha: 0.5)),
+              ),
+              child: Text('#$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: medalColor)),
+            )
+          else
+            Container(
+              width: 36, height: 36,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: cs.surface,
+                shape: BoxShape.circle,
+                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Text('#$place', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: cs.onSurfaceVariant)),
+            ),
+          const SizedBox(width: 12),
+          Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Text(
+              finished ? 'Финишировал' : !hasStarted ? 'Ожидает старта' : 'На трассе',
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: finished ? cs.primary : cs.tertiary),
+            ),
+            Text('Круг ${a.completedLaps}/${session.totalLaps}', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+          ]),
+          const Spacer(),
+          Text(totalTime, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: finished ? cs.primary : cs.onSurface)),
+        ]),
+        const SizedBox(height: 16),
+
+        // ── Детализация по кругам ──
+        if (lapDurations.isNotEmpty) ...[
+          Text('КРУГИ', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 1)),
+          const SizedBox(height: 8),
+          ...lapDurations.asMap().entries.map((e) {
+            final lapIdx = e.key;
+            final lapTime = e.value;
+            final isLast = lapIdx == lapDurations.length - 1 && finished;
+
+            // Кумулятивное время
+            Duration cumulative = Duration.zero;
+            for (var j = 0; j <= lapIdx; j++) {
+              cumulative += lapDurations[j];
+            }
+
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 6),
+              child: AppCard(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                backgroundColor: isLast
+                    ? cs.primaryContainer.withValues(alpha: 0.08)
+                    : cs.surfaceContainerHighest.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(10),
+                children: [
+                  Row(children: [
+                    Container(
+                      width: 28, height: 28,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: isLast ? cs.primary.withValues(alpha: 0.1) : cs.surface.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text('L${lapIdx + 1}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: isLast ? cs.primary : cs.onSurfaceVariant)),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                        Text(
+                          TimeFormatter.compact(lapTime),
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.onSurface),
+                        ),
+                        Text(
+                          'Общее: ${TimeFormatter.compact(cumulative)}',
+                          style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
+                        ),
+                      ]),
+                    ),
+                    if (isLast) Icon(Icons.flag, size: 18, color: cs.primary),
+                  ]),
+                ],
+              ),
+            );
+          }),
+        ] else if (hasStarted)
+          Center(child: Text('На трассе — ожидаем первую отсечку', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)))
+        else
+          Center(child: Text('Спортсмен ещё не стартовал', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant))),
+      ]),
     );
   }
 
