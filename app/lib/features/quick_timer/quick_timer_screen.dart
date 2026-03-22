@@ -8,11 +8,20 @@ import 'package:sportos_app/core/widgets/app_app_bar.dart';
 import '../../domain/quick_timer/quick_timer_models.dart';
 import '../../domain/quick_timer/quick_timer_providers.dart';
 import '../../domain/timing/time_formatter.dart';
+import '../../domain/timing/result_table.dart';
 
-/// QT2 — Live хронометраж быстрой сессии.
+/// QT3 — Live хронометраж быстрой сессии.
 ///
 /// Масс-старт: 2 закладки (Финиш + Таблица)
 /// Интервальный / Ручной: 3 закладки (Старт + Финиш + Таблица)
+///
+/// Использует существующие компоненты:
+/// - [AppResultTable] + [ResultTable] — таблица результатов
+/// - [AppInfoBanner] — подсказки и баннеры
+/// - [AppQueueItem] — элементы очереди
+/// - [AppBibTile] — плитки на вкладке Финиш
+/// - [AppStatCard] — статистика
+/// - [AppBottomSheet] — модальное окно деталей
 class QuickTimerScreen extends ConsumerStatefulWidget {
   const QuickTimerScreen({super.key});
 
@@ -49,7 +58,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     });
   }
 
-  /// Авто-старт: если время пришло → отметить атлета как стартовавшего.
   void _autoStartCheck(QuickSession session) {
     if (session.globalStartTime == null) return;
     final now = DateTime.now();
@@ -57,14 +65,13 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       ..sort((a, b) => a.startOrder.compareTo(b.startOrder));
 
     for (final a in sorted) {
-      if (a.startTime != null) continue; // уже стартовал
+      if (a.startTime != null) continue;
       final planned = session.plannedStartTime(a);
       if (planned == null) continue;
       if (now.isAfter(planned) || now.isAtSameMomentAs(planned)) {
-        // Авто-запуск — используем плановое время, а не текущее
         ref.read(quickSessionProvider.notifier).startIndividualAt(a.id, planned);
       } else {
-        break; // следующие ещё не пришло время
+        break;
       }
     }
   }
@@ -85,7 +92,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     ref.read(quickSessionProvider.notifier).startMass();
   }
 
-  /// Запуск первого спортсмена (интервальный) или конкретного (ручной).
   void _startIndividual(String athleteId) {
     HapticFeedback.mediumImpact();
     ref.read(quickSessionProvider.notifier).startIndividual(athleteId);
@@ -96,12 +102,10 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     ref.read(quickSessionProvider.notifier).recordSplit(athleteId);
     final session = ref.read(quickSessionProvider);
     if (session != null && session.allFinished) {
-      // Авто-завершение: сохраняем, но НЕ уходим с экрана
       ref.read(quickSessionProvider.notifier).finishSession();
       ref.read(quickSessionProvider.notifier).saveToHistory();
       ref.read(quickHistoryProvider.notifier).refresh();
       if (mounted) {
-        // Переключаемся на вкладку Таблица
         _tabCtrl.animateTo(_tabCtrl.length - 1);
         AppSnackBar.success(context, 'Все финишировали! Результаты сохранены.');
       }
@@ -136,8 +140,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final cs = theme.colorScheme;
+    final cs = Theme.of(context).colorScheme;
     final session = ref.watch(quickSessionProvider);
 
     if (session == null) {
@@ -149,11 +152,8 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
 
     final mode = session.mode;
     final isRunning = session.status == QuickSessionStatus.running;
-    final finishedCount = session.finishedCount;
-    final totalCount = session.athletes.length;
     final hasTabs3 = mode != QuickStartMode.mass;
 
-    // Tab labels
     final tabs = hasTabs3
         ? const [Tab(text: 'Старт'), Tab(text: 'Финиш'), Tab(text: 'Таблица')]
         : const [Tab(text: 'Финиш'), Tab(text: 'Таблица')];
@@ -187,7 +187,8 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             child: Row(mainAxisSize: MainAxisSize.min, children: [
               Icon(Icons.flag, size: 14, color: cs.primary),
               const SizedBox(width: 4),
-              Text('$finishedCount/$totalCount', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
+              Text('${session.finishedCount}/${session.athletes.length}',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: cs.primary)),
             ]),
           ),
           if (isRunning)
@@ -245,64 +246,30 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     final isOverdue = countdown != null && countdown.isNegative;
 
     return Column(children: [
-      // ── Не начали: подсказка ──
-      if (!isRunning) ...[
+      // ── AppInfoBanner: подсказка до старта ──
+      if (!isRunning)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: AppCard(
-            padding: const EdgeInsets.all(14),
-            backgroundColor: cs.primaryContainer.withValues(alpha: 0.08),
-            borderRadius: BorderRadius.circular(14),
-            borderColor: cs.primary.withValues(alpha: 0.15),
-            children: [
-              Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Icon(Icons.info_outline, size: 20, color: cs.primary),
-                const SizedBox(width: 10),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      isInterval ? 'Интервальный старт' : 'Ручной старт',
-                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: cs.primary),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      isInterval
-                          ? 'Нажмите кнопку «Старт» — первый спортсмен уйдёт немедленно. '
-                            'Далее остальные стартуют автоматически каждые ${session.intervalSeconds} сек. '
-                            'Вам нужно только контролировать процесс.'
-                          : 'Нажимайте на каждого спортсмена, когда он готов к старту. '
-                            'Время записывается в момент нажатия.',
-                      style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.4),
-                    ),
-                  ],
-                )),
-              ]),
-            ],
+          child: AppInfoBanner.info(
+            title: isInterval ? 'Интервальный старт' : 'Ручной старт',
+            subtitle: isInterval
+                ? 'Нажмите «Старт» — первый спортсмен уйдёт. '
+                  'Далее остальные стартуют автоматически каждые ${session.intervalSeconds} сек.'
+                : 'Нажимайте на каждого спортсмена, когда он готов к старту.',
           ),
         ),
-        if (current != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
-            child: AppCard(
-              padding: const EdgeInsets.all(14),
-              backgroundColor: cs.tertiaryContainer.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(14),
-              children: [
-                Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                  Icon(Icons.person, color: cs.tertiary, size: 22),
-                  const SizedBox(width: 8),
-                  Text('Первый: ${current.bib} — ${current.name}',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: cs.tertiary)),
-                ]),
-                if (isInterval) ...[
-                  const SizedBox(height: 4),
-                  Text('Интервал: ${session.intervalSeconds} сек', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-                ],
-              ],
-            ),
+
+      // ── Первый атлет (до старта) ──
+      if (!isRunning && current != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 4),
+          child: AppInfoBanner(
+            title: 'Первый: ${current.bib} — ${current.name}',
+            subtitle: isInterval ? 'Интервал: ${session.intervalSeconds} сек' : null,
+            type: BannerType.success,
+            icon: Icons.person,
           ),
-      ],
+        ),
 
       // ── Обратный отсчёт (интервальный, гонка идёт) ──
       if (isInterval && isRunning && current != null && countdown != null)
@@ -351,20 +318,13 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
                 ),
               ]),
               const SizedBox(height: 8),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: cs.surface.withValues(alpha: 0.6),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: cs.primary.withValues(alpha: 0.15)),
-                ),
-                child: Row(children: [
-                  Text('СЛЕДУЮЩИЙ:', style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
-                  const Spacer(),
-                  Text('${current.bib} — ${current.name}',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: cs.primary)),
-                ]),
+              AppQueueItem(
+                leading: Icon(Icons.person, color: cs.primary, size: 22),
+                title: Text('${current.bib} — ${current.name}',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: cs.primary)),
+                subtitle: const Text('Следующий'),
+                dense: true,
+                backgroundColor: cs.surface.withValues(alpha: 0.6),
               ),
             ],
           ),
@@ -374,37 +334,26 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       if (current == null && startedCount == totalCount && isRunning)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-          child: AppCard(
-            padding: const EdgeInsets.all(16),
-            backgroundColor: cs.primaryContainer.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(16),
-            children: [
-              Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.check_circle, color: cs.primary, size: 28),
-                const SizedBox(width: 8),
-                Text('Все стартовали!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: cs.primary)),
-              ]),
-              const SizedBox(height: 8),
-              Text('Переключитесь на вкладку «Финиш»', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
-            ],
+          child: AppInfoBanner.success(
+            title: 'Все стартовали!',
+            subtitle: 'Переключитесь на вкладку «Финиш».',
           ),
         ),
 
-      // ── Инфо ──
+      // ── Заголовок списка ──
       Padding(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 4),
         child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
           Text('СТАРТ-ЛИСТ', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.onSurfaceVariant, letterSpacing: 1.2)),
           Text('$startedCount/$totalCount', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: cs.primary)),
         ]),
       ),
 
-      // ── Очередь ──
+      // ── Очередь (AppQueueItem) ──
       Expanded(
-        child: ListView.separated(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 8),
+        child: ListView.builder(
+          padding: const EdgeInsets.only(left: 0, right: 0, top: 4, bottom: 8),
           itemCount: sorted.length,
-          separatorBuilder: (_, a) => const SizedBox(height: 6),
           itemBuilder: (context, i) {
             final a = sorted[i];
             final hasStarted = a.startTime != null;
@@ -414,80 +363,35 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             final icon = hasStarted ? Icons.check_circle : isCurrent ? Icons.play_circle : Icons.hourglass_empty;
             final statusText = hasStarted ? 'Ушёл' : isCurrent ? 'Текущий' : 'Ожидает';
 
-            return AppCard(
-              padding: EdgeInsets.zero,
+            return AppQueueItem(
+              leading: Icon(icon, color: color, size: 24),
+              title: Text('${a.bib} — ${a.name}',
+                style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: cs.onSurface)),
+              subtitle: Text(statusText, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+              trailing: !isInterval && !hasStarted
+                  ? Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4))
+                  : null,
               backgroundColor: isCurrent
                   ? cs.tertiaryContainer.withValues(alpha: 0.1)
                   : hasStarted
                       ? cs.primaryContainer.withValues(alpha: 0.05)
-                      : cs.surfaceContainerHighest.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(12),
-              borderColor: isCurrent ? cs.tertiary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.1),
-              children: [
-                InkWell(
-                  // Ручной режим: тап по ожидающему → старт
-                  onTap: !isInterval && !hasStarted
-                      ? () => _startIndividual(a.id)
                       : null,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                    child: Row(children: [
-                      Icon(icon, color: color, size: 24),
-                      const SizedBox(width: 12),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(6)),
-                        child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: cs.onSurfaceVariant)),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Text(a.name, style: TextStyle(fontSize: 14, fontWeight: isCurrent ? FontWeight.w800 : FontWeight.w600, color: cs.onSurface)),
-                          const SizedBox(height: 2),
-                          Text(statusText, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
-                        ]),
-                      ),
-                      // Ручной режим: стрелка для тапа
-                      if (!isInterval && !hasStarted)
-                        Icon(Icons.chevron_right, size: 20, color: cs.onSurfaceVariant.withValues(alpha: 0.4)),
-                    ]),
-                  ),
-                ),
-              ],
+              onTap: !isInterval && !hasStarted ? () => _startIndividual(a.id) : null,
             );
           },
         ),
       ),
 
-      // ── Кнопка СТАРТ (интервальный: только первый; ручной: нет) ──
+      // ── Кнопка СТАРТ (интервальный: только первый) ──
       if (!isRunning && current != null && isInterval)
         SafeArea(
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              backgroundColor: cs.errorContainer.withValues(alpha: 0.1),
-              borderColor: cs.error.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(24),
-              children: [
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _startIndividual(current.id),
-                    child: Container(
-                      width: double.infinity,
-                      height: 80,
-                      alignment: Alignment.center,
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.play_arrow, size: 32, color: cs.error),
-                        const SizedBox(height: 4),
-                        Text('СТАРТ', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: cs.error, letterSpacing: 2)),
-                      ]),
-                    ),
-                  ),
-                ),
-              ],
+            child: AppButton.danger(
+              text: 'СТАРТ',
+              icon: Icons.play_arrow,
+              onPressed: () => _startIndividual(current.id),
             ),
           ),
         ),
@@ -497,18 +401,9 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
         SafeArea(
           top: false,
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: cs.primaryContainer.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                Icon(Icons.touch_app, size: 20, color: cs.primary),
-                const SizedBox(width: 8),
-                Text('Нажмите на спортсмена для старта', style: TextStyle(fontSize: 13, color: cs.primary, fontWeight: FontWeight.w600)),
-              ]),
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+            child: AppInfoBanner.info(
+              title: 'Нажмите на спортсмена для старта',
             ),
           ),
         ),
@@ -525,7 +420,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       // ── Таймер для масс-старта ──
       if (isMass) _buildMassTimer(cs, isRunning),
 
-      // ── Сетка атлетов ──
+      // ── Сетка BibTile ──
       Expanded(
         child: GridView.extent(
           maxCrossAxisExtent: 140,
@@ -538,7 +433,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             final laps = a.completedLaps;
             final hasStarted = isMass ? isRunning : a.startTime != null;
 
-            // Elapsed time
             String? timeStr;
             if (finished && a.finishTime != null) {
               final start = session.effectiveStart(a);
@@ -548,19 +442,17 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
               timeStr = TimeFormatter.compact(a.splits.last.difference(start));
             }
 
-            // Lap info
             final String lapInfo;
             if (finished) {
               lapInfo = timeStr ?? 'Финиш';
             } else if (!hasStarted) {
-              lapInfo = 'Ожидает старта';
+              lapInfo = 'Ожидает';
             } else if (laps > 0) {
               lapInfo = 'Круг $laps/${session.totalLaps}${timeStr != null ? '\n⏱$timeStr' : ''}';
             } else {
               lapInfo = 'На трассе';
             }
 
-            // BibState
             final BibState state;
             if (finished) {
               state = BibState.finished;
@@ -574,7 +466,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
 
             return AppBibTile(
               bib: a.bib,
-              name: a.name,
+              name: a.name.isNotEmpty ? a.name : null,
               lapInfo: lapInfo,
               state: state,
               onTap: () {
@@ -586,37 +478,16 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
         ),
       ),
 
-      // ── Кнопка Масс-Старт ──
+      // ── Кнопка Масс-Старт (AppButton) ──
       if (isMass && !isRunning)
         SafeArea(
           top: false,
           child: Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-            child: AppCard(
-              padding: EdgeInsets.zero,
-              backgroundColor: cs.errorContainer.withValues(alpha: 0.1),
-              borderColor: cs.error.withValues(alpha: 0.3),
-              borderRadius: BorderRadius.circular(24),
-              children: [
-                Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _startMass,
-                    splashColor: cs.error.withValues(alpha: 0.2),
-                    highlightColor: cs.error.withValues(alpha: 0.1),
-                    child: Container(
-                      width: double.infinity,
-                      height: 100,
-                      alignment: Alignment.center,
-                      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Icon(Icons.play_arrow, size: 40, color: cs.error),
-                        const SizedBox(height: 4),
-                        Text('СТАРТ', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: cs.error, letterSpacing: 3)),
-                      ]),
-                    ),
-                  ),
-                ),
-              ],
+            child: AppButton.danger(
+              text: 'СТАРТ',
+              icon: Icons.play_arrow,
+              onPressed: _startMass,
             ),
           ),
         ),
@@ -624,9 +495,67 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
   }
 
   // ═══════════════════════════════════════
-  // Tab 3: ТАБЛИЦА (live-результаты)
+  // Tab 3: ТАБЛИЦА — AppResultTable
   // ═══════════════════════════════════════
   Widget _buildTableTab(QuickSession session, ColorScheme cs) {
+    final table = _buildResultTable(session);
+
+    if (table.rows.isEmpty) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Icon(Icons.leaderboard_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
+          const SizedBox(height: 16),
+          Text('Результаты появятся после старта', style: TextStyle(color: cs.onSurfaceVariant)),
+        ]),
+      );
+    }
+
+    return Column(children: [
+      // ── Toolbar: статистика + переключатель ──
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: cs.surfaceContainerHighest.withValues(alpha: 0.15),
+          border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1))),
+        ),
+        child: Row(children: [
+          AppStatCard(value: '${session.finishedCount}', label: 'Финиш', color: cs.primary, expanded: false),
+          const SizedBox(width: 6),
+          AppStatCard(value: '${session.athletes.length - session.finishedCount}', label: 'На трассе', color: cs.tertiary, expanded: false),
+          const Spacer(),
+          // Переключатель вид
+          GestureDetector(
+            onTap: () => setState(() => _showCards = !_showCards),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _showCards ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _showCards ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
+              ),
+              child: Icon(
+                _showCards ? Icons.view_agenda_outlined : Icons.table_rows_outlined,
+                size: 16,
+                color: _showCards ? cs.primary : cs.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ]),
+      ),
+
+      // ── AppResultTable ──
+      Expanded(
+        child: AppResultTable(
+          table: table,
+          showCards: _showCards,
+          onRowTap: (row) => _showAthleteDetailFromRow(session, row, cs),
+        ),
+      ),
+    ]);
+  }
+
+  /// Построить [ResultTable] из [QuickSession] для [AppResultTable].
+  ResultTable _buildResultTable(QuickSession session) {
     // Сортировка: больше кругов → меньше времени
     final athletes = [...session.athletes];
     athletes.sort((a, b) {
@@ -640,7 +569,7 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       return 0;
     });
 
-    // Лидер для расчёта отставаний (по лапам)
+    // Лидер
     final leaderLapDurations = athletes.isNotEmpty
         ? athletes.first.lapDurations(session.effectiveStart(athletes.first))
         : <Duration>[];
@@ -649,340 +578,161 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       leaderTotalTime = athletes.first.splits.last.difference(session.effectiveStart(athletes.first));
     }
 
-    // Пустой стейт
-    final hasAnyData = athletes.any((a) => a.splits.isNotEmpty || a.startTime != null);
-    if (!hasAnyData) {
-      return Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.leaderboard_outlined, size: 64, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
-          const SizedBox(height: 16),
-          Text('Результаты появятся после старта', style: TextStyle(color: cs.onSurfaceVariant)),
-        ]),
-      );
+    // Колонки
+    final columns = <ColumnDef>[
+      const ColumnDef(id: 'place', label: '#', type: ColumnType.number, align: ColumnAlign.center, flex: 0.4, minWidth: 36),
+      const ColumnDef(id: 'bib', label: 'BIB', type: ColumnType.text, align: ColumnAlign.center, flex: 0.5, minWidth: 40),
+      const ColumnDef(id: 'name', label: 'Имя', type: ColumnType.text, flex: 1.5, minWidth: 80),
+      // Лап-колонки
+      for (var lap = 1; lap <= session.totalLaps; lap++)
+        ColumnDef(id: 'lap${lap}_time', label: 'L$lap', type: ColumnType.time, align: ColumnAlign.right, flex: 0.8, minWidth: 60),
+      const ColumnDef(id: 'result_time', label: 'Время', type: ColumnType.time, align: ColumnAlign.right, flex: 1.0, minWidth: 70),
+      const ColumnDef(id: 'gap_leader', label: 'Δ', type: ColumnType.gap, align: ColumnAlign.right, flex: 0.7, minWidth: 55),
+    ];
+
+    // Строки
+    final rows = <ResultRow>[];
+    for (var i = 0; i < athletes.length; i++) {
+      final a = athletes[i];
+      final finished = a.isFinished(session.totalLaps);
+      final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
+      final laps = a.completedLaps;
+      final place = i + 1;
+      final lapDurations = a.lapDurations(session.effectiveStart(a));
+      final displayName = a.name.isNotEmpty ? a.name : 'BIB ${a.bib}';
+
+      // Общее время
+      Duration? athleteTime;
+      if (a.splits.isNotEmpty) {
+        athleteTime = a.splits.last.difference(session.effectiveStart(a));
+      }
+
+      // RowType
+      final RowType rowType;
+      if (finished) {
+        rowType = RowType.finished;
+      } else if (!hasStarted) {
+        rowType = RowType.waiting;
+      } else {
+        rowType = RowType.onTrack;
+      }
+
+      // Cells
+      final cells = <String, CellValue>{};
+
+      // Place
+      if (finished) {
+        cells['place'] = CellValue(raw: place, display: '$place', style: place <= 3 ? CellStyle.highlight : CellStyle.normal);
+      } else if (hasStarted) {
+        final statusLabel = laps > 0 ? 'К$laps' : 'LIVE';
+        cells['place'] = CellValue(display: statusLabel, style: CellStyle.highlight);
+      } else {
+        cells['place'] = const CellValue(display: '—', style: CellStyle.muted);
+      }
+
+      // BIB
+      cells['bib'] = CellValue(raw: a.bib, display: a.bib);
+
+      // Name
+      cells['name'] = CellValue(raw: displayName, display: displayName,
+        style: finished ? CellStyle.bold : hasStarted ? CellStyle.normal : CellStyle.muted);
+
+      // Lap times
+      for (var lap = 1; lap <= session.totalLaps; lap++) {
+        final lapIdx = lap - 1;
+        if (lapIdx < lapDurations.length) {
+          final lapTime = lapDurations[lapIdx];
+          // Лучший круг?
+          var lapStyle = CellStyle.normal;
+          if (i == 0 && finished) lapStyle = CellStyle.highlight;
+          // Per-lap gap
+          String lapDisplay = TimeFormatter.compact(lapTime);
+          if (i > 0 && lapIdx < leaderLapDurations.length) {
+            final diff = lapTime - leaderLapDurations[lapIdx];
+            if (diff.inMilliseconds > 0) {
+              lapDisplay = TimeFormatter.compact(lapTime);
+              lapStyle = CellStyle.normal;
+            }
+          }
+          cells['lap${lap}_time'] = CellValue(raw: lapTime, display: lapDisplay, style: lapStyle);
+        } else {
+          cells['lap${lap}_time'] = CellValue.na;
+        }
+      }
+
+      // Result time
+      if (athleteTime != null) {
+        cells['result_time'] = CellValue(
+          raw: athleteTime,
+          display: TimeFormatter.compact(athleteTime),
+          style: finished ? CellStyle.bold : CellStyle.normal,
+        );
+      } else {
+        cells['result_time'] = CellValue.empty;
+      }
+
+      // Gap
+      if (leaderTotalTime != null && athleteTime != null && i > 0) {
+        final gap = athleteTime - leaderTotalTime;
+        if (gap.inMilliseconds > 0) {
+          cells['gap_leader'] = CellValue(raw: gap, display: '+${TimeFormatter.compact(gap)}', style: CellStyle.error);
+        } else {
+          cells['gap_leader'] = CellValue.na;
+        }
+      } else {
+        cells['gap_leader'] = CellValue.na;
+      }
+
+      rows.add(ResultRow(entryId: a.id, cells: cells, type: rowType));
     }
 
-    return Column(children: [
-      // ── Toolbar ──
-      Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: cs.surfaceContainerHighest.withValues(alpha: 0.15),
-          border: Border(bottom: BorderSide(color: cs.outlineVariant.withValues(alpha: 0.1))),
-        ),
-        child: Row(children: [
-          // Статистика
-          _statBadge(cs, '${session.finishedCount}', 'Финиш', cs.primary),
-          const SizedBox(width: 6),
-          _statBadge(cs, '${session.athletes.length - session.finishedCount}', 'На трассе', cs.tertiary),
-          const Spacer(),
-          // Переключатель вид
-          GestureDetector(
-            onTap: () => setState(() => _showCards = !_showCards),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: _showCards ? cs.primary.withValues(alpha: 0.12) : cs.surfaceContainerHighest,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _showCards ? cs.primary.withValues(alpha: 0.3) : cs.outlineVariant.withValues(alpha: 0.3)),
-              ),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(
-                  _showCards ? Icons.grid_view : Icons.view_list,
-                  size: 16,
-                  color: _showCards ? cs.primary : cs.onSurfaceVariant,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  _showCards ? 'Виджеты' : 'Список',
-                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _showCards ? cs.primary : cs.onSurfaceVariant),
-                ),
-              ]),
-            ),
-          ),
-        ]),
-      ),
-
-      // ── Контент ──
-      Expanded(
-        child: _showCards
-            ? _buildTableGrid(session, athletes, cs, leaderLapDurations, leaderTotalTime)
-            : _buildTableList(session, athletes, cs, leaderLapDurations, leaderTotalTime),
-      ),
-    ]);
+    return ResultTable(columns: columns, rows: rows);
   }
 
-  Widget _statBadge(ColorScheme cs, String value, String label, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Text(value, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: color)),
-        const SizedBox(width: 3),
-        Text(label, style: TextStyle(fontSize: 9, color: color)),
-      ]),
-    );
+  // ── Модальное окно по тапу на строку таблицы ──
+  void _showAthleteDetailFromRow(QuickSession session, ResultRow row, ColorScheme cs) {
+    final a = session.athletes.firstWhere((x) => x.id == row.entryId, orElse: () => session.athletes.first);
+    // Вычислить позицию
+    final sorted = [...session.athletes]..sort((x, y) {
+      final lc = y.completedLaps.compareTo(x.completedLaps);
+      if (lc != 0) return lc;
+      if (x.splits.isNotEmpty && y.splits.isNotEmpty) {
+        return x.splits.last.difference(session.effectiveStart(x)).compareTo(y.splits.last.difference(session.effectiveStart(y)));
+      }
+      return 0;
+    });
+    final place = sorted.indexOf(a) + 1;
+    _showAthleteDetail(session, a, place, cs);
   }
 
-  // ── Список ──
-  Widget _buildTableList(QuickSession session, List<QuickAthlete> athletes, ColorScheme cs,
-      List<Duration> leaderLapDurations, Duration? leaderTotalTime) {
-    return ListView.separated(
-      padding: const EdgeInsets.all(12),
-      itemCount: athletes.length,
-      separatorBuilder: (_, a) => const SizedBox(height: 6),
-      itemBuilder: (context, i) {
-        final a = athletes[i];
-        final laps = a.completedLaps;
-        final finished = a.isFinished(session.totalLaps);
-        final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
-        final place = i + 1;
-        final lapDurations = a.lapDurations(session.effectiveStart(a));
-
-        // Имя или BIB
-        final displayName = a.name.isNotEmpty ? a.name : 'BIB ${a.bib}';
-
-        // Общее время
-        String timeStr = '—';
-        Duration? athleteTime;
-        if (a.splits.isNotEmpty) {
-          athleteTime = a.splits.last.difference(session.effectiveStart(a));
-          timeStr = TimeFormatter.compact(athleteTime);
-        }
-
-        // Статус
-        String status;
-        Color statusColor;
-        if (finished) {
-          status = 'Финиш';
-          statusColor = cs.primary;
-        } else if (!hasStarted) {
-          status = 'Ожидает';
-          statusColor = cs.outline;
-        } else if (laps > 0) {
-          status = 'Круг $laps/${session.totalLaps}';
-          statusColor = cs.tertiary;
-        } else {
-          status = 'На трассе';
-          statusColor = cs.tertiary;
-        }
-
-        // Общее отставание от лидера
-        String gapStr = '';
-        if (leaderTotalTime != null && athleteTime != null && i > 0) {
-          final gap = athleteTime - leaderTotalTime;
-          if (gap.inMilliseconds > 0) {
-            gapStr = '+${TimeFormatter.compact(gap)}';
-          }
-        }
-
-        // Медаль
-        final Color? medalColor = place == 1
-            ? const Color(0xFFFFD700)
-            : place == 2
-                ? const Color(0xFFC0C0C0)
-                : place == 3
-                    ? const Color(0xFFCD7F32)
-                    : null;
-
-        return InkWell(
-          onTap: () => _showAthleteDetail(session, a, place, cs),
-          borderRadius: BorderRadius.circular(12),
-          child: AppCard(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            backgroundColor: finished
-                ? cs.primaryContainer.withValues(alpha: 0.08)
-                : !hasStarted
-                    ? cs.surfaceContainerHighest.withValues(alpha: 0.1)
-                    : cs.surfaceContainerHighest.withValues(alpha: 0.15),
-            borderRadius: BorderRadius.circular(12),
-            borderColor: medalColor?.withValues(alpha: 0.4) ?? cs.outlineVariant.withValues(alpha: 0.1),
-            children: [
-              Row(children: [
-                // Позиция
-                Container(
-                  width: 30, height: 30,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: medalColor?.withValues(alpha: 0.15) ?? cs.surface.withValues(alpha: 0.5),
-                    shape: BoxShape.circle,
-                    border: Border.all(color: medalColor?.withValues(alpha: 0.5) ?? cs.outlineVariant.withValues(alpha: 0.2)),
-                  ),
-                  child: Text('$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: medalColor ?? cs.onSurfaceVariant)),
-                ),
-                const SizedBox(width: 8),
-                // BIB
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                  decoration: BoxDecoration(color: cs.surface.withValues(alpha: 0.5), borderRadius: BorderRadius.circular(4)),
-                  child: Text(a.bib, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 11, color: cs.primary)),
-                ),
-                const SizedBox(width: 8),
-                // Имя + статус
-                Expanded(
-                  child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(displayName, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: cs.onSurface)),
-                    Text(status, style: TextStyle(fontSize: 10, color: statusColor, fontWeight: FontWeight.w600)),
-                  ]),
-                ),
-                // Отставание
-                if (gapStr.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: Text(gapStr, style: TextStyle(fontSize: 11, color: cs.error, fontWeight: FontWeight.w600)),
-                  ),
-                // Время
-                Text(timeStr, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, fontFamily: 'monospace', color: finished ? cs.primary : cs.onSurface)),
-                const SizedBox(width: 4),
-                Icon(Icons.chevron_right, size: 16, color: cs.onSurfaceVariant.withValues(alpha: 0.3)),
-              ]),
-              // ── Лапы с отставаниями по кругам ──
-              if (lapDurations.isNotEmpty && session.totalLaps > 1)
-                Padding(
-                  padding: const EdgeInsets.only(top: 6),
-                  child: Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: lapDurations.asMap().entries.map((e) {
-                      final lapIdx = e.key;
-                      final lapTime = e.value;
-                      // Отставание на этом круге
-                      String lapGap = '';
-                      if (i > 0 && lapIdx < leaderLapDurations.length) {
-                        final diff = lapTime - leaderLapDurations[lapIdx];
-                        if (diff.inMilliseconds > 0) {
-                          lapGap = ' +${TimeFormatter.compact(diff)}';
-                        }
-                      }
-                      return Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          'L${lapIdx + 1}: ${TimeFormatter.compact(lapTime)}$lapGap',
-                          style: TextStyle(fontSize: 10, fontFamily: 'monospace', color: lapGap.isNotEmpty ? cs.error : cs.onSurfaceVariant),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  // ── Виджеты (карточки) ──
-  Widget _buildTableGrid(QuickSession session, List<QuickAthlete> athletes, ColorScheme cs,
-      List<Duration> leaderLapDurations, Duration? leaderTotalTime) {
-    return GridView.extent(
-      maxCrossAxisExtent: 140,
-      childAspectRatio: 0.85,
-      padding: const EdgeInsets.all(12),
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      children: athletes.asMap().entries.map((entry) {
-        final i = entry.key;
-        final a = entry.value;
-        final finished = a.isFinished(session.totalLaps);
-        final laps = a.completedLaps;
-        final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
-        final place = i + 1;
-
-        // Время
-        String? timeStr;
-        if (a.splits.isNotEmpty) {
-          final time = a.splits.last.difference(session.effectiveStart(a));
-          timeStr = TimeFormatter.compact(time);
-        }
-
-        // Lap info
-        final String lapInfo;
-        if (finished) {
-          lapInfo = '#$place ${timeStr ?? 'Финиш'}';
-        } else if (!hasStarted) {
-          lapInfo = 'Ожидает';
-        } else if (laps > 0) {
-          lapInfo = 'Круг $laps/${session.totalLaps}';
-        } else {
-          lapInfo = 'На трассе';
-        }
-
-        final BibState state;
-        if (finished) {
-          state = BibState.finished;
-        } else if (!hasStarted) {
-          state = BibState.disabled;
-        } else if (laps > 0) {
-          state = BibState.current;
-        } else {
-          state = BibState.available;
-        }
-
-        return AppBibTile(
-          bib: a.bib,
-          name: a.name.isNotEmpty ? a.name : null,
-          lapInfo: lapInfo,
-          state: state,
-          onTap: () => _showAthleteDetail(session, a, place, cs),
-        );
-      }).toList(),
-    );
-  }
-
-  // ── Модальное окно с деталями спортсмена ──
   void _showAthleteDetail(QuickSession session, QuickAthlete a, int place, ColorScheme cs) {
     final finished = a.isFinished(session.totalLaps);
     final hasStarted = a.startTime != null || session.mode == QuickStartMode.mass;
     final displayName = a.name.isNotEmpty ? a.name : 'BIB ${a.bib}';
     final lapDurations = a.lapDurations(session.effectiveStart(a));
 
-    // Общее время
     String totalTime = '—';
     if (a.splits.isNotEmpty) {
       totalTime = TimeFormatter.compact(a.splits.last.difference(session.effectiveStart(a)));
     }
-
-    // Позиция
-    final Color? medalColor = place == 1
-        ? const Color(0xFFFFD700)
-        : place == 2
-            ? const Color(0xFFC0C0C0)
-            : place == 3
-                ? const Color(0xFFCD7F32)
-                : null;
 
     AppBottomSheet.show(
       context,
       title: '$displayName (BIB ${a.bib})',
       initialHeight: 0.55,
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        // ── Статус и позиция ──
+        // ── Шапка: позиция + статус + время ──
         Row(children: [
-          if (medalColor != null)
-            Container(
-              width: 36, height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: medalColor.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-                border: Border.all(color: medalColor.withValues(alpha: 0.5)),
-              ),
-              child: Text('#$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: medalColor)),
-            )
-          else
-            Container(
-              width: 36, height: 36,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: cs.surface,
-                shape: BoxShape.circle,
-                border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.3)),
-              ),
-              child: Text('#$place', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: cs.onSurfaceVariant)),
+          Container(
+            width: 36, height: 36,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: cs.primaryContainer.withValues(alpha: 0.15),
+              shape: BoxShape.circle,
+              border: Border.all(color: cs.primary.withValues(alpha: 0.3)),
             ),
+            child: Text('#$place', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: cs.primary)),
+          ),
           const SizedBox(width: 12),
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Text(
@@ -1005,7 +755,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
             final lapTime = e.value;
             final isLast = lapIdx == lapDurations.length - 1 && finished;
 
-            // Кумулятивное время
             Duration cumulative = Duration.zero;
             for (var j = 0; j <= lapIdx; j++) {
               cumulative += lapDurations[j];
@@ -1013,46 +762,29 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
 
             return Padding(
               padding: const EdgeInsets.only(bottom: 6),
-              child: AppCard(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                backgroundColor: isLast
-                    ? cs.primaryContainer.withValues(alpha: 0.08)
-                    : cs.surfaceContainerHighest.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(10),
-                children: [
-                  Row(children: [
-                    Container(
-                      width: 28, height: 28,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        color: isLast ? cs.primary.withValues(alpha: 0.1) : cs.surface.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text('L${lapIdx + 1}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: isLast ? cs.primary : cs.onSurfaceVariant)),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                        Text(
-                          TimeFormatter.compact(lapTime),
-                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.onSurface),
-                        ),
-                        Text(
-                          'Общее: ${TimeFormatter.compact(cumulative)}',
-                          style: TextStyle(fontSize: 10, color: cs.onSurfaceVariant),
-                        ),
-                      ]),
-                    ),
-                    if (isLast) Icon(Icons.flag, size: 18, color: cs.primary),
-                  ]),
-                ],
+              child: AppQueueItem(
+                leading: Container(
+                  width: 28, height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: isLast ? cs.primary.withValues(alpha: 0.1) : cs.surface.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text('L${lapIdx + 1}', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 11, color: isLast ? cs.primary : cs.onSurfaceVariant)),
+                ),
+                title: Text(
+                  TimeFormatter.compact(lapTime),
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'monospace', color: cs.onSurface),
+                ),
+                subtitle: Text('Общее: ${TimeFormatter.compact(cumulative)}', style: TextStyle(fontSize: 11, color: cs.onSurfaceVariant)),
+                trailing: isLast ? Icon(Icons.flag, size: 18, color: cs.primary) : null,
               ),
             );
           }),
         ] else if (hasStarted)
-          Center(child: Text('На трассе — ожидаем первую отсечку', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant)))
+          AppInfoBanner.info(title: 'На трассе', subtitle: 'Ожидаем первую отсечку')
         else
-          Center(child: Text('Спортсмен ещё не стартовал', style: TextStyle(fontSize: 13, color: cs.onSurfaceVariant))),
+          AppInfoBanner.warning(title: 'Ожидает старта'),
       ]),
     );
   }

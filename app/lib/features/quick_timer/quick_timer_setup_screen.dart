@@ -204,27 +204,17 @@ class _QuickTimerSetupScreenState extends ConsumerState<QuickTimerSetupScreen> {
                 selected: {_mode},
                 onSelectionChanged: (s) => setState(() => _mode = s.first),
               ),
-              const SizedBox(height: 10),
-              // Подсказка по режиму
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: cs.primaryContainer.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Icon(Icons.info_outline, size: 16, color: cs.primary),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(
-                    _mode == QuickStartMode.mass
-                        ? 'Все спортсмены стартуют одновременно по нажатию кнопки «Старт».'
-                        : _mode == QuickStartMode.interval
-                            ? 'Нажмите «Старт» — первый спортсмен уйдёт, далее остальные стартуют автоматически через заданный интервал.'
-                            : 'Вы вручную нажимаете на каждого спортсмена, когда он готов к старту.',
-                    style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant, height: 1.4),
-                  )),
-                ]),
+              AppInfoBanner.info(
+                title: _mode == QuickStartMode.mass
+                    ? 'Масс-старт'
+                    : _mode == QuickStartMode.interval
+                        ? 'Интервальный старт'
+                        : 'Ручной старт',
+                subtitle: _mode == QuickStartMode.mass
+                    ? 'Все спортсмены стартуют одновременно по нажатию кнопки «Старт».'
+                    : _mode == QuickStartMode.interval
+                        ? 'Нажмите «Старт» — первый спортсмен уйдёт, далее остальные стартуют автоматически через заданный интервал.'
+                        : 'Вы вручную нажимаете на каждого спортсмена, когда он готов к старту.',
               ),
             ],
           ),
