@@ -46,18 +46,6 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
       setState(() => _selectedTab = _tabCtrl.index);
     });
 
-    // Авто-создание пустой сессии
-    Future.microtask(() {
-      final session = ref.read(quickSessionProvider);
-      if (session == null) {
-        ref.read(quickSessionProvider.notifier).createSession(
-          mode: QuickStartMode.mass,
-          totalLaps: 1,
-          athletes: [],
-        );
-      }
-    });
-
     // Таймер для обновления шапки каждые 100 мс
     _uiTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       final s = ref.read(quickSessionProvider);
@@ -112,7 +100,16 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
     final cs = Theme.of(context).colorScheme;
     final session = ref.watch(quickSessionProvider);
 
+    // Авто-создание сессии если null (первый вход или после reset)
     if (session == null) {
+      // Создаём на следующем кадре чтобы не мутировать state в build
+      Future.microtask(() {
+        ref.read(quickSessionProvider.notifier).createSession(
+          mode: QuickStartMode.mass,
+          totalLaps: 1,
+          athletes: [],
+        );
+      });
       return Scaffold(
         appBar: AppAppBar(forceBackButton: true, title: const Text('Секундомер')),
         body: const Center(child: CircularProgressIndicator()),
