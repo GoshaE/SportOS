@@ -35,11 +35,16 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
   Timer? _uiTimer;
   Duration _elapsed = Duration.zero;
   late TabController _tabCtrl;
+  int _selectedTab = 0;
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 3, vsync: this);
+    _tabCtrl.addListener(() {
+      if (_tabCtrl.indexIsChanging) return;
+      setState(() => _selectedTab = _tabCtrl.index);
+    });
 
     // Авто-создание пустой сессии
     Future.microtask(() {
@@ -208,8 +213,8 @@ class _QuickTimerScreenState extends ConsumerState<QuickTimerScreen>
           icons: const [Icons.play_arrow, Icons.flag, Icons.leaderboard],
         ),
       ),
-      body: TabBarView(
-        controller: _tabCtrl,
+      body: IndexedStack(
+        index: _selectedTab,
         children: [
           QtStartTab(session: session, isRunning: isRunning, isFinished: isFinished),
           QtFinishTab(session: session, isRunning: isRunning, elapsed: _elapsed),

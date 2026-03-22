@@ -126,11 +126,12 @@ class QuickSessionNotifier extends Notifier<QuickSession?> {
   void loadSession(QuickSession session) => state = session;
 
   /// Добавить участника на лету (во время сессии).
-  void addAthlete({required String name, required String bib}) {
+  /// [idSuffix] — необязательный суффикс для уникальности ID при массовом добавлении.
+  void addAthlete({required String name, required String bib, int idSuffix = 0}) {
     if (state == null) return;
     final nextOrder = state!.athletes.length;
     final newAthlete = QuickAthlete(
-      id: 'qa-${DateTime.now().millisecondsSinceEpoch}',
+      id: 'qa-${DateTime.now().millisecondsSinceEpoch}-$idSuffix-$nextOrder',
       name: name,
       bib: bib.isNotEmpty ? bib : '${nextOrder + 1}',
       startOrder: nextOrder,

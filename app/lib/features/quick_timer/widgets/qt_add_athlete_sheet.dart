@@ -74,9 +74,11 @@ class _AddAthleteContentState extends ConsumerState<_AddAthleteContent> with Sin
     final notifier = ref.read(quickSessionProvider.notifier);
     int nextBibInt = (session?.athletes.length ?? 0) + 1;
 
+    int suffix = 0;
     for (var name in _selectedRecent) {
-      notifier.addAthlete(name: name, bib: '$nextBibInt');
+      notifier.addAthlete(name: name, bib: '$nextBibInt', idSuffix: suffix);
       nextBibInt++;
+      suffix++;
     }
     AppSnackBar.success(context, 'Добавлено: ${_selectedRecent.length}');
     Navigator.of(context, rootNavigator: true).pop();
