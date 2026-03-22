@@ -87,9 +87,9 @@ class AppBibTile extends StatelessWidget {
                     fit: BoxFit.scaleDown,
                     child: Text(
                       bib,
-                      maxLines: 1,
+                      textAlign: TextAlign.center,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        height: 1.0,
+                        height: 1.2,
                         fontWeight: FontWeight.w900,
                         color: textColor,
                         decoration: decoration,

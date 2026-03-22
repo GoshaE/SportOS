@@ -150,9 +150,7 @@ class QtFinishTab extends ConsumerWidget {
             String displayName;
             if (a.name.isNotEmpty) {
               final parts = a.name.trim().split(RegExp(r'\s+'));
-              displayName = parts.length > 1
-                  ? '${parts[0]} ${parts[1][0]}.'
-                  : parts[0];
+              displayName = parts.join('\n');
             } else {
               displayName = a.bib;
             }
