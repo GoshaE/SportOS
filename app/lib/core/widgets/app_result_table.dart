@@ -298,7 +298,7 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 3b: Phase 2c + isDnf + category only ──
+    // ── Phase 3c: 3b + medals + timeColor ──
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -313,6 +313,24 @@ class _CardRow extends StatelessWidget {
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
 
+    // Time color
+    Color timeColor = cs.onSurface;
+    if (place == '1') timeColor = cs.primary;
+    else if (isDnf) timeColor = cs.error;
+
+    // Place widget with medals
+    Widget placeWidget;
+    if (place == '1') {
+      placeWidget = const Text('🥇', style: TextStyle(fontSize: 16));
+    } else if (place == '2') {
+      placeWidget = const Text('🥈', style: TextStyle(fontSize: 16));
+    } else if (place == '3') {
+      placeWidget = const Text('🥉', style: TextStyle(fontSize: 16));
+    } else {
+      placeWidget = Text(place, textAlign: TextAlign.center,
+        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700));
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -325,9 +343,7 @@ class _CardRow extends StatelessWidget {
         children: [
           // ── Top row ──
           Row(children: [
-            SizedBox(width: 28, child: Text(place, textAlign: TextAlign.center,
-              style: theme.textTheme.titleSmall?.copyWith(
-                color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700))),
+            SizedBox(width: 30, child: placeWidget),
             const SizedBox(width: 6),
             if (bib.isNotEmpty) ...[
               Container(
@@ -357,7 +373,7 @@ class _CardRow extends StatelessWidget {
               ),
           ]),
           const SizedBox(height: 6),
-          // ── Bottom row ──
+          // ── Bottom row (same as 3b — inline laps in Wrap) ──
           Row(children: [
             Expanded(child: Wrap(
               spacing: 4, runSpacing: 3,
@@ -384,7 +400,7 @@ class _CardRow extends StatelessWidget {
             ],
             const SizedBox(width: 6),
             Text(time, style: AppTypography.monoTiming.copyWith(
-              fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
+              fontSize: 15, fontWeight: FontWeight.w700, color: timeColor)),
           ]),
         ],
       ),
