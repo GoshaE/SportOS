@@ -315,7 +315,14 @@ class _CardRow extends StatelessWidget {
 
     // DEBUG: show all cell keys — REMOVE LATER
     final debugKeys = row.cells.keys.join(', ');
-    final debugInfo = 'keys:[$debugKeys] place:[$place] bib:[$bib] time:[$time] type:[${row.type}]';
+    final pCell = row.cells['place'];
+    final bCell = row.cells['bib'];
+    final tCell = row.cells['result_time'];
+    final debugInfo = 'keys:[$debugKeys]\n'
+      'place: d=[${pCell?.display}] raw=[${pCell?.raw}] s=[${pCell?.style}]\n'
+      'bib: d=[${bCell?.display}] raw=[${bCell?.raw}]\n'
+      'time: d=[${tCell?.display}] raw=[${tCell?.raw}]\n'
+      'type:[${row.type}]';
 
     // Time color
     Color timeColor = cs.onSurface;
