@@ -331,6 +331,26 @@ class _CardRow extends StatelessWidget {
         style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700));
     }
 
+    // Build lap chips list before return
+    final lapChips = <Widget>[];
+    for (final col in columns) {
+      if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
+        final display = row.cells[col.id]?.display ?? '';
+        if (display.isNotEmpty) {
+          lapChips.add(Container(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+            decoration: BoxDecoration(
+              color: cs.surfaceContainerHighest.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(3),
+            ),
+            child: Text('${col.label}: $display',
+              style: AppTypography.monoTiming.copyWith(
+                fontSize: 11, color: cs.onSurfaceVariant)),
+          ));
+        }
+      }
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
@@ -341,7 +361,7 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row ──
+          // ── Top row ── (same as 3c)
           Row(children: [
             SizedBox(width: 30, child: placeWidget),
             const SizedBox(width: 6),
@@ -373,26 +393,11 @@ class _CardRow extends StatelessWidget {
               ),
           ]),
           const SizedBox(height: 6),
-          // ── Bottom row (same as 3b — inline laps in Wrap) ──
+          // ── Bottom row (3d — lapChips list + conditional) ──
           Row(children: [
-            Expanded(child: Wrap(
-              spacing: 4, runSpacing: 3,
-              children: [
-                for (final col in columns)
-                  if (col.id.startsWith('lap') && col.id.endsWith('_time'))
-                    if (row.cells[col.id] != null && row.cells[col.id]!.display.isNotEmpty)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: cs.surfaceContainerHighest.withOpacity(0.5),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text('${col.label}: ${row.cells[col.id]!.display}',
-                          style: AppTypography.monoTiming.copyWith(
-                            fontSize: 11, color: cs.onSurfaceVariant)),
-                      ),
-              ],
-            )),
+            if (lapChips.isNotEmpty)
+              Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: lapChips)),
+            if (lapChips.isEmpty) const Spacer(),
             if (gap.isNotEmpty) ...[
               const SizedBox(width: 4),
               Text(gap, style: AppTypography.monoTiming.copyWith(
