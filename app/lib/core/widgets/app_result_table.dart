@@ -298,51 +298,49 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final name = row.cells['name']?.display ?? '';
-    final time = row.cells['result_time']?.display ?? '—';
-    final place = row.cells['place']?.display ?? '';
-    final bib = row.cells['bib']?.display ?? '';
-    final gap = row.cells['gap_leader']?.display ??
-                row.cells['gap_prev']?.display ?? '';
-    final category = row.cells['category']?.display ?? '';
+    final nameDisplay = row.cells['name']?.display ?? '';
+    final totalTime = row.cells['result_time']?.display ?? '—';
+    final placeStr = row.cells['place']?.display ?? '';
+    final bibStr = row.cells['bib']?.display ?? '';
+    final gapStr = row.cells['gap_leader']?.display ??
+                   row.cells['gap_prev']?.display ?? '';
+    final categoryStr = row.cells['category']?.display ?? '';
 
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
 
-    // DEBUG: show all cell keys — REMOVE LATER
-    final debugKeys = row.cells.keys.join(', ');
-    final pCell = row.cells['place'];
-    final bCell = row.cells['bib'];
-    final tCell = row.cells['result_time'];
-    final debugInfo = 'keys:[$debugKeys]\n'
-      'place: d=[${pCell?.display}] raw=[${pCell?.raw}] s=[${pCell?.style}]\n'
-      'bib: d=[${bCell?.display}] raw=[${bCell?.raw}]\n'
-      'time: d=[${tCell?.display}] raw=[${tCell?.raw}]\n'
-      'type:[${row.type}]';
+    // DEBUG — REMOVE LATER
+    final debugInfo = 'place:[$placeStr] bib:[$bibStr] totalTime:[$totalTime] gap:[$gapStr]';
 
     // Time color
     Color timeColor = cs.onSurface;
-    if (place == '1') timeColor = cs.primary;
+    if (placeStr == '1') timeColor = cs.primary;
     else if (isDnf) timeColor = cs.error;
 
-    // Place widget with medals
+    // Place badge (no emoji — they don't render on web CanvasKit)
     Widget placeWidget;
-    if (place == '1') {
-      placeWidget = const Text('🥇', style: TextStyle(fontSize: 16));
-    } else if (place == '2') {
-      placeWidget = const Text('🥈', style: TextStyle(fontSize: 16));
-    } else if (place == '3') {
-      placeWidget = const Text('🥉', style: TextStyle(fontSize: 16));
+    if (placeStr == '1' || placeStr == '2' || placeStr == '3') {
+      const colors = {'1': Color(0xFFFFD700), '2': Color(0xFFC0C0C0), '3': Color(0xFFCD7F32)};
+      placeWidget = Container(
+        width: 26, height: 26,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: colors[placeStr]!.withOpacity(0.2),
+          shape: BoxShape.circle,
+          border: Border.all(color: colors[placeStr]!, width: 1.5),
+        ),
+        child: Text(placeStr, textAlign: TextAlign.center,
+          style: TextStyle(color: colors[placeStr], fontSize: 13, fontWeight: FontWeight.w900)),
+      );
     } else {
-      placeWidget = Text(place, textAlign: TextAlign.center,
+      placeWidget = Text(placeStr, textAlign: TextAlign.center,
         style: TextStyle(color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700));
     }
 
-    // Build lap chips list before return
+    // Lap chips
     final lapChips = <Widget>[];
     for (final col in columns) {
       if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
@@ -372,37 +370,37 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // DEBUG TEXT — REMOVE LATER
+          // DEBUG — REMOVE LATER
           Text(debugInfo, style: TextStyle(fontSize: 9, color: cs.error)),
           const SizedBox(height: 4),
           // ── Top row ──
           Row(children: [
             SizedBox(width: 30, child: placeWidget),
             const SizedBox(width: 6),
-            if (bib.isNotEmpty) ...[
+            if (bibStr.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(bib, style: theme.textTheme.labelMedium?.copyWith(
+                child: Text(bibStr, style: theme.textTheme.labelMedium?.copyWith(
                   color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 8),
             ],
-            Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
+            Expanded(child: Text(nameDisplay, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleSmall?.copyWith(
                 color: isDnf ? cs.onSurfaceVariant : cs.onSurface,
                 fontSize: 14, fontWeight: FontWeight.w600))),
-            if (category.isNotEmpty)
+            if (categoryStr.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(category, style: theme.textTheme.labelSmall?.copyWith(
+                child: Text(categoryStr, style: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
               ),
           ]),
@@ -412,13 +410,13 @@ class _CardRow extends StatelessWidget {
             if (lapChips.isNotEmpty)
               Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: lapChips)),
             if (lapChips.isEmpty) const Spacer(),
-            if (gap.isNotEmpty) ...[
+            if (gapStr.isNotEmpty) ...[
               const SizedBox(width: 4),
-              Text(gap, style: AppTypography.monoTiming.copyWith(
+              Text(gapStr, style: AppTypography.monoTiming.copyWith(
                 fontSize: 11, color: cs.onSurfaceVariant)),
             ],
             const SizedBox(width: 6),
-            Text(time, style: AppTypography.monoTiming.copyWith(
+            Text(totalTime, style: AppTypography.monoTiming.copyWith(
               fontSize: 15, fontWeight: FontWeight.w700, color: timeColor)),
           ]),
         ],
