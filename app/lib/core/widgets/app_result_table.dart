@@ -301,13 +301,21 @@ class _CardRow extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final nameDisplay = row.cells['name']?.display ?? '';
-    final totalTime = row.cells['result_time']?.display ?? '—';
-    final placeStr = row.cells['place']?.display ?? '';
-    final bibStr = row.cells['bib']?.display ?? '';
-    final gapStr = row.cells['gap_leader']?.display ??
-                   row.cells['gap_prev']?.display ?? '';
-    final categoryStr = row.cells['category']?.display ?? '';
+    // CRITICAL: store cell in local variable FIRST, then access .display
+    // dart2js minification breaks chained row.cells['id']?.display
+    final nameCell = row.cells['name'];
+    final timeCell = row.cells['result_time'];
+    final placeCell = row.cells['place'];
+    final bibCell = row.cells['bib'];
+    final gapCell = row.cells['gap_leader'] ?? row.cells['gap_prev'];
+    final categoryCell = row.cells['category'];
+
+    final nameDisplay = nameCell?.display ?? '';
+    final totalTime = timeCell?.display ?? '—';
+    final placeStr = placeCell?.display ?? '';
+    final bibStr = bibCell?.display ?? '';
+    final gapStr = gapCell?.display ?? '';
+    final categoryStr = categoryCell?.display ?? '';
 
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
