@@ -298,63 +298,20 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 3a: full design, NO CellValue.raw / CellValue.style access ──
+    // ── Phase 3b: Phase 2c + isDnf + category only ──
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // Only use .display strings — no .raw, no .style
-    final placeDisplay = row.cells['place']?.display ?? '';
-    final bibDisplay = row.cells['bib']?.display ?? '';
-    final nameDisplay = row.cells['name']?.display ?? '';
-    final timeDisplay = row.cells['result_time']?.display ?? '';
-    final categoryDisplay = row.cells['category']?.display ?? '';
-    final gapDisplay = row.cells['gap_leader']?.display ??
-                        row.cells['gap_prev']?.display ?? '';
+    final name = row.cells['name']?.display ?? '';
+    final time = row.cells['result_time']?.display ?? '—';
+    final place = row.cells['place']?.display ?? '';
+    final bib = row.cells['bib']?.display ?? '';
+    final gap = row.cells['gap_leader']?.display ??
+                row.cells['gap_prev']?.display ?? '';
+    final category = row.cells['category']?.display ?? '';
 
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
-
-    // Time color by status
-    Color timeColor = cs.onSurface;
-    if (placeDisplay == '1') {
-      timeColor = cs.primary;
-    } else if (isDnf) {
-      timeColor = cs.error;
-    }
-
-    // Place widget — medals via display string
-    Widget placeWidget;
-    if (placeDisplay == '1') {
-      placeWidget = const Text('🥇', style: TextStyle(fontSize: 16));
-    } else if (placeDisplay == '2') {
-      placeWidget = const Text('🥈', style: TextStyle(fontSize: 16));
-    } else if (placeDisplay == '3') {
-      placeWidget = const Text('🥉', style: TextStyle(fontSize: 16));
-    } else {
-      placeWidget = Text(placeDisplay, textAlign: TextAlign.center,
-        style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700, fontSize: 11, color: cs.onSurfaceVariant));
-    }
-
-    // Lap chips — no cell.style access
-    final lapChips = <Widget>[];
-    for (final col in columns) {
-      if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
-        final display = row.cells[col.id]?.display ?? '';
-        if (display.isNotEmpty) {
-          lapChips.add(Container(
-            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-            decoration: BoxDecoration(
-              color: cs.surfaceContainerHighest.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text('${col.label}: $display',
-              style: AppTypography.monoTiming.copyWith(
-                fontSize: 11, color: cs.onSurfaceVariant)),
-          ));
-        }
-      }
-    }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -366,51 +323,68 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top: place + bib + name + category ──
+          // ── Top row ──
           Row(children: [
-            SizedBox(width: 30, child: placeWidget),
-            if (bibDisplay.isNotEmpty) ...[
+            SizedBox(width: 28, child: Text(place, textAlign: TextAlign.center,
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: cs.onSurfaceVariant, fontSize: 13, fontWeight: FontWeight.w700))),
+            const SizedBox(width: 6),
+            if (bib.isNotEmpty) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(bibDisplay, style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
+                child: Text(bib, style: theme.textTheme.labelMedium?.copyWith(
+                  color: cs.onSurfaceVariant, fontSize: 12, fontWeight: FontWeight.w700)),
               ),
               const SizedBox(width: 8),
             ],
-            Expanded(child: Text(nameDisplay, maxLines: 1, overflow: TextOverflow.ellipsis,
+            Expanded(child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis,
               style: theme.textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.w600, fontSize: 14,
-                color: isDnf ? cs.onSurfaceVariant : cs.onSurface))),
-            if (categoryDisplay.isNotEmpty)
+                color: isDnf ? cs.onSurfaceVariant : cs.onSurface,
+                fontSize: 14, fontWeight: FontWeight.w600))),
+            if (category.isNotEmpty)
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.primaryContainer.withOpacity(0.25),
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(categoryDisplay, style: theme.textTheme.labelSmall?.copyWith(
+                child: Text(category, style: theme.textTheme.labelSmall?.copyWith(
                   fontSize: 11, fontWeight: FontWeight.w600, color: cs.primary)),
               ),
           ]),
           const SizedBox(height: 6),
-          // ── Bottom: laps + gap + total time ──
+          // ── Bottom row ──
           Row(children: [
-            if (lapChips.isNotEmpty)
-              Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: lapChips)),
-            if (lapChips.isEmpty) const Spacer(),
-            if (gapDisplay.isNotEmpty) ...[
+            Expanded(child: Wrap(
+              spacing: 4, runSpacing: 3,
+              children: [
+                for (final col in columns)
+                  if (col.id.startsWith('lap') && col.id.endsWith('_time'))
+                    if (row.cells[col.id] != null && row.cells[col.id]!.display.isNotEmpty)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: cs.surfaceContainerHighest.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text('${col.label}: ${row.cells[col.id]!.display}',
+                          style: AppTypography.monoTiming.copyWith(
+                            fontSize: 11, color: cs.onSurfaceVariant)),
+                      ),
+              ],
+            )),
+            if (gap.isNotEmpty) ...[
               const SizedBox(width: 4),
-              Text(gapDisplay, style: AppTypography.monoTiming.copyWith(
+              Text(gap, style: AppTypography.monoTiming.copyWith(
                 fontSize: 11, color: cs.onSurfaceVariant)),
             ],
             const SizedBox(width: 6),
-            Text(timeDisplay.isEmpty ? '—' : timeDisplay,
-              style: AppTypography.monoTiming.copyWith(
-                fontSize: 15, fontWeight: FontWeight.w700, color: timeColor)),
+            Text(time, style: AppTypography.monoTiming.copyWith(
+              fontSize: 15, fontWeight: FontWeight.w700, color: cs.onSurface)),
           ]),
         ],
       ),
