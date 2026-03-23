@@ -298,12 +298,13 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ── Phase 3a: full design, NO CellValue.raw / CellValue.style access ──
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // ── Extract cell values ──
-    final placeCell = row.cells['place'];
-    final bibCell = row.cells['bib'];
+    // Only use .display strings — no .raw, no .style
+    final placeDisplay = row.cells['place']?.display ?? '';
+    final bibDisplay = row.cells['bib']?.display ?? '';
     final nameDisplay = row.cells['name']?.display ?? '';
     final timeDisplay = row.cells['result_time']?.display ?? '';
     final categoryDisplay = row.cells['category']?.display ?? '';
@@ -313,54 +314,43 @@ class _CardRow extends StatelessWidget {
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
 
-    // ── Time color: leader → primary, DNF/DNS/DSQ → error, else onSurface ──
+    // Time color by status
     Color timeColor = cs.onSurface;
-    if (placeCell?.raw is int && (placeCell!.raw as int) == 1) {
+    if (placeDisplay == '1') {
       timeColor = cs.primary;
     } else if (isDnf) {
       timeColor = cs.error;
     }
 
-    // ── Place widget ──
+    // Place widget — medals via display string
     Widget placeWidget;
-    if (placeCell == null) {
-      placeWidget = const SizedBox.shrink();
-    } else if (placeCell.raw is int) {
-      final p = placeCell.raw as int;
-      if (p >= 1 && p <= 3) {
-        placeWidget = Text(['🥇', '🥈', '🥉'][p - 1], style: const TextStyle(fontSize: 16));
-      } else {
-        placeWidget = Text('$p', textAlign: TextAlign.center,
-          style: theme.textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 14));
-      }
+    if (placeDisplay == '1') {
+      placeWidget = const Text('🥇', style: TextStyle(fontSize: 16));
+    } else if (placeDisplay == '2') {
+      placeWidget = const Text('🥈', style: TextStyle(fontSize: 16));
+    } else if (placeDisplay == '3') {
+      placeWidget = const Text('🥉', style: TextStyle(fontSize: 16));
     } else {
-      placeWidget = Text(placeCell.display, textAlign: TextAlign.center,
+      placeWidget = Text(placeDisplay, textAlign: TextAlign.center,
         style: theme.textTheme.labelSmall?.copyWith(
-          fontWeight: FontWeight.w700, fontSize: 11,
-          color: placeCell.style == CellStyle.error ? cs.error : cs.onSurfaceVariant));
+          fontWeight: FontWeight.w700, fontSize: 11, color: cs.onSurfaceVariant));
     }
 
-    // ── Lap chips ──
+    // Lap chips — no cell.style access
     final lapChips = <Widget>[];
     for (final col in columns) {
       if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
-        final cell = row.cells[col.id];
-        if (cell != null && cell.display.isNotEmpty) {
-          final isHighlight = cell.style == CellStyle.highlight;
+        final display = row.cells[col.id]?.display ?? '';
+        if (display.isNotEmpty) {
           lapChips.add(Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
             decoration: BoxDecoration(
-              color: isHighlight
-                  ? cs.primaryContainer.withOpacity(0.3)
-                  : cs.surfaceContainerHighest.withOpacity(0.5),
+              color: cs.surfaceContainerHighest.withOpacity(0.5),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: Text('${col.label}: ${cell.display}',
+            child: Text('${col.label}: $display',
               style: AppTypography.monoTiming.copyWith(
-                fontSize: 11,
-                fontWeight: isHighlight ? FontWeight.w700 : FontWeight.w400,
-                color: isHighlight ? cs.primary : cs.onSurfaceVariant)),
+                fontSize: 11, color: cs.onSurfaceVariant)),
           ));
         }
       }
@@ -379,14 +369,14 @@ class _CardRow extends StatelessWidget {
           // ── Top: place + bib + name + category ──
           Row(children: [
             SizedBox(width: 30, child: placeWidget),
-            if (bibCell != null) ...[
+            if (bibDisplay.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                 decoration: BoxDecoration(
                   color: cs.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(4),
                 ),
-                child: Text(bibCell.display, style: theme.textTheme.labelMedium?.copyWith(
+                child: Text(bibDisplay, style: theme.textTheme.labelMedium?.copyWith(
                   fontWeight: FontWeight.w700, color: cs.onSurfaceVariant, fontSize: 13)),
               ),
               const SizedBox(width: 8),
