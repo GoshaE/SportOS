@@ -298,7 +298,7 @@ class _CardRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Phase 3c: 3b + medals + timeColor ──
+
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
@@ -361,7 +361,7 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Top row ── (same as 3c)
+          // ── Top row ──
           Row(children: [
             SizedBox(width: 30, child: placeWidget),
             const SizedBox(width: 6),
@@ -393,7 +393,7 @@ class _CardRow extends StatelessWidget {
               ),
           ]),
           const SizedBox(height: 6),
-          // ── Bottom row (3d — lapChips list + conditional) ──
+          // ── Bottom row ──
           Row(children: [
             if (lapChips.isNotEmpty)
               Expanded(child: Wrap(spacing: 4, runSpacing: 3, children: lapChips)),
