@@ -48,6 +48,7 @@ description: Скилл для разработки Flutter-приложения
 - [Продвинутые паттерны](references/advanced_patterns.md) — World-class: Slivers, кеширование, пагинация, анимации, responsive.
 - [Продвинутые паттерны II](references/advanced_patterns_2.md) — Формы, тема, auth guards, тесты, NFC, миграции, i18n.
 - [Обработка ошибок](references/error_handling.md) — AsyncValue, offline, retry, валидация.
+- [Web Release паттерны](references/web_release_patterns.md) — dart2js подводные камни, CanvasKit ограничения, безопасные паттерны для web.
 
 ### Предметная область и дизайн
 - [Глоссарий](references/glossary.md) — 35+ терминов ездового спорта и системы.
