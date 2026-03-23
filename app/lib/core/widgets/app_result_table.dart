@@ -313,6 +313,10 @@ class _CardRow extends StatelessWidget {
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
 
+    // DEBUG: show all cell keys — REMOVE LATER
+    final debugKeys = row.cells.keys.join(', ');
+    final debugInfo = 'keys:[$debugKeys] place:[$place] bib:[$bib] time:[$time] type:[${row.type}]';
+
     // Time color
     Color timeColor = cs.onSurface;
     if (place == '1') timeColor = cs.primary;
@@ -361,6 +365,9 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // DEBUG TEXT — REMOVE LATER
+          Text(debugInfo, style: TextStyle(fontSize: 9, color: cs.error)),
+          const SizedBox(height: 4),
           // ── Top row ──
           Row(children: [
             SizedBox(width: 30, child: placeWidget),
