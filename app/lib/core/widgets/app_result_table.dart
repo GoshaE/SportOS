@@ -301,7 +301,7 @@ class _CardRow extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // Use row.cell() method — compiled inside ResultRow, not inline
+    // Use row.cell() — encapsulated Map lookup avoids dart2js issues
     final nameDisplay = row.cell('name');
     final placeStr = row.cell('place');
     final bibStr = row.cell('bib');
@@ -313,10 +313,7 @@ class _CardRow extends StatelessWidget {
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
 
-    // DEBUG — REMOVE LATER
-    final debugInfo = 'cell(): place=[${row.cell('place')}] bib=[${row.cell('bib')}] time=[${row.cell('result_time')}]\n'
-      'direct: place=[${row.cells['place']?.display}] bib=[${row.cells['bib']?.display}] time=[${row.cells['result_time']?.display}]\n'
-      'vars: place=[$placeStr] bib=[$bibStr] time=[$totalTime]';
+
 
     // Time color
     Color timeColor = cs.onSurface;
@@ -347,7 +344,7 @@ class _CardRow extends StatelessWidget {
     final lapChips = <Widget>[];
     for (final col in columns) {
       if (col.id.startsWith('lap') && col.id.endsWith('_time')) {
-        final display = row.cells[col.id]?.display ?? '';
+        final display = row.cell(col.id);
         if (display.isNotEmpty) {
           lapChips.add(Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
@@ -373,9 +370,7 @@ class _CardRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // DEBUG — REMOVE LATER
-          Text(debugInfo, style: TextStyle(fontSize: 9, color: cs.error)),
-          const SizedBox(height: 4),
+
           // ── Top row ──
           Row(children: [
             SizedBox(width: 30, child: placeWidget),
