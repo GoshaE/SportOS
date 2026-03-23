@@ -301,27 +301,22 @@ class _CardRow extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    // CRITICAL: store cell in local variable FIRST, then access .display
-    // dart2js minification breaks chained row.cells['id']?.display
-    final nameCell = row.cells['name'];
-    final timeCell = row.cells['result_time'];
-    final placeCell = row.cells['place'];
-    final bibCell = row.cells['bib'];
-    final gapCell = row.cells['gap_leader'] ?? row.cells['gap_prev'];
-    final categoryCell = row.cells['category'];
-
-    final nameDisplay = nameCell?.display ?? '';
-    final totalTime = timeCell?.display ?? '—';
-    final placeStr = placeCell?.display ?? '';
-    final bibStr = bibCell?.display ?? '';
-    final gapStr = gapCell?.display ?? '';
-    final categoryStr = categoryCell?.display ?? '';
+    // Use row.cell() method — compiled inside ResultRow, not inline
+    final nameDisplay = row.cell('name');
+    final placeStr = row.cell('place');
+    final bibStr = row.cell('bib');
+    final categoryStr = row.cell('category');
+    final gapStr = row.cell('gap_leader').isNotEmpty
+        ? row.cell('gap_leader') : row.cell('gap_prev');
+    final totalTime = row.cell('result_time');
 
     final isDnf = row.type == RowType.dnf || row.type == RowType.dns || row.type == RowType.dsq;
     final rowTint = _rowTint(row.type, cs);
 
     // DEBUG — REMOVE LATER
-    final debugInfo = 'place:[$placeStr] bib:[$bibStr] totalTime:[$totalTime] gap:[$gapStr]';
+    final debugInfo = 'cell(): place=[${row.cell('place')}] bib=[${row.cell('bib')}] time=[${row.cell('result_time')}]\n'
+      'direct: place=[${row.cells['place']?.display}] bib=[${row.cells['bib']?.display}] time=[${row.cells['result_time']?.display}]\n'
+      'vars: place=[$placeStr] bib=[$bibStr] time=[$totalTime]';
 
     // Time color
     Color timeColor = cs.onSurface;
@@ -424,7 +419,7 @@ class _CardRow extends StatelessWidget {
                 fontSize: 11, color: cs.onSurfaceVariant)),
             ],
             const SizedBox(width: 6),
-            Text(totalTime, style: AppTypography.monoTiming.copyWith(
+            Text(totalTime.isEmpty ? '—' : totalTime, style: AppTypography.monoTiming.copyWith(
               fontSize: 15, fontWeight: FontWeight.w700, color: timeColor)),
           ]),
         ],
